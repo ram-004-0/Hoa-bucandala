@@ -1,0 +1,51 @@
+import React from "react";
+import { Link } from "react-router-dom";
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import AmenityCard from "../../props/AmenityCard";
+import icon from "../../../src/assets/homeIcons.png";
+import { Building, Waves, DumbbellIcon } from "lucide-react";
+const AmenityReservation = () => {
+  return (
+    <div className="">
+      <div className="bg-[#00704e] h-40 gap-10 grid grid-cols-[10%_90%] p-10 text-white justify-center items-center">
+        <Link to="/home">
+          <ArrowLeftIcon className="h-10 w-10 ml-5 md:ml-10 cursor-pointer text-white" />
+        </Link>
+        <div>
+          <h1 className="font-bold text-4xl">Amenity Reservation</h1>
+          <p>Book Community Amenities</p>
+        </div>
+      </div>
+      <div className="m-10 justify-center content-center flex flex-col gap-10 flex-wrap">
+        <AmenityCard
+          image={
+            <Building className="w-12 h-12 text-green-600 bg-green-100 rounded-lg p-2"></Building>
+          }
+          name="Club House"
+          description="Perfect for gatherings, meetings, and parties."
+          route="/amenities/clubhouse"
+        />
+
+        <AmenityCard
+          image={
+            <Waves className="w-12 h-12 text-green-600 bg-green-100 rounded-lg p-2"></Waves>
+          }
+          name="Swimming Pool"
+          description="Enjoy a refreshing swim in our well-maintained pool."
+          route="/amenities/swimmingpool"
+        />
+
+        <AmenityCard
+          image={
+            <DumbbellIcon className="w-12 h-12 text-green-600 bg-green-100 rounded-lg p-2"></DumbbellIcon>
+          }
+          name="Basketball Court"
+          description="Shoot some hoops and stay active."
+          route="/amenities/basketballcourt"
+        />
+      </div>
+    </div>
+  );
+};
+
+export default AmenityReservation;
