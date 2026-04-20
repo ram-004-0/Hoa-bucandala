@@ -4,17 +4,23 @@ import {
   createResident,
   getResidents,
   getResidentCount,
+  updateResident, // Import new controller
+  deleteResident, // Import new controller
 } from "../Controllers/residentsController.js";
 import { authenticate } from "../middlewares/authMiddleware.js";
 import { authorizeRoles } from "../middlewares/roles.js";
 
 const router = express.Router();
 
-// 1. Change to GET and specific path
+// Get total count for dashboard cards
 router.get("/count", authenticate, authorizeRoles("ADMIN"), getResidentCount);
 
-// 2. Keep the others as is
+// Main Resident CRUD
 router.get("/", authenticate, authorizeRoles("ADMIN"), getResidents);
 router.post("/", authenticate, authorizeRoles("ADMIN"), createResident);
+
+// ID-based routes for Update and Delete
+router.put("/:id", authenticate, authorizeRoles("ADMIN"), updateResident);
+router.delete("/:id", authenticate, authorizeRoles("ADMIN"), deleteResident);
 
 export default router;

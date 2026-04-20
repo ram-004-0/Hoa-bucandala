@@ -9,6 +9,8 @@ import {
   Trash,
   TriangleAlert,
   RefreshCcw,
+  Megaphone,
+  Users,
 } from "lucide-react";
 
 import Card from "../../props/AdminComponent";
@@ -21,7 +23,7 @@ const AdminDashboard = () => {
     unpaidDues: 0,
     reservations: 0,
     wasteRequests: 0,
-    visitorCount: 0, // Keep as placeholder or map to a specific logic
+    visitorCount: 0,
     securityReports: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -31,7 +33,7 @@ const AdminDashboard = () => {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      // Use Promise.allSettled so one failing endpoint doesn't crash the whole dashboard
+      // Cleaned up the array to remove duplicate calls
       const results = await Promise.allSettled([
         fetch(`${API_URL}/residents/count`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -45,44 +47,50 @@ const AdminDashboard = () => {
         fetch(`${API_URL}/reports`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch(`${API_URL}/billing/unpaid-total`, {
+        // Assuming your router now points to payments for this logic
+        fetch(`${API_URL}/payments/unpaid-total`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/visitors`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
 
-      const data = { ...statsData };
+      const newData = { ...statsData };
 
-      // Resident Count
-      if (results[0].status === "fulfilled" && results[0].value.ok) {
-        const res = await results[0].value.json();
-        data.residents = res.count || 0;
-      }
+      // Helper to parse JSON only once and check for OK status
+      const parseResult = async (res) => {
+        if (res.status === "fulfilled" && res.value.ok) {
+          return await res.value.json();
+        }
+        return null;
+      };
 
-      // Reservations Count
-      if (results[1].status === "fulfilled" && results[1].value.ok) {
-        const res = await results[1].value.json();
-        data.reservations = Array.isArray(res) ? res.length : 0;
-      }
+      // 1. Resident Count
+      const res0 = await parseResult(results[0]);
+      if (res0) newData.residents = res0.count || 0;
 
-      // Waste Requests Count
-      if (results[2].status === "fulfilled" && results[2].value.ok) {
-        const res = await results[2].value.json();
-        data.wasteRequests = Array.isArray(res) ? res.length : 0;
-      }
+      // 2. Reservations
+      const res1 = await parseResult(results[1]);
+      if (res1) newData.reservations = Array.isArray(res1) ? res1.length : 0;
 
-      // Security Reports Count
-      if (results[3].status === "fulfilled" && results[3].value.ok) {
-        const res = await results[3].value.json();
-        data.securityReports = Array.isArray(res) ? res.length : 0;
-      }
+      // 3. Waste Requests
+      const res2 = await parseResult(results[2]);
+      if (res2) newData.wasteRequests = Array.isArray(res2) ? res2.length : 0;
 
-      // Unpaid Dues (Total Sum)
-      if (results[4].status === "fulfilled" && results[4].value.ok) {
-        const res = await results[4].value.json();
-        data.unpaidDues = res.totalAmount || 0;
-      }
+      // 4. Security Reports
+      const res3 = await parseResult(results[3]);
+      if (res3) newData.securityReports = Array.isArray(res3) ? res3.length : 0;
 
-      setStatsData(data);
+      // 5. Unverified Dues (from billing table where status = 'Pending')
+      const res4 = await parseResult(results[4]);
+      if (res4) newData.unpaidDues = res4.totalAmount || 0;
+
+      // 6. Visitor Count
+      const res5 = await parseResult(results[5]);
+      if (res5) newData.visitorCount = Array.isArray(res5) ? res5.length : 0;
+
+      setStatsData(newData);
     } catch (err) {
       console.error("Dashboard Fetch Error:", err);
     } finally {
@@ -99,37 +107,37 @@ const AdminDashboard = () => {
       icon: User2,
       label: "Total Residents",
       value: statsData.residents,
-      color: "blue",
+      color: "#2563eb",
     },
     {
       icon: DollarSign,
-      label: "Unpaid Dues",
+      label: "Unverified Dues",
       value: `₱${Number(statsData.unpaidDues).toLocaleString()}`,
-      color: "red",
+      color: "#dc2626",
     },
     {
       icon: Calendar,
       label: "Reservations",
       value: statsData.reservations,
-      color: "purple",
+      color: "#7c3aed",
     },
     {
       icon: Trash,
       label: "Waste Requests",
       value: statsData.wasteRequests,
-      color: "green",
+      color: "#16a34a",
     },
     {
-      icon: User2,
+      icon: Users,
       label: "Visitor Count",
       value: statsData.visitorCount,
-      color: "emerald",
+      color: "#059669",
     },
     {
       icon: TriangleAlert,
       label: "Security Reports",
       value: statsData.securityReports,
-      color: "rose",
+      color: "#e11d48",
     },
   ];
 
@@ -139,8 +147,7 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Header */}
+    <div className="min-h-screen bg-gray-100 antialiased font-sans">
       <div className="bg-[#00704e] text-white px-4 py-6 md:px-10 md:py-8 flex flex-col md:flex-row md:justify-between md:items-center gap-4 shadow-lg">
         <div className="flex items-center gap-4">
           <ShieldCheck className="w-10 h-10" />
@@ -168,9 +175,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Content */}
       <div className="p-4 md:p-10 flex flex-col gap-10">
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {dynamicStats.map(({ icon: Icon, label, value, color }, i) => (
             <div
@@ -190,7 +195,6 @@ const AdminDashboard = () => {
           ))}
         </div>
 
-        {/* Management Section */}
         <div className="flex flex-col gap-6">
           <h2 className="font-bold text-xl text-gray-800 border-b pb-2">
             Management Portal
@@ -210,7 +214,7 @@ const AdminDashboard = () => {
                 image={<Calendar className="text-purple-700 w-6 h-6" />}
               />
             </Link>
-            <Link to="/admin/dues">
+            <Link to="/admin/manage-payments">
               <Card
                 name="HOA Dues Management"
                 desc="Track HOA payment status"
@@ -235,7 +239,7 @@ const AdminDashboard = () => {
               <Card
                 name="Create Announcement"
                 desc="Post community updates"
-                image={<User2 className="text-blue-700 w-6 h-6" />}
+                image={<Megaphone className="text-orange-600 w-6 h-6" />}
               />
             </Link>
           </div>

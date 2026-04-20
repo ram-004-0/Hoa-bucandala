@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Environment Variables (SENSITIVE)
+.env
+.env.local
+
+# Build folders
+dist/
+build/
+
+# Debug logs
+npm-debug.log*
+yarn-error.log*

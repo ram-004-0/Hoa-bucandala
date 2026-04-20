@@ -8,12 +8,13 @@ import reservationRoutes from "./Routes/reservation.js";
 import reportsRoutes from "./Routes/reports.js";
 import announcementRoutes from "./Routes/announcement.js";
 import visitorRoutes from "./Routes/visitorRoutes.js";
+import paymentsRoutes from "./Routes/payments.js";
 const app = express();
 app.use(
   cors({
     origin: "http://localhost:5173",
-    methods: ["GET", "POST", "PATCH", "DELETE"],
-    credentials: true,
+    methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
@@ -23,6 +24,7 @@ app.use(express.json());
 app.use("/api/visitors", visitorRoutes);
 app.use("/api/residents", residentsRoutes);
 app.use("/api", authRoutes);
+app.use("/api/payments", paymentsRoutes);
 app.use("/api/waste", wasteRoutes);
 app.use("/api", reservationRoutes);
 app.use("/api", reportsRoutes);

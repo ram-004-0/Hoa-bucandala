@@ -50,6 +50,7 @@ import ManageWaste from "./pages/admin/adminpages/ManageWaste";
 import ManageReports from "./pages/admin/adminpages/ManageReports";
 import CreateAnnouncement from "./pages/admin/adminpages/CreateAnnouncement";
 import ViewPickups from "./pages/admin/adminpages/ViewPickups.jsx";
+import ManagePayments from "./pages/admin/adminpages/ManagePayments.jsx";
 const App = () => {
   useEffect(() => {
     startAutoLogout();
@@ -254,6 +255,14 @@ const App = () => {
           element={
             <ProtectedRoute roles={["ADMIN"]}>
               <ManageResidents />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/manage-payments"
+          element={
+            <ProtectedRoute roles={["ADMIN"]}>
+              <ManagePayments />
             </ProtectedRoute>
           }
         />
