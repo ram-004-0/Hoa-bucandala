@@ -41,6 +41,7 @@ import SuspisciousActivity from "./pages/dashboardpages/securityassistancepages/
 import GuardDashboard from "./pages/guard/GuardDashboard";
 import VisitorList from "./pages/guard/pages/VisitorList";
 import VisitorLog from "./pages/guard/pages/VisitorLog";
+import SecurityAlerts from "./pages/guard/pages/SecurityAlerts";
 
 // Admin
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -221,6 +222,14 @@ const App = () => {
           element={
             <ProtectedRoute roles={["GUARD"]}>
               <GuardDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="guard/security-alerts"
+          element={
+            <ProtectedRoute roles={["GUARD"]}>
+              <SecurityAlerts />
             </ProtectedRoute>
           }
         />

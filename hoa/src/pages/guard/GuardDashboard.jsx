@@ -10,27 +10,46 @@ import {
   Activity,
   RefreshCcw,
   Clock,
+  BellRing, // New icon for requests
 } from "lucide-react";
-import Card from "../../props/AdminComponent"; // Using your Admin Card prop for consistency
+import Card from "../../props/AdminComponent";
 import VerificationActionModal from "./guard_modal/VerificationActionModal";
 
 const GuardDashboard = () => {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [stats, setStats] = useState({ total: 0, expected: 0, inside: 0 });
+  const [stats, setStats] = useState({
+    total: 0,
+    expected: 0,
+    inside: 0,
+    pendingRequests: 0,
+  });
 
   const fetchStats = async () => {
     setLoading(true);
+    const token = localStorage.getItem("token");
+    const headers = { Authorization: `Bearer ${token}` };
+
     try {
-      const res = await fetch("http://localhost:5000/api/visitors/all", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      // Fetch Visitor Stats
+      const visitorRes = await fetch("http://localhost:5000/api/visitors/all", {
+        headers,
       });
-      const data = await res.json();
-      if (res.ok) {
+      const visitorData = await visitorRes.json();
+
+      // Fetch Security Request Stats (Add this endpoint to your backend)
+      const requestRes = await fetch(
+        "http://localhost:5000/api/guard-requests/pending",
+        { headers },
+      );
+      const requestData = await requestRes.json();
+
+      if (visitorRes.ok) {
         setStats({
-          total: data.length,
-          expected: data.filter((v) => v.status === "PENDING").length,
-          inside: data.filter((v) => v.status === "ARRIVED").length,
+          total: visitorData.length,
+          expected: visitorData.filter((v) => v.status === "PENDING").length,
+          inside: visitorData.filter((v) => v.status === "ARRIVED").length,
+          pendingRequests: requestRes.ok ? requestData.length : 0,
         });
       }
     } catch (err) {
@@ -42,6 +61,9 @@ const GuardDashboard = () => {
 
   useEffect(() => {
     fetchStats();
+    // Optional: Refresh every 30 seconds to catch new emergency requests
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleLogout = () => {
@@ -51,7 +73,7 @@ const GuardDashboard = () => {
 
   return (
     <div className="min-h-screen bg-[#fcfdfc] font-sans antialiased">
-      {/* Header - Matching Admin Dashboard */}
+      {/* Header */}
       <div className="bg-[#00704e] text-white px-4 py-6 md:px-10 md:py-8 flex flex-col md:flex-row md:justify-between md:items-center gap-4 shadow-lg">
         <div className="flex items-center gap-4">
           <div className="bg-white/10 p-3 rounded-2xl">
@@ -83,10 +105,10 @@ const GuardDashboard = () => {
 
       {/* Content Area */}
       <div className="p-4 md:p-10 max-w-7xl mx-auto flex flex-col gap-10">
-        {/* Stats Grid - Using the Admin Stat Card Style */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Stats Grid - Now with 4 items */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatBox
-            label="Today's Total"
+            label="Total Visitors"
             value={stats.total}
             icon={Activity}
             color="text-blue-600"
@@ -106,9 +128,21 @@ const GuardDashboard = () => {
             color="text-[#00704e]"
             loading={loading}
           />
+          {/* New Active Alerts Stat */}
+          <StatBox
+            label="Active Alerts"
+            value={stats.pendingRequests}
+            icon={BellRing}
+            color={
+              stats.pendingRequests > 0
+                ? "text-red-600 animate-pulse"
+                : "text-gray-400"
+            }
+            loading={loading}
+          />
         </div>
 
-        {/* Action Section - Matching Management Portal Design */}
+        {/* Action Section */}
         <div className="flex flex-col gap-6">
           <div className="flex items-center gap-3 border-b border-gray-100 pb-4">
             <div className="w-2 h-8 bg-[#00704e] rounded-full"></div>
@@ -117,7 +151,7 @@ const GuardDashboard = () => {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Main Action: Verification */}
             <button
               onClick={() => setShowVerifyModal(true)}
@@ -125,16 +159,30 @@ const GuardDashboard = () => {
             >
               <Card
                 name="Verification"
-                desc="Scan QR or Search Visitor ID"
+                desc="Scan QR / Search ID"
                 image={<QrCode className="text-blue-600 w-6 h-6" />}
               />
             </button>
 
-            {/* Secondary Action: List */}
+            {/* Incident Reports - NEW */}
+            <Link to="/guard/security-alerts" className="group relative">
+              {stats.pendingRequests > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-full z-20 animate-bounce">
+                  {stats.pendingRequests} NEW
+                </span>
+              )}
+              <Card
+                name="Security Alerts"
+                desc="Noise & Suspicious Reports"
+                image={<BellRing className="text-red-600 w-6 h-6" />}
+              />
+            </Link>
+
+            {/* Visitor List */}
             <Link to="/guard/visitor-list" className="group">
               <Card
                 name="Visitor List"
-                desc="View all pre-registered guests"
+                desc="View pre-registered guests"
                 image={<User className="text-[#00704e] w-6 h-6" />}
               />
             </Link>
@@ -143,14 +191,14 @@ const GuardDashboard = () => {
             <Link to="/guard/visitor-log" className="group">
               <Card
                 name="Entry/Exit Logs"
-                desc="Detailed history of all movements"
+                desc="Detailed movement history"
                 image={<Clipboard className="text-purple-600 w-6 h-6" />}
               />
             </Link>
           </div>
         </div>
 
-        {/* Emergency Section - Kept but styled for alignment */}
+        {/* Emergency Support section remains same... */}
         <div className="bg-white rounded-2xl border border-red-100 shadow-sm overflow-hidden">
           <div className="bg-red-50 px-6 py-4 border-b border-red-100 flex items-center justify-between">
             <h3 className="text-red-700 font-bold flex items-center gap-2 text-sm uppercase tracking-wider">
@@ -185,7 +233,6 @@ const GuardDashboard = () => {
   );
 };
 
-// Internal Sub-component for Stats to match Admin style
 const StatBox = ({ label, value, icon: Icon, color, loading }) => (
   <div className="bg-white shadow-sm border border-gray-100 rounded-2xl p-6 flex flex-col gap-2 hover:shadow-md transition-all duration-300">
     <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-gray-50">

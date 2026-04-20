@@ -101,15 +101,24 @@ export const getAllVisitors = async (req, res) => {
 
 export const updateVisitorStatus = async (req, res) => {
   const { id } = req.params;
-  const { status } = req.body; // e.g., 'ARRIVED'
+  const { status } = req.body; // 'ARRIVED' or 'DEPARTED' or 'CANCELLED'
 
   try {
-    await db.query("UPDATE visitors SET status = ? WHERE visitor_id = ?", [
-      status,
-      id,
-    ]);
-    res.json({ message: `Visitor marked as ${status}` });
+    const [result] = await db.query(
+      "UPDATE visitors SET status = ? WHERE visitor_id = ?",
+      [status, id],
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Visitor record not found" });
+    }
+
+    res.json({
+      message: `Visitor status updated to ${status}`,
+      updatedStatus: status,
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Status update error:", err);
+    res.status(500).json({ error: "Failed to update status" });
   }
 };

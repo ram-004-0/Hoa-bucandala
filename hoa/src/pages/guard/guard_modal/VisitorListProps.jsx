@@ -1,5 +1,12 @@
-import React, { useState } from "react";
-import { ClockIcon, CheckIcon } from "@heroicons/react/24/outline";
+import React from "react";
+import {
+  UserIcon,
+  MapPinIcon,
+  ClockIcon,
+  InformationCircleIcon,
+  ArrowLeftEndOnRectangleIcon,
+  CheckCircleIcon,
+} from "@heroicons/react/24/outline";
 
 const VisitorListProps = ({
   id,
@@ -11,11 +18,7 @@ const VisitorListProps = ({
   time,
   onUpdate,
 }) => {
-  const [updating, setUpdating] = useState(false);
-  const isArrived = state === "ARRIVED";
-
-  const handleMarkArrived = async () => {
-    setUpdating(true);
+  const handleStatusChange = async (newStatus) => {
     try {
       const res = await fetch(
         `http://localhost:5000/api/visitors/${id}/status`,
@@ -25,78 +28,91 @@ const VisitorListProps = ({
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-          body: JSON.stringify({ status: "ARRIVED" }),
+          body: JSON.stringify({ status: newStatus }),
         },
       );
-
-      if (res.ok) {
-        onUpdate(); // Trigger parent refresh
-      } else {
-        alert("Failed to update status");
-      }
+      if (res.ok) onUpdate();
     } catch (err) {
-      console.error("Error updating status:", err);
-    } finally {
-      setUpdating(false);
+      console.error("Status update failed:", err);
     }
   };
 
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col gap-4 hover:shadow-md transition-shadow">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="font-bold text-lg text-gray-800">{name}</h2>
-          <p className="text-[10px] font-mono text-gray-400 uppercase">
-            ID: {id}
-          </p>
-        </div>
-        <span
-          className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
-            isArrived
-              ? "bg-green-100 text-green-700"
-              : "bg-yellow-100 text-yellow-700"
-          }`}
-        >
-          {state}
-        </span>
-      </div>
+  const statusStyles = {
+    PENDING: "bg-amber-100 text-amber-700",
+    ARRIVED: "bg-green-100 text-green-700",
+    DEPARTED: "bg-gray-100 text-gray-500",
+  };
 
-      {/* Details */}
-      <div className="flex flex-col gap-2 text-sm border-t border-gray-50 pt-4">
-        <DetailRow label="Homeowner" value={homeowner} />
-        <DetailRow label="Address" value={address} />
-        <DetailRow label="Purpose" value={purpose} />
-        <div className="flex justify-between items-center">
-          <span className="text-gray-400">Expected</span>
-          <span className="flex items-center gap-1 font-semibold text-gray-700">
-            <ClockIcon className="w-4 h-4 text-gray-400" />
-            {time}
+  return (
+    <div
+      className={`bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full transition-all ${state === "DEPARTED" ? "opacity-60" : "hover:shadow-md"}`}
+    >
+      <div className="p-6 flex flex-col gap-5 flex-grow">
+        <div className="flex justify-between items-start">
+          <h3 className="font-black text-gray-800 text-lg leading-tight uppercase tracking-tight">
+            {name}
+          </h3>
+          <span
+            className={`text-[10px] font-black px-3 py-1 rounded-full tracking-widest ${statusStyles[state]}`}
+          >
+            {state}
           </span>
         </div>
+
+        <div className="space-y-4">
+          <InfoItem icon={MapPinIcon} label="Destination" value={address} />
+          <InfoItem icon={UserIcon} label="Resident Host" value={homeowner} />
+          <InfoItem
+            icon={InformationCircleIcon}
+            label="Purpose"
+            value={purpose}
+          />
+          <InfoItem icon={ClockIcon} label="Expected Time" value={time} />
+        </div>
       </div>
 
-      {/* Action */}
-      {!isArrived && (
-        <button
-          onClick={handleMarkArrived}
-          disabled={updating}
-          className="mt-2 w-full bg-[#00704e] hover:bg-green-800 disabled:opacity-50 transition-all text-white py-3 rounded-lg font-bold flex items-center justify-center gap-2 active:scale-95"
-        >
-          <CheckIcon className="w-5 h-5" />
-          {updating ? "Processing..." : "Mark as Arrived"}
-        </button>
-      )}
+      <div className="p-4 bg-gray-50 border-t border-gray-100 mt-auto">
+        {state === "PENDING" && (
+          <button
+            onClick={() => handleStatusChange("ARRIVED")}
+            className="w-full bg-[#00704e] text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-green-800 transition-all uppercase text-xs tracking-widest shadow-lg"
+          >
+            <CheckCircleIcon className="w-5 h-5" />
+            Check In Visitor
+          </button>
+        )}
+
+        {state === "ARRIVED" && (
+          <button
+            onClick={() => handleStatusChange("DEPARTED")}
+            className="w-full bg-red-600 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-red-700 transition-all uppercase text-xs tracking-widest shadow-lg"
+          >
+            <ArrowLeftEndOnRectangleIcon className="w-5 h-5" />
+            Check Out Visitor
+          </button>
+        )}
+
+        {state === "DEPARTED" && (
+          <div className="text-center py-2 text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">
+            Visit Completed
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-const DetailRow = ({ label, value }) => (
-  <div className="flex justify-between gap-4">
-    <span className="text-gray-400">{label}</span>
-    <span className="font-semibold text-gray-700 text-right">
-      {value || "---"}
-    </span>
+const InfoItem = ({ icon: Icon, label, value }) => (
+  <div className="flex gap-3 items-start">
+    <div className="bg-gray-100 p-2 rounded-lg shrink-0">
+      <Icon className="w-4 h-4 text-gray-500" />
+    </div>
+    <div>
+      <p className="text-[10px] uppercase font-black text-gray-400 tracking-tighter mb-0.5">
+        {label}
+      </p>
+      <p className="text-sm text-gray-700 font-bold leading-tight">{value}</p>
+    </div>
   </div>
 );
 
