@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { startAutoLogout } from "../../../backend/utils/auth.js";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = "hoa-camellabucandalav-production.up.railway.app/api";
 
 const AdminCard = () => {
   const navigate = useNavigate();
@@ -31,13 +31,16 @@ const AdminCard = () => {
       // 🔍 DEBUG: confirm payload
       console.log("LOGIN PAYLOAD:", payload);
 
-      const res = await fetch("http://localhost:5000/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const res = await fetch(
+        "hoa-camellabucandalav-production.up.railway.app/api/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
         },
-        body: JSON.stringify(payload),
-      });
+      );
 
       const data = await res.json();
 

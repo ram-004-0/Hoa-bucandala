@@ -19,7 +19,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: "http://project-qbdkn.vercel.app",
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
@@ -40,7 +40,7 @@ app.use("/api", reportsRoutes);
 app.use("/api/announcements", announcementRoutes);
 app.use("/api/guard-requests", guardRequestRoutes);
 
-const PORT = 5000;
+const PORT = 17180;
 app.listen(PORT, () =>
-  console.log(`🚀 Server running on http://localhost:${PORT}`),
+  console.log(`🚀 Server running on http://project-qbdkn.vercel.app:${PORT}`),
 );

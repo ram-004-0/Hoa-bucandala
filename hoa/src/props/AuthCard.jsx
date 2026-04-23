@@ -19,7 +19,6 @@ const AuthCard = () => {
 
   return (
     <div className="bg-white rounded-xl p-8 w-105 shadow-md">
-      {/* Role Toggle */}
       <div className="bg-[#eaeaea] flex rounded-lg h-12 mb-6 p-1">
         {["resident", "guard", "admin"].map((item) => (
           <button
@@ -36,7 +35,6 @@ const AuthCard = () => {
         ))}
       </div>
 
-      {/* Login Card */}
       <div className="relative">{renderCard()}</div>
     </div>
   );
