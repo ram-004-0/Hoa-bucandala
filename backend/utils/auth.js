@@ -2,7 +2,7 @@
 export const logout = () => {
   localStorage.removeItem("token");
   localStorage.removeItem("role");
-  window.location.href = "/login";
+  window.location.pathname = "/login";
 };
 
 export const getTokenExpiry = (token) => {
