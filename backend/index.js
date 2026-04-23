@@ -17,13 +17,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-app.use(
-  cors({
-    origin: "http://project-qbdkn.vercel.app",
-    methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  }),
-);
+app.use(cors());
 
 app.use(express.json());
 
@@ -40,7 +34,8 @@ app.use("/api", reportsRoutes);
 app.use("/api/announcements", announcementRoutes);
 app.use("/api/guard-requests", guardRequestRoutes);
 
-const PORT = 17180;
-app.listen(PORT, () =>
-  console.log(`🚀 Server running on http://project-qbdkn.vercel.app:${PORT}`),
-);
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server is running on port ${PORT}`);
+});

@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { startAutoLogout } from "../../../backend/utils/auth.js";
 
-const API_URL = "hoa-camellabucandalav-production.up.railway.app/api";
+// Correct: A full, absolute URL
+const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
 const AdminCard = () => {
   const navigate = useNavigate();
