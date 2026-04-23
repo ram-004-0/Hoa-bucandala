@@ -17,47 +17,39 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// 1. Setup CORS properly
+const allowedOrigins = [
+  "https://project-qbdkn.vercel.app",
+  "http://localhost:5173",
+];
+
 app.use(
   cors({
-    origin: ["https://project-qbdkn.vercel.app", "http://localhost:5173"],
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
-app.use((req, res, next) => {
-  if (req.method === "OPTIONS") {
-    res.header("Access-Control-Allow-Origin", req.headers.origin);
-    res.header(
-      "Access-Control-Allow-Methods",
-      "GET, POST, PUT, DELETE, OPTIONS",
-    );
-    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    res.header("Access-Control-Allow-Credentials", "true");
-    return res.sendStatus(200);
-  }
-  next();
-});
 
 app.use(express.json());
 
-app.options("(.*)", cors());
-
+// 2. Static files
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Routes
+// 3. Routes
 app.use("/api/visitors", visitorRoutes);
 app.use("/api/residents", residentsRoutes);
-app.use("/api", authRoutes); // Handles /login
+app.use("/api", authRoutes); // This handles /api/login
 app.use("/api/payments", paymentsRoutes);
 app.use("/api/waste", wasteRoutes);
 app.use("/api", reservationRoutes);
 app.use("/api", reportsRoutes);
-app.use("/api/announcements", announcementRoutes);
+app.use("/api", announcementRoutes);
 app.use("/api/guard-requests", guardRequestRoutes);
 
+// 4. Server Start
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
