@@ -1,4 +1,3 @@
-// index.js
 import express from "express";
 import cors from "cors";
 import path from "path";
@@ -18,39 +17,32 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// 1. Define allowed origins
+// 1. Updated CORS configuration
 const allowedOrigins = [
-  "https://project-qbdkn.vercel.app", // Your Vercel frontend
-  "http://localhost:5173", // For local development
+  "https://project-qbdkn.vercel.app",
+  "http://localhost:5173",
 ];
 
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.indexOf(origin) === -1) {
-        const msg =
-          "The CORS policy for this site does not allow access from the specified Origin.";
-        return callback(new Error(msg), false);
-      }
-      return callback(null, true);
-    },
+    origin: allowedOrigins,
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
 app.use(express.json());
 
+// Handle OPTIONS preflight requests explicitly for all routes
+app.options("*", cors());
+
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
 app.use("/api/visitors", visitorRoutes);
 app.use("/api/residents", residentsRoutes);
-app.use("/api", authRoutes);
+app.use("/api", authRoutes); // Handles /login
 app.use("/api/payments", paymentsRoutes);
 app.use("/api/waste", wasteRoutes);
 app.use("/api", reservationRoutes);

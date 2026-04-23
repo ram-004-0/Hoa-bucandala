@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { startAutoLogout } from "../../../backend/utils/auth.js";
 
-// Correct: A full, absolute URL
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
 const AdminCard = () => {
@@ -29,23 +28,18 @@ const AdminCard = () => {
         role: "ADMIN",
       };
 
-      // 🔍 DEBUG: confirm payload
       console.log("LOGIN PAYLOAD:", payload);
 
-      const res = await fetch(
-        "hoa-camellabucandalav-production.up.railway.app/api/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
+      // FIX: Use the API_URL variable with backticks
+      const res = await fetch(`${API_URL}/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify(payload),
+      });
 
       const data = await res.json();
-
-      // 🔍 DEBUG: server response
       console.log("LOGIN RESPONSE:", data);
 
       if (!res.ok) {
@@ -53,18 +47,15 @@ const AdminCard = () => {
         return;
       }
 
-      // ✅ store auth data
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.role);
 
-      // ✅ auto logout based on expiry
-      startAutoLogout(data.expiresIn || 900);
+      // startAutoLogout(data.expiresIn || 900);
 
-      // ✅ redirect
       navigate("/admin");
     } catch (err) {
       console.error("LOGIN ERROR:", err);
-      setError("Server unreachable");
+      setError("Server unreachable. Please check your connection.");
     } finally {
       setLoading(false);
     }
@@ -73,7 +64,6 @@ const AdminCard = () => {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold mb-4 text-gray-800">Admin Login</h1>
-
       <div>
         <label className="block mb-1">Email</label>
         <input
@@ -84,7 +74,6 @@ const AdminCard = () => {
           placeholder="admin@example.com"
         />
       </div>
-
       <div>
         <label className="block mb-1">Password</label>
         <input
@@ -95,9 +84,7 @@ const AdminCard = () => {
           placeholder="Enter your password"
         />
       </div>
-
       {error && <p className="text-red-500">{error}</p>}
-
       <button
         onClick={handleLogin}
         disabled={loading}
