@@ -35,7 +35,7 @@ app.use(
 app.use(express.json());
 
 // Handle OPTIONS preflight requests explicitly for all routes
-app.options("*", cors());
+app.options("(.*)", cors());
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
