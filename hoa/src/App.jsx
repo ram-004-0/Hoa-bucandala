@@ -25,6 +25,7 @@ import WasteCollection from "./pages/dashboardpages/WasteCollection";
 import Announcement from "./pages/dashboardpages/Announcement";
 import SecurityAssistance from "./pages/dashboardpages/SecurityAssistance";
 import VisitorRegistration from "./pages/dashboardpages/VisitorRegistration";
+import ProfileSettings from "./props/ProfileSettings";
 
 // Waste
 import ScheduleBiodegradable from "./pages/dashboardpages/wastecollectionpages/BookBiodegradable";
@@ -173,7 +174,14 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
+        <Route
+          path="profile"
+          element={
+            <ProtectedRoute roles={["RESIDENT"]}>
+              <ProfileSettings />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="securityassistance"
           element={

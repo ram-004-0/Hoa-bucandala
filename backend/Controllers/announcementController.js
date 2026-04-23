@@ -14,17 +14,25 @@ export const getAllAnnouncements = async (req, res) => {
 };
 
 // CREATE announcement
+// CREATE announcement
 export const createAnnouncement = async (req, res) => {
   const { category, title, content } = req.body;
 
+  // Get the admin ID from the authenticated user token
+  const adminId = req.user.id;
+  // Check if req.user exists (if middleware failed or was missed)
+  if (!req.user) {
+    return res.status(401).json({ message: "Unauthorized: No user found" });
+  }
   if (!category || !title || !content) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
   try {
+    // UPDATED QUERY: Added admin_id
     const [result] = await db.query(
-      "INSERT INTO announcements (category, title, content) VALUES (?, ?, ?)",
-      [category, title, content],
+      "INSERT INTO announcements (category, title, content, admin_id) VALUES (?, ?, ?, ?)",
+      [category, title, content, adminId],
     );
 
     res.status(201).json({
@@ -32,6 +40,7 @@ export const createAnnouncement = async (req, res) => {
       category,
       title,
       content,
+      adminId,
     });
   } catch (err) {
     console.error(err);
