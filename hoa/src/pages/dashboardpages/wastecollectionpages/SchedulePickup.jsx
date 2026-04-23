@@ -93,7 +93,7 @@ const SchedulePickup = ({ type }) => {
     const token = localStorage.getItem("token");
     try {
       const res = await fetch(
-        `http://localhost:5000/api/waste/availability?date=${selectedDate}&type=${type}`,
+        `https://hoa-camellabucandalav-production.up.railway.app/api/waste/availability?date=${selectedDate}&type=${type}`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
       const data = await res.json();
@@ -142,20 +142,23 @@ const SchedulePickup = ({ type }) => {
     setBooking(true);
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch("http://localhost:5000/api/waste/book", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const res = await fetch(
+        "https://hoa-camellabucandalav-production.up.railway.app:5000/api/waste/book",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            schedule_id: selected.schedule_id,
+            notes,
+            date,
+            type,
+            time_slot: selected.time_slot,
+          }),
         },
-        body: JSON.stringify({
-          schedule_id: selected.schedule_id,
-          notes,
-          date,
-          type,
-          time_slot: selected.time_slot,
-        }),
-      });
+      );
 
       if (!res.ok) {
         const data = await res.json();

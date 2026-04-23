@@ -10,7 +10,7 @@ import VisitorRegistered from "./visitorregistration_modal/VisitorRegistered";
 import VisitorPass from "./visitorregistration_modal/VisitorPass";
 
 const VisitorRegistration = () => {
-  const API_URL = "http://localhost:5000/api";
+  const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
   // UI State
   const [activeTab, setActiveTab] = useState("register"); // 'register' or 'history'

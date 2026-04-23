@@ -21,7 +21,7 @@ const VisitorListProps = ({
   const handleStatusChange = async (newStatus) => {
     try {
       const res = await fetch(
-        `http://localhost:5000/api/visitors/${id}/status`,
+        `https://hoa-camellabucandalav-production.up.railway.app/api/visitors/${id}/status`,
         {
           method: "PATCH",
           headers: {

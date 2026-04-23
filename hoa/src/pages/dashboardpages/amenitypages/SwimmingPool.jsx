@@ -8,7 +8,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { Link, useNavigate } from "react-router-dom";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 const AMENITY_ID = 3; // Swimming Pool ID in DB
 const TIME_SLOTS = [
   { label: "08:00 AM - 12:00 PM", value: "08:00-12:00" },

@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
 const SecurityAlerts = () => {
   const navigate = useNavigate();
@@ -199,14 +199,14 @@ const SecurityAlerts = () => {
                 {req.photo_url && (
                   <div className="relative group/img rounded-2xl overflow-hidden border border-gray-200 mb-6">
                     <img
-                      src={`http://localhost:5000${req.photo_url}`}
+                      src={`https://hoa-camellabucandalav-production.up.railway.app${req.photo_url}`}
                       alt="Evidence"
                       className="w-full h-56 object-cover transition-transform duration-500 group-hover/img:scale-110"
                     />
                     <button
                       onClick={() =>
                         window.open(
-                          `http://localhost:5000${req.photo_url}`,
+                          `https://hoa-camellabucandalav-production.up.railway.app${req.photo_url}`,
                           "_blank",
                         )
                       }

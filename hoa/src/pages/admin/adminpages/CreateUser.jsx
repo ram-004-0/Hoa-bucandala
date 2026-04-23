@@ -29,8 +29,8 @@ const CreateUser = ({ onClose, onCreate, editData }) => {
     const token = localStorage.getItem("token");
     const method = editData ? "PUT" : "POST";
     const url = editData
-      ? `http://localhost:5000/api/residents/${editData.id}`
-      : `http://localhost:5000/api/residents`;
+      ? `https://hoa-camellabucandalav-production.up.railway.app/api/residents/${editData.id}`
+      : `https://hoa-camellabucandalav-production.up.railway.app/api/residents`;
 
     try {
       const res = await fetch(url, {

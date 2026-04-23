@@ -14,9 +14,12 @@ const VerificationActionModal = ({ onClose }) => {
     try {
       // We'll call your /all visitors endpoint and filter,
       // or create a specific /verify?q= search endpoint
-      const res = await fetch(`http://localhost:5000/api/visitors/all`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
+      const res = await fetch(
+        `https://hoa-camellabucandalav-production.up.railway.app/api/visitors/all`,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        },
+      );
       const data = await res.json();
 
       // Find visitor by ID (VIS-...) or partial Name match
@@ -39,7 +42,7 @@ const VerificationActionModal = ({ onClose }) => {
     try {
       // Add a backend route: PATCH /api/visitors/:id/status
       const res = await fetch(
-        `http://localhost:5000/api/visitors/${visitor.visitor_id}/status`,
+        `https://hoa-camellabucandalav-production.up.railway.app/api/visitors/${visitor.visitor_id}/status`,
         {
           method: "PATCH",
           headers: {

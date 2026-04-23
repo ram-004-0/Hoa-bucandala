@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
 const ManageWaste = () => {
   const [schedules, setSchedules] = useState([]);

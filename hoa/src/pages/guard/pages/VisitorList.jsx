@@ -19,11 +19,14 @@ const VisitorList = () => {
   const fetchVisitors = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/visitors/all", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+      const res = await fetch(
+        "https://hoa-camellabucandalav-production.up.railway.app/api/visitors/all",
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
         },
-      });
+      );
       const data = await res.json();
       if (res.ok) {
         setVisitors(data);

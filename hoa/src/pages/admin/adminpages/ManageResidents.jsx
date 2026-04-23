@@ -10,7 +10,7 @@ import {
 import { Link } from "react-router-dom";
 import CreateUser from "./CreateUser";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
 const ManageResidents = () => {
   const [residents, setResidents] = useState([]);

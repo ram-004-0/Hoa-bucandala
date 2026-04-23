@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ShieldCheck, ArrowLeftIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
 const ManageReports = () => {
   const [reports, setReports] = useState([]);

@@ -16,9 +16,12 @@ const VisitorLog = () => {
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/visitors/all`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
+      const res = await fetch(
+        `https://hoa-camellabucandalav-production.up.railway.app/api/visitors/all`,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        },
+      );
       const data = await res.json();
       if (res.ok) setLogs(data);
     } catch (err) {
@@ -33,7 +36,7 @@ const VisitorLog = () => {
     setIsProcessing(true);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/visitors/${id}/status`,
+        `https://hoa-camellabucandalav-production.up.railway.app/api/visitors/${id}/status`,
         {
           method: "PATCH",
           headers: {

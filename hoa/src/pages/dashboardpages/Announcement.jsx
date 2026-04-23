@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeftIcon, Trash2, Megaphone, Calendar } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-const API_URL = "http://localhost:5000/api";
+const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
 const CATEGORY_STYLES = {
   Policy: "bg-blue-100 text-blue-700",

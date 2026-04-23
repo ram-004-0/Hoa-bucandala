@@ -24,10 +24,15 @@ const ProfileSettings = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/me", {
-          // Assuming you have a /me or profile route
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        });
+        const res = await fetch(
+          "https://hoa-camellabucandalav-production.up.railway.app/api/me",
+          {
+            // Assuming you have a /me or profile route
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          },
+        );
         const data = await res.json();
         if (res.ok) {
           setFormData((prev) => ({
@@ -70,18 +75,21 @@ const ProfileSettings = () => {
 
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/update-profile", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+      const res = await fetch(
+        "https://hoa-camellabucandalav-production.up.railway.app/api/update-profile",
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            currentPassword: formData.currentPassword,
+            newPassword: formData.newPassword,
+            contactNumber: formData.contactNumber,
+          }),
         },
-        body: JSON.stringify({
-          currentPassword: formData.currentPassword,
-          newPassword: formData.newPassword,
-          contactNumber: formData.contactNumber,
-        }),
-      });
+      );
 
       const data = await res.json();
 

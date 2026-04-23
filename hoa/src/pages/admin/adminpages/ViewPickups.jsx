@@ -10,7 +10,7 @@ import {
   RefreshCcw,
 } from "lucide-react";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
 const ViewPickups = () => {
   const [pickups, setPickups] = useState([]);

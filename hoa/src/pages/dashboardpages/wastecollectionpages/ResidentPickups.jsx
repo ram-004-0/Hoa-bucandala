@@ -21,9 +21,12 @@ const ResidentPickups = () => {
   const fetchMyHistory = async () => {
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch("http://localhost:5000/api/waste/my-pickups", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        "https://hoa-camellabucandalav-production.up.railway.app/api/waste/my-pickups",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       const data = await res.json();
       setMyPickups(data);
     } catch (err) {
@@ -39,10 +42,13 @@ const ResidentPickups = () => {
 
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`http://localhost:5000/api/waste/cancel/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `https://hoa-camellabucandalav-production.up.railway.app/api/waste/cancel/${id}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
 
       if (res.ok) {
         // Optimistic UI update: remove from list immediately

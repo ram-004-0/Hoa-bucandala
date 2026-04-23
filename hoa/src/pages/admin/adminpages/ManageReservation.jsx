@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ArrowLeftIcon, Trash2, Calendar, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
 // Helper for authenticated requests
 export const authFetch = (url, options = {}) => {

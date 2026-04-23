@@ -32,14 +32,17 @@ const GuardDashboard = () => {
 
     try {
       // Fetch Visitor Stats
-      const visitorRes = await fetch("http://localhost:5000/api/visitors/all", {
-        headers,
-      });
+      const visitorRes = await fetch(
+        "https://hoa-camellabucandalav-production.up.railway.app/api/visitors/all",
+        {
+          headers,
+        },
+      );
       const visitorData = await visitorRes.json();
 
       // Fetch Security Request Stats (Add this endpoint to your backend)
       const requestRes = await fetch(
-        "http://localhost:5000/api/guard-requests/pending",
+        "https://hoa-camellabucandalav-production.up.railway.app/api/guard-requests/pending",
         { headers },
       );
       const requestData = await requestRes.json();

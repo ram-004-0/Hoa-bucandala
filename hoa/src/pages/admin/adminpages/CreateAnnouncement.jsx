@@ -19,18 +19,21 @@ const CreateAnnouncement = () => {
     }
 
     try {
-      const res = await fetch("http://localhost:5000/api/announcements", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+      const res = await fetch(
+        "https://hoa-camellabucandalav-production.up.railway.app/api/announcements",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            category,
+            title,
+            content,
+          }),
         },
-        body: JSON.stringify({
-          category,
-          title,
-          content,
-        }),
-      });
+      );
 
       const data = await res.json();
 
@@ -50,9 +53,12 @@ const CreateAnnouncement = () => {
     if (!window.confirm("Delete this announcement?")) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/announcements/${id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `https://hoa-camellabucandalav-production.up.railway.app/api/announcements/${id}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
@@ -68,7 +74,9 @@ const CreateAnnouncement = () => {
   }, []);
 
   const fetchAnnouncements = async () => {
-    const res = await fetch("http://localhost:5000/api/announcements");
+    const res = await fetch(
+      "https://hoa-camellabucandalav-production.up.railway.app/api/announcements",
+    );
     const data = await res.json();
     setAnnouncements(data);
   };

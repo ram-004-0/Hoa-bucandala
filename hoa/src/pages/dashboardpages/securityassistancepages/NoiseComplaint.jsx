@@ -4,7 +4,7 @@ import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { Camera, Loader2, X, AlertCircle, Zap } from "lucide-react";
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
 const NoiseComplaint = () => {
   const navigate = useNavigate();
