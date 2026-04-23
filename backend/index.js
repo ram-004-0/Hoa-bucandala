@@ -42,6 +42,10 @@ app.use("/api", reportsRoutes);
 app.use("/api", announcementRoutes);
 app.use("/api/guard-requests", guardRequestRoutes);
 
+app.get("/", (req, res) => {
+  res.send("HOA Backend is UP and RUNNING!");
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 HOA Backend live on port ${PORT}`);
