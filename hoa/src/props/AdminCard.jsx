@@ -30,7 +30,6 @@ const AdminCard = () => {
 
       console.log("LOGIN PAYLOAD:", payload);
 
-      // FIX: Use the API_URL variable with backticks
       const res = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: {
@@ -50,7 +49,7 @@ const AdminCard = () => {
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.role);
 
-      // startAutoLogout(data.expiresIn || 900);
+      startAutoLogout(data.expiresIn || 900);
 
       navigate("/admin");
     } catch (err) {

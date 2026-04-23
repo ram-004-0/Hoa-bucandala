@@ -17,24 +17,30 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// 1. Updated CORS configuration
-const allowedOrigins = [
-  "https://project-qbdkn.vercel.app",
-  "http://localhost:5173",
-];
-
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: ["https://project-qbdkn.vercel.app", "http://localhost:5173"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    res.header("Access-Control-Allow-Origin", req.headers.origin);
+    res.header(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, DELETE, OPTIONS",
+    );
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.header("Access-Control-Allow-Credentials", "true");
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 app.use(express.json());
 
-// Handle OPTIONS preflight requests explicitly for all routes
 app.options("(.*)", cors());
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
