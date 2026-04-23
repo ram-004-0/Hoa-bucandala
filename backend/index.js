@@ -17,15 +17,10 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// 1. Setup CORS properly
-const allowedOrigins = [
-  "https://project-qbdkn.vercel.app",
-  "http://localhost:5173",
-];
-
+// 1. SIMPLEST CORS CONFIG (Avoids complex logic that might fail)
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: ["https://project-qbdkn.vercel.app", "http://localhost:5173"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -34,13 +29,13 @@ app.use(
 
 app.use(express.json());
 
-// 2. Static files
+// 2. STATIC FILES
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// 3. Routes
+// 3. ROUTES
 app.use("/api/visitors", visitorRoutes);
 app.use("/api/residents", residentsRoutes);
-app.use("/api", authRoutes); // This handles /api/login
+app.use("/api", authRoutes); // Ensure this handles /login
 app.use("/api/payments", paymentsRoutes);
 app.use("/api/waste", wasteRoutes);
 app.use("/api", reservationRoutes);
@@ -48,8 +43,8 @@ app.use("/api", reportsRoutes);
 app.use("/api", announcementRoutes);
 app.use("/api/guard-requests", guardRequestRoutes);
 
-// 4. Server Start
+// 4. SERVER START (Crucial: listens on all interfaces)
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 HOA Backend live on port ${PORT}`);
 });
