@@ -9,7 +9,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
-const AMENITY_ID = 2; // Swimming Pool ID in DB
+const AMENITY_ID = 2;
 const TIME_SLOTS = [
   { label: "08:00 AM - 12:00 PM", value: "08:00-12:00" },
   { label: "12:00 PM - 04:00 PM", value: "12:00-16:00" },
