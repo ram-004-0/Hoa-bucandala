@@ -143,7 +143,7 @@ const SchedulePickup = ({ type }) => {
     const token = localStorage.getItem("token");
     try {
       const res = await fetch(
-        "https://hoa-camellabucandalav-production.up.railway.app:5000/api/waste/book",
+        "https://hoa-camellabucandalav-production.up.railway.app/api/waste/book",
         {
           method: "POST",
           headers: {
