@@ -32,15 +32,16 @@ app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // 3. ROUTES
+app.use("/api/announcements", announcementRoutes);
 app.use("/api/visitors", visitorRoutes);
 app.use("/api/residents", residentsRoutes);
-app.use("/api", authRoutes);
 app.use("/api/payments", paymentsRoutes);
 app.use("/api/waste", wasteRoutes);
+app.use("/api/guard-requests", guardRequestRoutes);
+
+app.use("/api", authRoutes);
 app.use("/api", reservationRoutes);
 app.use("/api", reportsRoutes);
-app.use("/api", announcementRoutes);
-app.use("/api/guard-requests", guardRequestRoutes);
 
 app.get("/", (req, res) => {
   res.send("HOA Backend is UP and RUNNING!");

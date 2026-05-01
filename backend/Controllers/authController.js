@@ -131,13 +131,16 @@ export const updateProfile = async (req, res) => {
  */
 export const getMe = async (req, res) => {
   try {
+    // req.user is populated by your authenticate middleware
     const accountId = req.user.id;
 
-    // Join with residents to get the full name
+    // Fetch the detailed info based on the role
     const [rows] = await db.query(
-      `SELECT a.email, a.role, r.full_name, r.contact 
-       FROM accounts a 
-       LEFT JOIN residents r ON r.account_id = a.id 
+      `SELECT a.email, a.role, r.full_name, g.username AS guard_name, ad.username AS admin_name
+       FROM accounts a
+       LEFT JOIN residents r ON r.account_id = a.id
+       LEFT JOIN guard g ON g.account_id = a.id
+       LEFT JOIN admin ad ON ad.account_id = a.id
        WHERE a.id = ?`,
       [accountId],
     );
@@ -146,9 +149,17 @@ export const getMe = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.json(rows[0]);
+    const user = rows[0];
+
+    // Flatten the response so the frontend finds "name" easily
+    res.json({
+      id: accountId,
+      email: user.email,
+      role: user.role,
+      name: user.full_name || user.guard_name || user.admin_name || "User",
+    });
   } catch (err) {
-    console.error("Get Me Error:", err);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("getMe error:", err);
+    res.status(500).json({ message: "Server error fetching profile" });
   }
 };
