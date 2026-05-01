@@ -36,12 +36,12 @@ const VerificationActionModal = ({ onClose }) => {
 
         scannerRef.current.render(
           (decodedText) => {
-            // Logic: Convert "VIS-1-8271" -> "8271"
             const cleanId = decodedText.includes("-")
               ? decodedText.split("-").pop()
               : decodedText;
 
-            handleSearch(cleanId);
+            setSearchQuery(cleanId); // Sync the input field with the scanned ID
+            handleSearch(cleanId); // Execute search
 
             if (scannerRef.current) {
               scannerRef.current.clear().catch((err) => console.error(err));
@@ -72,27 +72,40 @@ const VerificationActionModal = ({ onClose }) => {
     setVisitor(null);
 
     try {
-      // We fetch all and find client-side to handle both ID and Name searches
       const res = await fetch(`${API_URL}/visitors/all`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
-      const data = await res.json();
 
       if (!res.ok) throw new Error("Failed to fetch visitors");
 
-      const found = data.find(
-        (v) =>
-          v.visitor_id.toString() === query.toString() ||
-          v.visitor_name.toLowerCase().includes(query.toLowerCase()),
-      );
+      const data = await res.json();
+
+      // Robust Finding Logic
+      const found = data.find((v) => {
+        const searchTarget = query.toString().trim().toLowerCase();
+
+        // 1. Match by exact ID (e.g., "12")
+        const isIdMatch = v.visitor_id.toString() === searchTarget;
+
+        // 2. Match by Name (e.g., "kian")
+        const isNameMatch = v.visitor_name
+          ?.toLowerCase()
+          .includes(searchTarget);
+
+        // 3. Match by Phone Number (e.g., "8271" or the full "09670781365")
+        const isPhoneMatch = v.visitor_phone?.toString().includes(searchTarget);
+
+        return isIdMatch || isNameMatch || isPhoneMatch;
+      });
 
       if (found) {
         setVisitor(found);
-        setActiveMode("manual"); // Switch to result view
+        setActiveMode("manual"); // Switch to result view to show the card
       } else {
         setError(`No visitor found for "${query}"`);
       }
     } catch (err) {
+      console.error("Search Error:", err);
       setError("Server connection failed. Please try again.");
     } finally {
       setLoading(false);
