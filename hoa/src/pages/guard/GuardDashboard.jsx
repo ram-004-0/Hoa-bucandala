@@ -11,7 +11,7 @@ import {
   RefreshCcw,
   Clock,
   BellRing,
-  Camera, // Added for the scanner button
+  Camera,
 } from "lucide-react";
 import Card from "../../props/AdminComponent";
 import VerificationActionModal from "./guard_modal/VerificationActionModal";
@@ -19,11 +19,6 @@ import VerificationActionModal from "./guard_modal/VerificationActionModal";
 const GuardDashboard = () => {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  // Retrieve user and check authorization
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const isAuthorized = user.role === "GUARD" || user.role === "ADMIN";
-
   const [stats, setStats] = useState({
     total: 0,
     expected: 0,
@@ -94,15 +89,14 @@ const GuardDashboard = () => {
         </div>
 
         <div className="flex items-center gap-4 self-end md:self-auto">
-          {isAuthorized && (
-            <button
-              onClick={() => setShowVerifyModal(true)}
-              className="flex items-center gap-2 bg-white text-[#00704e] px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-green-50 transition-all shadow-md active:scale-95"
-            >
-              <Camera size={20} />
-              <span>SCAN QR CODE</span>
-            </button>
-          )}
+          {/* SCANNER BUTTON - Always Visible Now */}
+          <button
+            onClick={() => setShowVerifyModal(true)}
+            className="flex items-center gap-2 bg-white text-[#00704e] px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-green-50 transition-all shadow-md active:scale-95"
+          >
+            <Camera size={20} />
+            <span>SCAN QR CODE</span>
+          </button>
 
           <button
             onClick={fetchStats}
@@ -167,19 +161,17 @@ const GuardDashboard = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* VERIFICATION CARD: Only for Guard/Admin */}
-            {isAuthorized && (
-              <button
-                onClick={() => setShowVerifyModal(true)}
-                className="text-left group transition-all"
-              >
-                <Card
-                  name="Verification"
-                  desc="Scan QR / Search ID"
-                  image={<QrCode className="text-blue-600 w-6 h-6" />}
-                />
-              </button>
-            )}
+            {/* VERIFICATION CARD - Always Visible Now */}
+            <button
+              onClick={() => setShowVerifyModal(true)}
+              className="text-left group transition-all"
+            >
+              <Card
+                name="Verification"
+                desc="Scan QR / Search ID"
+                image={<QrCode className="text-blue-600 w-6 h-6" />}
+              />
+            </button>
 
             <Link to="/guard/security-alerts" className="group relative">
               {stats.pendingRequests > 0 && (
@@ -212,7 +204,7 @@ const GuardDashboard = () => {
           </div>
         </div>
 
-        {/* Emergency Support Section */}
+        {/* Emergency Support */}
         <div className="bg-white rounded-2xl border border-red-100 shadow-sm overflow-hidden">
           <div className="bg-red-50 px-6 py-4 border-b border-red-100 flex items-center justify-between">
             <h3 className="text-red-700 font-bold flex items-center gap-2 text-sm uppercase tracking-wider">
