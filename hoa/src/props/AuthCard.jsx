@@ -1,89 +1,91 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { startAutoLogout } from "../../../backend/utils/auth.js";
+import { startAutoLogout } from "../../../backend/utils/auth.js"; // Adjust path if necessary
 
+// Using the absolute URL from your reference
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
 const AuthCard = () => {
   const navigate = useNavigate();
 
+  // State Management
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Prevent page refresh
     setError("");
 
-    // Mobile fix: Always trim email to remove accidental trailing spaces
-    const cleanEmail = email.trim();
-    const cleanPassword = password.trim();
-
-    if (!cleanEmail || !cleanPassword) {
-      setError("Please fill in all fields");
+    // 1. Basic Validation
+    if (!email.trim() || !password.trim()) {
+      setError("Email and password are required");
       return;
     }
 
     setLoading(true);
 
     try {
+      // 2. Prepare Payload
+      // Note: We don't send a hardcoded "role" here because the
+      // database will verify the email/password and tell us the role.
+      const payload = {
+        email: email.trim(),
+        password: password.trim(),
+      };
+
       const res = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email: cleanEmail, password: cleanPassword }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
 
+      // 3. Handle Unauthorized/Errors
       if (!res.ok) {
-        // If backend fails, show the specific message (e.g., "User not found")
-        throw new Error(data.message || "Invalid credentials");
+        // This handles the 401 error and displays the server's message
+        setError(data.message || "Invalid email or password");
+        return;
       }
 
-      // 1. Store the token immediately
+      // 4. Store Auth Data
+      // The backend returns { token, role, expiresIn }
       localStorage.setItem("token", data.token);
+      localStorage.setItem("role", data.role);
 
-      // 2. Store user data (Ensure data.role exists in your backend response)
-      const userObj = {
-        role: data.role,
-        email: cleanEmail,
-      };
-      localStorage.setItem("user", JSON.stringify(userObj));
-
-      // 3. Handle auto-logout if applicable
+      // 5. Start auto-logout timer (from your reference logic)
       if (data.expiresIn) {
         startAutoLogout(data.expiresIn);
       }
 
-      // 4. Role-based Navigation
+      // 6. Role-Based Redirection
+      // Matching your database ENUMs: 'ADMIN', 'GUARD', 'RESIDENT'
       if (data.role === "ADMIN") {
         navigate("/admin");
       } else if (data.role === "GUARD") {
         navigate("/guard");
       } else {
-        navigate("/home");
+        navigate("/home"); // Default for RESIDENTS
       }
     } catch (err) {
       console.error("LOGIN ERROR:", err);
-      // This catches network errors (server down) AND the throw new Error above
-      setError(
-        err.message === "Failed to fetch"
-          ? "Cannot reach server. Check your mobile data/WiFi."
-          : err.message,
-      );
+      setError("Server unreachable. Please try again later.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="bg-white rounded-xl p-8 w-full max-w-md shadow-md border border-gray-100">
+    <div className="bg-white rounded-xl p-8 w-105 shadow-md border border-gray-100">
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-[#00704e]">HOA Portal</h2>
-        <p className="text-gray-500 mt-2">Sign in to your account</p>
+        <p className="text-gray-500 mt-2">
+          Enter your credentials to access your account
+        </p>
       </div>
 
       <form onSubmit={handleLogin} className="space-y-5">
@@ -93,7 +95,7 @@ const AuthCard = () => {
           </label>
           <input
             type="email"
-            autoComplete="email"
+            placeholder="name@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full p-3 border text-gray-800 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00704e] outline-none transition-all"
@@ -107,7 +109,7 @@ const AuthCard = () => {
           </label>
           <input
             type="password"
-            autoComplete="current-password"
+            placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full p-3 border text-gray-800 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00704e] outline-none transition-all"
@@ -116,43 +118,17 @@ const AuthCard = () => {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-100 text-red-600 text-sm p-3 rounded-lg text-center font-medium">
+          <p className="text-red-500 text-sm text-center font-medium bg-red-50 p-2 rounded">
             {error}
-          </div>
+          </p>
         )}
 
         <button
           type="submit"
           disabled={loading}
-          className="bg-[#00704e] w-full rounded-xl h-12 text-white font-bold hover:bg-[#016446] transition-all shadow-lg disabled:opacity-50 active:scale-95 flex items-center justify-center"
+          className="bg-[#00704e] w-full rounded-xl h-12 text-white font-bold hover:bg-[#016446] transition-all shadow-lg disabled:opacity-50 active:scale-95"
         >
-          {loading ? (
-            <span className="flex items-center gap-2">
-              <svg
-                className="animate-spin h-5 w-5 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              Verifying...
-            </span>
-          ) : (
-            "Sign In"
-          )}
+          {loading ? "Verifying..." : "Sign In"}
         </button>
       </form>
     </div>
