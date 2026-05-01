@@ -1,46 +1,79 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { startAutoLogout } from "../../../backend/utils/auth.js"; // Adjust path if necessary
+
+// Using the absolute URL from your reference
+const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
 const AuthCard = () => {
+  const navigate = useNavigate();
+
+  // State Management
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+    e.preventDefault(); // Prevent page refresh
     setError("");
 
+    // 1. Basic Validation
+    if (!email.trim() || !password.trim()) {
+      setError("Email and password are required");
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      const response = await fetch(
-        "https://hoa-camellabucandalav-production.up.railway.app/api/login",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
+      // 2. Prepare Payload
+      // Note: We don't send a hardcoded "role" here because the
+      // database will verify the email/password and tell us the role.
+      const payload = {
+        email: email.trim(),
+        password: password.trim(),
+      };
+
+      const res = await fetch(`${API_URL}/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify(payload),
+      });
 
-      const data = await response.json();
+      const data = await res.json();
 
-      if (response.ok) {
-        // Store the JWT token for other requests
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("role", data.role);
+      // 3. Handle Unauthorized/Errors
+      if (!res.ok) {
+        // This handles the 401 error and displays the server's message
+        setError(data.message || "Invalid email or password");
+        return;
+      }
 
-        // REDIRECT LOGIC: Matching your database ENUMs
-        if (data.role === "ADMIN") {
-          window.location.href = "/admin";
-        } else if (data.role === "GUARD") {
-          window.location.href = "/guard";
-        } else {
-          window.location.href = "/home"; // Default for RESIDENT
-        }
+      // 4. Store Auth Data
+      // The backend returns { token, role, expiresIn }
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("role", data.role);
+
+      // 5. Start auto-logout timer (from your reference logic)
+      if (data.expiresIn) {
+        startAutoLogout(data.expiresIn);
+      }
+
+      // 6. Role-Based Redirection
+      // Matching your database ENUMs: 'ADMIN', 'GUARD', 'RESIDENT'
+      if (data.role === "ADMIN") {
+        navigate("/admin");
+      } else if (data.role === "GUARD") {
+        navigate("/guard");
       } else {
-        setError(data.message || "Invalid credentials. Please try again.");
+        navigate("/home"); // Default for RESIDENTS
       }
     } catch (err) {
-      setError("Server error. Please check if backend is running.");
+      console.error("LOGIN ERROR:", err);
+      setError("Server unreachable. Please try again later.");
     } finally {
       setLoading(false);
     }
@@ -55,45 +88,45 @@ const AuthCard = () => {
         </p>
       </div>
 
-      {error && (
-        <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-4 text-sm text-center">
-          {error}
-        </div>
-      )}
-
       <form onSubmit={handleLogin} className="space-y-5">
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">
+          <label className="block text-sm font-semibold text-[#3c3c3c] mb-1">
             Email Address
           </label>
           <input
             type="email"
             placeholder="name@email.com"
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00704e] outline-none transition-all"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-3 border text-gray-800 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00704e] outline-none transition-all"
             required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">
+          <label className="block text-sm font-semibold text-[#3c3c3c] mb-1">
             Password
           </label>
           <input
             type="password"
             placeholder="••••••••"
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00704e] outline-none transition-all"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            className="w-full p-3 border text-gray-800 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00704e] outline-none transition-all"
             required
           />
         </div>
 
+        {error && (
+          <p className="text-red-500 text-sm text-center font-medium bg-red-50 p-2 rounded">
+            {error}
+          </p>
+        )}
+
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-[#00704e] text-white font-bold py-3 rounded-lg hover:bg-[#005a3e] transition-colors shadow-lg active:transform active:scale-95 disabled:opacity-50"
+          className="bg-[#00704e] w-full rounded-xl h-12 text-white font-bold hover:bg-[#016446] transition-all shadow-lg disabled:opacity-50 active:scale-95"
         >
           {loading ? "Verifying..." : "Sign In"}
         </button>
