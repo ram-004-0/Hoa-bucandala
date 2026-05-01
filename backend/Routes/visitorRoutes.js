@@ -10,7 +10,11 @@ import { authorizeRoles } from "../middlewares/roles.js";
 
 const router = express.Router();
 
-// Resident: Register a visitor
+/**
+ * @route   POST /api/visitors/register
+ * @desc    Resident registers a new visitor
+ * @access  Private (Resident)
+ */
 router.post(
   "/register",
   authenticate,
@@ -18,7 +22,11 @@ router.post(
   registerVisitor,
 );
 
-// Resident: View their own history
+/**
+ * @route   GET /api/visitors/my-history
+ * @desc    Resident views their own registration history
+ * @access  Private (Resident)
+ */
 router.get(
   "/my-history",
   authenticate,
@@ -26,13 +34,23 @@ router.get(
   getResidentVisitorHistory,
 );
 
-// Admin/Guard: View all visitors (for the security gate list)
+/**
+ * @route   GET /api/visitors/all
+ * @desc    Admin/Guard views all scheduled visitors for the gate list
+ * @access  Private (Admin, Guard)
+ */
 router.get(
   "/all",
   authenticate,
   authorizeRoles("ADMIN", "GUARD"),
   getAllVisitors,
 );
+
+/**
+ * @route   PATCH /api/visitors/:id/status
+ * @desc    Guard/Admin updates visitor status (ARRIVED/DEPARTED) via Scan or Manual
+ * @access  Private (Admin, Guard)
+ */
 router.patch(
   "/:id/status",
   authenticate,

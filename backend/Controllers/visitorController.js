@@ -122,3 +122,45 @@ export const updateVisitorStatus = async (req, res) => {
     res.status(500).json({ error: "Failed to update status" });
   }
 };
+/**
+ * ADMIN/GUARD: Update visitor status (Approve Entry/Exit)
+ * PATCH /api/visitors/:id/status
+ */
+export const updateVisitorStatus = async (req, res) => {
+  let { id } = req.params; // This could be "1" or "VIS-1-4321"
+  const { status } = req.body; // e.g., 'ARRIVED'
+
+  try {
+    let numericId = id;
+    if (typeof id === "string" && id.startsWith("VIS-")) {
+      numericId = id.split("-")[1];
+    }
+
+    const [result] = await db.query(
+      `UPDATE visitors 
+       SET status = ?, 
+           arrival_time = IF(? = 'ARRIVED', NOW(), arrival_time),
+           departure_time = IF(? = 'DEPARTED', NOW(), departure_time)
+       WHERE visitor_id = ?`,
+      [status, status, status, numericId],
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Visitor record not found" });
+    }
+
+    // 3. Fetch the updated visitor info to send back to the Guard UI
+    const [updatedVisitor] = await db.query(
+      "SELECT visitor_id, visitor_name, status, address_to_visit FROM visitors WHERE visitor_id = ?",
+      [numericId],
+    );
+
+    res.json({
+      message: `Visitor marked as ${status}`,
+      visitor: updatedVisitor[0], // Sending this back allows the frontend to show the Success Card
+    });
+  } catch (err) {
+    console.error("Status update error:", err);
+    res.status(500).json({ error: "Failed to update status on server" });
+  }
+};
