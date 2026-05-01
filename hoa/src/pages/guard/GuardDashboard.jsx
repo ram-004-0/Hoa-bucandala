@@ -94,7 +94,6 @@ const GuardDashboard = () => {
         </div>
 
         <div className="flex items-center gap-4 self-end md:self-auto">
-          {/* PRIMARY SCANNER BUTTON: Only for Guard/Admin */}
           {isAuthorized && (
             <button
               onClick={() => setShowVerifyModal(true)}
