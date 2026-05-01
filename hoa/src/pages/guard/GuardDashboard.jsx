@@ -10,7 +10,8 @@ import {
   Activity,
   RefreshCcw,
   Clock,
-  BellRing, // New icon for requests
+  BellRing,
+  Camera, // Added for the scanner button
 } from "lucide-react";
 import Card from "../../props/AdminComponent";
 import VerificationActionModal from "./guard_modal/VerificationActionModal";
@@ -18,6 +19,11 @@ import VerificationActionModal from "./guard_modal/VerificationActionModal";
 const GuardDashboard = () => {
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Retrieve user and check authorization
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const isAuthorized = user.role === "GUARD" || user.role === "ADMIN";
+
   const [stats, setStats] = useState({
     total: 0,
     expected: 0,
@@ -34,13 +40,11 @@ const GuardDashboard = () => {
       // Fetch Visitor Stats
       const visitorRes = await fetch(
         "https://hoa-camellabucandalav-production.up.railway.app/api/visitors/all",
-        {
-          headers,
-        },
+        { headers },
       );
       const visitorData = await visitorRes.json();
 
-      // Fetch Security Request Stats (Add this endpoint to your backend)
+      // Fetch Security Request Stats
       const requestRes = await fetch(
         "https://hoa-camellabucandalav-production.up.railway.app/api/guard-requests/pending",
         { headers },
@@ -64,7 +68,6 @@ const GuardDashboard = () => {
 
   useEffect(() => {
     fetchStats();
-    // Optional: Refresh every 30 seconds to catch new emergency requests
     const interval = setInterval(fetchStats, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -91,6 +94,17 @@ const GuardDashboard = () => {
         </div>
 
         <div className="flex items-center gap-4 self-end md:self-auto">
+          {/* PRIMARY SCANNER BUTTON: Only for Guard/Admin */}
+          {isAuthorized && (
+            <button
+              onClick={() => setShowVerifyModal(true)}
+              className="flex items-center gap-2 bg-white text-[#00704e] px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-green-50 transition-all shadow-md active:scale-95"
+            >
+              <Camera size={20} />
+              <span>SCAN QR CODE</span>
+            </button>
+          )}
+
           <button
             onClick={fetchStats}
             disabled={loading}
@@ -108,7 +122,7 @@ const GuardDashboard = () => {
 
       {/* Content Area */}
       <div className="p-4 md:p-10 max-w-7xl mx-auto flex flex-col gap-10">
-        {/* Stats Grid - Now with 4 items */}
+        {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatBox
             label="Total Visitors"
@@ -131,7 +145,6 @@ const GuardDashboard = () => {
             color="text-[#00704e]"
             loading={loading}
           />
-          {/* New Active Alerts Stat */}
           <StatBox
             label="Active Alerts"
             value={stats.pendingRequests}
@@ -145,7 +158,7 @@ const GuardDashboard = () => {
           />
         </div>
 
-        {/* Action Section */}
+        {/* Operations Section */}
         <div className="flex flex-col gap-6">
           <div className="flex items-center gap-3 border-b border-gray-100 pb-4">
             <div className="w-2 h-8 bg-[#00704e] rounded-full"></div>
@@ -155,19 +168,20 @@ const GuardDashboard = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Main Action: Verification */}
-            <button
-              onClick={() => setShowVerifyModal(true)}
-              className="text-left group transition-all"
-            >
-              <Card
-                name="Verification"
-                desc="Scan QR / Search ID"
-                image={<QrCode className="text-blue-600 w-6 h-6" />}
-              />
-            </button>
+            {/* VERIFICATION CARD: Only for Guard/Admin */}
+            {isAuthorized && (
+              <button
+                onClick={() => setShowVerifyModal(true)}
+                className="text-left group transition-all"
+              >
+                <Card
+                  name="Verification"
+                  desc="Scan QR / Search ID"
+                  image={<QrCode className="text-blue-600 w-6 h-6" />}
+                />
+              </button>
+            )}
 
-            {/* Incident Reports - NEW */}
             <Link to="/guard/security-alerts" className="group relative">
               {stats.pendingRequests > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded-full z-20 animate-bounce">
@@ -181,7 +195,6 @@ const GuardDashboard = () => {
               />
             </Link>
 
-            {/* Visitor List */}
             <Link to="/guard/visitor-list" className="group">
               <Card
                 name="Visitor List"
@@ -190,7 +203,6 @@ const GuardDashboard = () => {
               />
             </Link>
 
-            {/* History Log */}
             <Link to="/guard/visitor-log" className="group">
               <Card
                 name="Entry/Exit Logs"
@@ -201,7 +213,7 @@ const GuardDashboard = () => {
           </div>
         </div>
 
-        {/* Emergency Support section remains same... */}
+        {/* Emergency Support Section */}
         <div className="bg-white rounded-2xl border border-red-100 shadow-sm overflow-hidden">
           <div className="bg-red-50 px-6 py-4 border-b border-red-100 flex items-center justify-between">
             <h3 className="text-red-700 font-bold flex items-center gap-2 text-sm uppercase tracking-wider">
@@ -229,6 +241,7 @@ const GuardDashboard = () => {
         </div>
       </div>
 
+      {/* Verification Modal */}
       {showVerifyModal && (
         <VerificationActionModal onClose={() => setShowVerifyModal(false)} />
       )}
