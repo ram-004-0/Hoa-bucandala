@@ -3,49 +3,59 @@ import bcrypt from "bcryptjs";
 import db from "../config/db.js";
 
 export const login = async (req, res) => {
-  const { email, password, role } = req.body;
+  const { email, password } = req.body;
 
   try {
-    // FIXED: Join residents table on r.account_id = a.id
-    // because your schema uses 'id' for the accounts table primary key.
     const [accounts] = await db.query(
-      `SELECT a.*, r.resident_id, r.full_name 
+      `SELECT a.*, 
+              r.resident_id, r.full_name as resident_name,
+              g.guard_id, g.username as guard_name,
+              ad.admin_id, ad.username as admin_name
        FROM accounts a 
        LEFT JOIN residents r ON r.account_id = a.id 
-       WHERE a.email = ? AND a.role = ?`,
-      [email, role],
+       LEFT JOIN guards g ON g.account_id = a.id
+       LEFT JOIN admin ad ON ad.account_id = a.id
+       WHERE a.email = ?`,
+      [email],
     );
 
     const account = accounts[0];
 
+    // Check if account exists
     if (!account) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // 2. Verify Password
+    // 3. Verify Password
     const isMatch = await bcrypt.compare(password, account.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // 3. Generate Token
-    // Note: Use account.id (to match your schema) and resident_id from the join
+    // 4. Generate Token
     const token = jwt.sign(
       {
         id: account.id,
-        role: account.role,
+        role: account.role, // This comes from the 'accounts' table ENUM
         residentId: account.resident_id || null,
       },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || "1h" },
     );
 
-    // 4. Send Response
+    // 5. Determine the display name based on role
+    let displayName = "User";
+    if (account.role === "RESIDENT") displayName = account.resident_name;
+    if (account.role === "GUARD") displayName = account.guard_name;
+    if (account.role === "ADMIN") displayName = account.admin_name;
+
+    // 6. Send Response
     res.json({
       token,
       role: account.role,
+      expiresIn: 3600, // Matches your 1h token for auto-logout
       user: {
-        name: account.full_name || "User",
+        name: displayName || "User",
         email: account.email,
       },
     });
