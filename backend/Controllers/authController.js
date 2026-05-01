@@ -3,12 +3,11 @@ import bcrypt from "bcryptjs";
 import db from "../config/db.js";
 
 export const login = async (req, res) => {
-  // 1. Only pull email and password from request
   const { email, password } = req.body;
 
   try {
-    // 2. Comprehensive Join: Get the account and its associated name from any role table
-    // This prevents the "Invalid credentials" error when role isn't passed
+    // 1. Unified Query
+    // Changes: 'guards' changed to 'guard' to match your schema
     const [accounts] = await db.query(
       `SELECT a.*, 
               r.full_name AS resident_name, 
@@ -17,7 +16,7 @@ export const login = async (req, res) => {
               ad.username AS admin_name
        FROM accounts a 
        LEFT JOIN residents r ON r.account_id = a.id 
-       LEFT JOIN guards g ON g.account_id = a.id
+       LEFT JOIN guard g ON g.account_id = a.id
        LEFT JOIN admin ad ON ad.account_id = a.id
        WHERE a.email = ?`,
       [email],
@@ -25,7 +24,7 @@ export const login = async (req, res) => {
 
     const account = accounts[0];
 
-    // If no account found with that email
+    // 2. Check if account exists
     if (!account) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
@@ -36,26 +35,25 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // 4. Determine user display name based on role
-    let displayName = "User";
-    if (account.role === "RESIDENT") displayName = account.resident_name;
-    else if (account.role === "GUARD") displayName = account.guard_name;
-    else if (account.role === "ADMIN") displayName = account.admin_name;
-
-    // 5. Generate Token
-    // Ensure JWT_SECRET and JWT_EXPIRES_IN exist in your Railway Env variables
+    // 4. Generate Token
+    // IMPORTANT: Ensure JWT_SECRET is set in Railway Variables
     const token = jwt.sign(
       {
         id: account.id,
         role: account.role,
         residentId: account.resident_id || null,
       },
-      process.env.JWT_SECRET || "fallback_secret", // Avoid crash if env is missing
+      process.env.JWT_SECRET || "fallback_secret",
       { expiresIn: process.env.JWT_EXPIRES_IN || "1h" },
     );
 
-    // 6. Send Response
-    // We include 'expiresIn' as a number for your startAutoLogout function
+    // 5. Select Name
+    let displayName = "User";
+    if (account.role === "RESIDENT") displayName = account.resident_name;
+    else if (account.role === "GUARD") displayName = account.guard_name;
+    else if (account.role === "ADMIN") displayName = account.admin_name;
+
+    // 6. Final Response
     res.json({
       token,
       role: account.role,
@@ -66,8 +64,12 @@ export const login = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("CRITICAL LOGIN ERROR:", err);
-    res.status(500).json({ message: "Server error during login" });
+    // If it still fails, this will tell you EXACTLY why in the response
+    console.error("Login Error:", err);
+    res.status(500).json({
+      message: "Internal server error",
+      error: err.sqlMessage || err.message,
+    });
   }
 };
 
