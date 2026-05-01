@@ -2,6 +2,7 @@ import db from "../config/db.js";
 
 /**
  * RESIDENT: Register a new visitor
+ * POST /api/visitors/register
  */
 export const registerVisitor = async (req, res) => {
   try {
@@ -45,12 +46,12 @@ export const registerVisitor = async (req, res) => {
       ],
     );
 
-    // 3. Generate a unique ID for the QR Code
-    const visitorId = `VIS-${result.insertId}-${Math.floor(1000 + Math.random() * 9000)}`;
+    // 3. Generate a unique ID for the QR Code (Frontend uses this string)
+    const visitorIdString = `VIS-${result.insertId}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     res.status(201).json({
       message: "Visitor registered successfully",
-      visitorId: visitorId,
+      visitorId: visitorIdString,
     });
   } catch (err) {
     console.error("Visitor registration error:", err);
@@ -60,6 +61,7 @@ export const registerVisitor = async (req, res) => {
 
 /**
  * RESIDENT: Get their own visitor history
+ * GET /api/visitors/my-history
  */
 export const getResidentVisitorHistory = async (req, res) => {
   try {
@@ -68,8 +70,9 @@ export const getResidentVisitorHistory = async (req, res) => {
       [req.user.id],
     );
 
-    if (!resident.length)
+    if (!resident.length) {
       return res.status(404).json({ message: "Resident not found" });
+    }
 
     const [rows] = await db.query(
       "SELECT * FROM visitors WHERE resident_id = ? ORDER BY created_at DESC",
@@ -84,6 +87,7 @@ export const getResidentVisitorHistory = async (req, res) => {
 
 /**
  * ADMIN/GUARD: Get all visitors in the system
+ * GET /api/visitors/all
  */
 export const getAllVisitors = async (req, res) => {
   try {
@@ -99,43 +103,23 @@ export const getAllVisitors = async (req, res) => {
   }
 };
 
-export const updateVisitorStatus = async (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body; // 'ARRIVED' or 'DEPARTED' or 'CANCELLED'
-
-  try {
-    const [result] = await db.query(
-      "UPDATE visitors SET status = ? WHERE visitor_id = ?",
-      [status, id],
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Visitor record not found" });
-    }
-
-    res.json({
-      message: `Visitor status updated to ${status}`,
-      updatedStatus: status,
-    });
-  } catch (err) {
-    console.error("Status update error:", err);
-    res.status(500).json({ error: "Failed to update status" });
-  }
-};
 /**
  * ADMIN/GUARD: Update visitor status (Approve Entry/Exit)
  * PATCH /api/visitors/:id/status
  */
 export const updateVisitorStatus = async (req, res) => {
-  let { id } = req.params; // This could be "1" or "VIS-1-4321"
-  const { status } = req.body; // e.g., 'ARRIVED'
+  let { id } = req.params; // This could be numeric "1" or QR string "VIS-1-4321"
+  const { status } = req.body; // Expecting 'ARRIVED', 'DEPARTED', or 'CANCELLED'
 
   try {
+    // 1. Handle QR Code format parsing
     let numericId = id;
     if (typeof id === "string" && id.startsWith("VIS-")) {
+      // Extract the ID between the dashes: VIS-[ID]-RANDOM
       numericId = id.split("-")[1];
     }
 
+    // 2. Update status and log timestamps automatically
     const [result] = await db.query(
       `UPDATE visitors 
        SET status = ?, 
@@ -149,7 +133,7 @@ export const updateVisitorStatus = async (req, res) => {
       return res.status(404).json({ message: "Visitor record not found" });
     }
 
-    // 3. Fetch the updated visitor info to send back to the Guard UI
+    // 3. Fetch updated info to return to the Frontend (Guard Success Modal)
     const [updatedVisitor] = await db.query(
       "SELECT visitor_id, visitor_name, status, address_to_visit FROM visitors WHERE visitor_id = ?",
       [numericId],
@@ -157,7 +141,7 @@ export const updateVisitorStatus = async (req, res) => {
 
     res.json({
       message: `Visitor marked as ${status}`,
-      visitor: updatedVisitor[0], // Sending this back allows the frontend to show the Success Card
+      visitor: updatedVisitor[0],
     });
   } catch (err) {
     console.error("Status update error:", err);
