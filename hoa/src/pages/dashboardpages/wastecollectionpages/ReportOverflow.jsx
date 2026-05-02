@@ -1,10 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  ArrowLeftIcon,
-  ExclamationTriangleIcon,
-} from "@heroicons/react/24/solid";
-import { Trash2, MapPin, CheckCircle, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeftIcon } from "@heroicons/react/24/solid";
+import { Trash2, MapPin, CheckCircle, Loader2 } from "lucide-react";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app";
 
@@ -39,15 +36,11 @@ const ReportOverflow = () => {
         body: JSON.stringify({
           reportType: "Overflowing Bins",
           location: formData.location,
-          description: `Severity: ${severity}. ${formData.description}`,
+          description: `Severity: ${severity}. Reported on: ${new Date().toLocaleDateString()}. ${formData.description}`,
         }),
       });
 
-      if (response.ok) {
-        setIsSuccess(true);
-      } else {
-        alert("Server error. Please try again later.");
-      }
+      if (response.ok) setIsSuccess(true);
     } catch (error) {
       console.error("Alert error:", error);
     } finally {
@@ -59,13 +52,9 @@ const ReportOverflow = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <div className="bg-white p-10 rounded-3xl shadow-xl text-center max-w-md border border-orange-100">
-          <div className="bg-orange-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="h-12 w-12 text-orange-500" />
-          </div>
+          <CheckCircle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-800">Alert Received</h2>
-          <p className="text-gray-600 mt-2">
-            Maintenance has been notified. Let's keep our HOA clean!
-          </p>
+          <p className="text-gray-600 mt-2">Maintenance has been notified.</p>
           <Link
             to="/wastecollection"
             className="mt-6 inline-block bg-[#00704e] text-white px-8 py-3 rounded-xl font-bold"
@@ -86,80 +75,65 @@ const ReportOverflow = () => {
         <div>
           <h1 className="font-bold text-4xl">Overflowing Bins</h1>
           <p className="opacity-90">
-            Report community bins that need urgent attention
+            Report community bins that need attention
           </p>
         </div>
       </div>
 
-      <div className="m-10 max-w-2xl mx-auto space-y-8">
+      <div className="m-10 max-w-2xl mx-auto space-y-6">
         <div className="bg-white shadow-xl rounded-3xl p-8 border border-gray-100 space-y-6">
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-3">
-              Common Locations
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {quickLocations.map((loc) => (
-                <button
-                  key={loc}
-                  onClick={() => setFormData({ ...formData, location: loc })}
-                  className="px-4 py-2 bg-gray-100 hover:bg-[#00704e] hover:text-white rounded-full text-xs font-bold transition-colors"
-                >
-                  {loc}
-                </button>
-              ))}
-            </div>
+          <div className="flex flex-wrap gap-2">
+            {quickLocations.map((loc) => (
+              <button
+                key={loc}
+                onClick={() => setFormData({ ...formData, location: loc })}
+                className="px-4 py-2 bg-gray-100 hover:bg-[#00704e] hover:text-white rounded-full text-xs font-bold transition-all"
+              >
+                {loc}
+              </button>
+            ))}
           </div>
 
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Specific Bin Location
-            </label>
-            <div className="relative">
-              <MapPin className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                required
-                value={formData.location}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
-                }
-                placeholder="Enter location manually..."
-                className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:ring-2 focus:ring-orange-400"
-              />
-            </div>
+          <div className="relative">
+            <MapPin className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              required
+              value={formData.location}
+              onChange={(e) =>
+                setFormData({ ...formData, location: e.target.value })
+              }
+              placeholder="Specify Bin Location (e.g. Block 2 Side Street)"
+              className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:ring-2 focus:ring-orange-400"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <button
               type="button"
               onClick={() => setSeverity("Moderate")}
-              className={`py-4 rounded-2xl border-2 font-black text-sm transition-all ${severity === "Moderate" ? "border-orange-500 bg-orange-50 text-orange-700" : "border-gray-50 bg-gray-50 text-gray-400"}`}
+              className={`py-4 rounded-2xl border-2 font-black text-xs transition-all ${severity === "Moderate" ? "border-orange-500 bg-orange-50 text-orange-700" : "border-gray-50 bg-gray-50 text-gray-400"}`}
             >
-              MODERATE
+              MODERATE OVERFLOW
             </button>
             <button
               type="button"
               onClick={() => setSeverity("Critical")}
-              className={`py-4 rounded-2xl border-2 font-black text-sm transition-all ${severity === "Critical" ? "border-red-500 bg-red-50 text-red-700" : "border-gray-50 bg-gray-50 text-gray-400"}`}
+              className={`py-4 rounded-2xl border-2 font-black text-xs transition-all ${severity === "Critical" ? "border-red-500 bg-red-50 text-red-700" : "border-gray-50 bg-gray-50 text-gray-400"}`}
             >
               CRITICAL / SPILLING
             </button>
           </div>
 
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Issue Details
-            </label>
-            <textarea
-              rows="4"
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              placeholder="e.g., Trash is spilling onto the road and attracting pests."
-              className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:ring-2 focus:ring-orange-400"
-            ></textarea>
-          </div>
+          <textarea
+            rows="4"
+            value={formData.description}
+            onChange={(e) =>
+              setFormData({ ...formData, description: e.target.value })
+            }
+            placeholder="Issue Details (e.g., bin is knocked over, smell is strong)"
+            className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:ring-2 focus:ring-orange-400"
+          ></textarea>
 
           <button
             onClick={handleSendAlert}

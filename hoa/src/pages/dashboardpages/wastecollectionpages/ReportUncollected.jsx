@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeftIcon, CheckCircleIcon } from "@heroicons/react/24/solid";
-import { AlertCircle, MapPin, Calendar, Loader2, Info } from "lucide-react";
+import { MapPin, Loader2 } from "lucide-react";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app";
 
@@ -11,24 +11,14 @@ const ReportUncollected = () => {
   const [isUrgent, setIsUrgent] = useState(false);
   const [formData, setFormData] = useState({
     location: "",
-    missedDate: new Date().toISOString().split("T")[0], // Defaults to today
     description: "",
   });
 
+  // Automatically set to today's date string (YYYY-MM-DD)
+  const todayDate = new Date().toISOString().split("T")[0];
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // 1. Validation: Prevent future dates
-    const selectedDate = new Date(formData.missedDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (selectedDate > today) {
-      return alert(
-        "Error: You cannot report a missed pickup for a future date.",
-      );
-    }
-
     setLoading(true);
 
     try {
@@ -42,7 +32,8 @@ const ReportUncollected = () => {
         body: JSON.stringify({
           reportType: "Uncollected Garbage",
           location: formData.location,
-          description: `${isUrgent ? "[HIGH URGENCY] " : ""}Missed Date: ${formData.missedDate}. ${formData.description}`,
+          // Sending the automatic date in the description or as a separate field
+          description: `${isUrgent ? "[HIGH URGENCY] " : ""}Reported on: ${todayDate}. ${formData.description}`,
         }),
       });
 
@@ -67,7 +58,7 @@ const ReportUncollected = () => {
           <CheckCircleIcon className="h-20 w-20 text-green-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-800">Report Filed</h2>
           <p className="text-gray-600 mt-2">
-            We've notified the team. Thank you for reporting!
+            We've notified the team. Thank you!
           </p>
           <Link
             to="/wastecollection"
@@ -89,83 +80,54 @@ const ReportUncollected = () => {
         <div>
           <h1 className="font-bold text-4xl">Uncollected Garbage</h1>
           <p className="opacity-90 font-medium">
-            Let us know if your street was skipped
+            Reporting for today: {todayDate}
           </p>
         </div>
       </div>
 
-      <div className="m-10 max-w-2xl mx-auto space-y-6">
+      <div className="m-10 max-w-2xl mx-auto">
         <form
           onSubmit={handleSubmit}
           className="bg-white shadow-xl rounded-3xl p-8 space-y-6 border border-gray-100"
         >
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                Location / Address
-              </label>
-              <div className="relative">
-                <MapPin className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
-                <input
-                  required
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) =>
-                    setFormData({ ...formData, location: e.target.value })
-                  }
-                  placeholder="e.g. Phase 1, Block 5, Lot 2"
-                  className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#00704e] outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  Missed Date
-                </label>
-                <input
-                  required
-                  type="date"
-                  max={new Date().toISOString().split("T")[0]} // Prevents future date selection
-                  value={formData.missedDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, missedDate: e.target.value })
-                  }
-                  className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#00704e] outline-none"
-                />
-              </div>
-              <div className="flex items-end">
-                <button
-                  type="button"
-                  onClick={() => setIsUrgent(!isUrgent)}
-                  className={`w-full py-4 rounded-2xl font-bold border-2 transition-all ${isUrgent ? "bg-red-50 border-red-500 text-red-700" : "bg-gray-50 border-gray-100 text-gray-400"}`}
-                >
-                  {isUrgent ? "⚠️ High Urgency Set" : "Mark as Urgent?"}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                Additional Notes
-              </label>
-              <textarea
-                rows="3"
-                value={formData.description}
+            <div className="relative">
+              <MapPin className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
+              <input
+                required
+                type="text"
+                value={formData.location}
                 onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
+                  setFormData({ ...formData, location: e.target.value })
                 }
-                placeholder="e.g., The truck passed by but didn't pick up my bin."
-                className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#00704e] outline-none"
-              ></textarea>
+                placeholder="Address (e.g. Phase 1, Block 5, Lot 2)"
+                className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#00704e] outline-none"
+              />
             </div>
+
+            <button
+              type="button"
+              onClick={() => setIsUrgent(!isUrgent)}
+              className={`w-full py-4 rounded-2xl font-bold border-2 transition-all ${isUrgent ? "bg-red-50 border-red-500 text-red-700" : "bg-gray-50 border-gray-100 text-gray-400"}`}
+            >
+              {isUrgent ? "⚠️ High Urgency Set" : "Mark as Urgent?"}
+            </button>
+
+            <textarea
+              rows="3"
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+              placeholder="Additional Details (Truck skipped my bin, etc.)"
+              className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#00704e] outline-none"
+            ></textarea>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#00704e] text-white font-black py-5 rounded-2xl shadow-lg hover:shadow-[#00704e]/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full bg-[#00704e] text-white font-black py-5 rounded-2xl shadow-lg hover:shadow-[#00704e]/30 transition-all flex items-center justify-center gap-2"
           >
             {loading ? (
               <Loader2 className="animate-spin h-6 w-6" />
