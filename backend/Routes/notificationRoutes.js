@@ -5,7 +5,7 @@ const router = express.Router();
 import {
   getMyNotifications,
   getUnreadCount,
-} from "../controllers/notificationController.js";
+} from "../Controllers/notificationController.js";
 
 import { authenticate } from "../middlewares/authMiddleware.js";
 
