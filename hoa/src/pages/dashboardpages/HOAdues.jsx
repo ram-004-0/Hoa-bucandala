@@ -7,7 +7,8 @@ import {
   BuildingOfficeIcon,
   InformationCircleIcon,
   CheckCircleIcon,
-  ClockIcon,
+  PhoneIcon,
+  EnvelopeIcon,
 } from "@heroicons/react/24/solid";
 
 const HOAdues = () => {
@@ -37,7 +38,7 @@ const HOAdues = () => {
     }
   };
 
-  // Calculate only Pending amounts
+  // Logic: Filters only bills belonging to this resident that are still 'Pending'
   const totalOutstanding = bills
     .filter((b) => b.status === "Pending")
     .reduce((sum, b) => sum + parseFloat(b.amount), 0);
@@ -64,10 +65,19 @@ const HOAdues = () => {
               Manual Verification Notice
             </h2>
             <p className="text-blue-700 text-sm">
-              Our system tracks dues manually. Once you pay, please{" "}
-              <strong>keep your receipt</strong>. The admin office will update
-              your status within 24-48 hours.
+              Please send your <strong>Proof of Payment</strong> to our official
+              channels below. The admin office will update your status within
+              24-48 hours.
             </p>
+            <div className="mt-3 flex flex-wrap gap-4 text-xs font-bold text-blue-600">
+              <span className="flex items-center gap-1">
+                <EnvelopeIcon className="h-4 w-4" />{" "}
+                lessandrabukandala2021@gmail.com
+              </span>
+              <span className="flex items-center gap-1">
+                <PhoneIcon className="h-4 w-4" /> Viber: 0907-356-1209
+              </span>
+            </div>
           </div>
         </div>
 
@@ -101,7 +111,8 @@ const HOAdues = () => {
                     ))
                 ) : (
                   <p className="text-sm text-green-600 font-medium flex items-center gap-2">
-                    <CheckCircleIcon className="h-5 w-5" /> No pending balances!
+                    <CheckCircleIcon className="h-5 w-5" /> All dues are
+                    settled!
                   </p>
                 )}
 
@@ -119,66 +130,75 @@ const HOAdues = () => {
             )}
           </div>
 
-          {/* Payment History List (Bonus Feature) */}
+          {/* Billing History */}
           <div className="bg-white shadow-sm border border-gray-100 rounded-2xl p-6 flex flex-col gap-4 overflow-y-auto max-h-[300px]">
             <h3 className="font-bold text-gray-800 text-sm">
               Recent Billing History
             </h3>
             <div className="space-y-3">
-              {bills.map((bill) => (
-                <div
-                  key={bill.id}
-                  className="flex justify-between items-center p-3 bg-gray-50 rounded-xl text-xs"
-                >
-                  <div>
-                    <p className="font-bold text-gray-800">
-                      {bill.billingMonth}
-                    </p>
-                    <p className="text-gray-500">
-                      ₱{parseFloat(bill.amount).toLocaleString()}
-                    </p>
-                  </div>
-                  <span
-                    className={`px-3 py-1 rounded-full font-bold text-[10px] uppercase ${
-                      bill.status === "Paid"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}
+              {bills.length > 0 ? (
+                bills.map((bill) => (
+                  <div
+                    key={bill.id}
+                    className="flex justify-between items-center p-3 bg-gray-50 rounded-xl text-xs"
                   >
-                    {bill.status}
-                  </span>
-                </div>
-              ))}
+                    <div>
+                      <p className="font-bold text-gray-800">
+                        {bill.billingMonth}
+                      </p>
+                      <p className="text-gray-500">
+                        ₱{parseFloat(bill.amount).toLocaleString()}
+                      </p>
+                    </div>
+                    <span
+                      className={`px-3 py-1 rounded-full font-bold text-[10px] uppercase ${
+                        bill.status === "Paid"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-yellow-100 text-yellow-700"
+                      }`}
+                    >
+                      {bill.status}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-400 text-center py-10">
+                  No billing history found.
+                </p>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Payment Methods Section (Static) */}
+        {/* Payment Channels (Updated with your Image Data) */}
         <div className="flex flex-col gap-6">
           <div className="flex items-center gap-3 border-b border-gray-100 pb-4">
             <div className="w-2 h-8 bg-[#00704e] rounded-full"></div>
             <h2 className="font-black text-xl text-gray-800 tracking-tight uppercase">
-              External Payment Channels
+              Official Payment Channels
             </h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <MethodCard
               icon={CreditCardIcon}
-              name="Bank Transfer"
-              desc="BDO Unibank: 0012-3456-7890"
-              color="text-blue-600"
+              name="Bank Transfer (RCBC)"
+              desc="Acc Name: Lessandra Bukandala Homeowners Inc."
+              subDesc="Acc No: 0025-015-941"
+              color="text-blue-700"
             />
             <MethodCard
               icon={BanknotesIcon}
               name="GCash"
-              desc="Account: 0917-123-4567"
-              color="text-blue-500"
+              desc="Account Name: M**K A******Y I***N"
+              subDesc="Number: 0993-805-1448"
+              color="text-blue-400"
             />
             <MethodCard
               icon={BuildingOfficeIcon}
               name="Office Payment"
-              desc="Visit Admin Office (9AM - 5PM)"
+              desc="Visit Admin Office"
+              subDesc="Open 9AM - 5PM Daily"
               color="text-amber-600"
             />
           </div>
@@ -188,7 +208,7 @@ const HOAdues = () => {
   );
 };
 
-const MethodCard = ({ icon: Icon, name, desc, color }) => (
+const MethodCard = ({ icon: Icon, name, desc, subDesc, color }) => (
   <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-4">
     <div
       className={`w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center ${color}`}
@@ -196,8 +216,9 @@ const MethodCard = ({ icon: Icon, name, desc, color }) => (
       <Icon className="h-7 w-7" />
     </div>
     <div>
-      <h4 className="font-bold text-gray-900">{name}</h4>
-      <p className="text-xs text-gray-500 mt-1 leading-relaxed">{desc}</p>
+      <h4 className="font-bold text-gray-900 leading-tight">{name}</h4>
+      <p className="text-[11px] text-gray-600 mt-2 font-medium">{desc}</p>
+      <p className="text-[11px] text-gray-900 font-bold mt-0.5">{subDesc}</p>
     </div>
   </div>
 );

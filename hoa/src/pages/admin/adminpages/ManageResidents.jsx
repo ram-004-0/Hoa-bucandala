@@ -7,7 +7,7 @@ import {
   Trash2,
   Search,
   UserPlus,
-  ShieldAlert,
+  Users,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import CreateUser from "./CreateUser";
@@ -15,9 +15,10 @@ import CreateUser from "./CreateUser";
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
 const ManageResidents = () => {
-  const [users, setUsers] = useState([]); // Renamed to users since it holds both
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentTab, setCurrentTab] = useState("RESIDENT");
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showGuardModal, setShowGuardModal] = useState(false);
@@ -31,21 +32,24 @@ const ManageResidents = () => {
     const token = localStorage.getItem("token");
     if (!token) return;
     try {
-      // Changed endpoint to /users to get the joined data from the controller above
       const res = await fetch(`${API_URL}/guards`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
 
-      const transformed = data.map((u) => ({
-        id: u.id,
-        name: u.name || "Unnamed",
-        email: u.email,
-        address: u.address || "N/A",
-        contact: u.contact || "N/A",
-        role: u.role,
-        withBalance: !!u.has_balance,
-      }));
+      // Filter: Strictly exclude anyone with the ADMIN role
+      const transformed = data
+        .filter((u) => u.role !== "ADMIN")
+        .map((u) => ({
+          id: u.id,
+          name: u.name || "Unnamed",
+          email: u.email,
+          address: u.address || "N/A",
+          contact: u.contact || "N/A",
+          role: u.role,
+          withBalance: !!u.has_balance,
+        }));
+
       setUsers(transformed);
     } catch (err) {
       console.error("Fetch failed:", err);
@@ -63,7 +67,7 @@ const ManageResidents = () => {
       return;
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`${API_URL}/users/${id}`, {
+      const res = await fetch(`${API_URL}/guards/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -74,6 +78,9 @@ const ManageResidents = () => {
   };
 
   const handleCreateEntry = (newEntry) => {
+    // Safety: don't add to UI if somehow an admin is created
+    if (newEntry.role === "ADMIN") return;
+
     const formatted = {
       id: newEntry.id,
       name: newEntry.full_name || newEntry.username,
@@ -101,8 +108,10 @@ const ManageResidents = () => {
     setSelectedUser(null);
   };
 
-  const filteredUsers = users.filter((u) =>
-    u.name.toLowerCase().includes(searchTerm.toLowerCase()),
+  const filteredDisplay = users.filter(
+    (u) =>
+      u.role === currentTab &&
+      u.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   return (
@@ -122,7 +131,7 @@ const ManageResidents = () => {
           />
           <StatCard
             title="Security Staff"
-            value={users.filter((u) => u.role === "GUARD").length} // Fixed the variable here
+            value={users.filter((u) => u.role === "GUARD").length}
             blue
           />
           <StatCard
@@ -132,12 +141,36 @@ const ManageResidents = () => {
           />
         </div>
 
+        {/* Tab Selection */}
+        <div className="flex border-b border-gray-200 mb-6">
+          <button
+            onClick={() => setCurrentTab("RESIDENT")}
+            className={`px-6 py-3 font-bold text-sm transition-all flex items-center gap-2 ${
+              currentTab === "RESIDENT"
+                ? "border-b-2 border-[#00704e] text-[#00704e]"
+                : "text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            <Users className="h-4 w-4" /> Residents
+          </button>
+          <button
+            onClick={() => setCurrentTab("GUARD")}
+            className={`px-6 py-3 font-bold text-sm transition-all flex items-center gap-2 ${
+              currentTab === "GUARD"
+                ? "border-b-2 border-blue-600 text-blue-600"
+                : "text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            <ShieldCheck className="h-4 w-4" /> Security Guards
+          </button>
+        </div>
+
         <div className="mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="relative w-full md:w-80">
             <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by name..."
+              placeholder={`Search ${currentTab.toLowerCase()}s...`}
               className="pl-10 pr-4 py-2 border rounded-xl w-full outline-none focus:ring-2 focus:ring-[#00704e] bg-white shadow-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -145,18 +178,21 @@ const ManageResidents = () => {
           </div>
 
           <div className="flex gap-3 w-full md:w-auto">
-            <button
-              onClick={() => setShowGuardModal(true)}
-              className="flex-1 md:flex-none bg-blue-600 text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-md"
-            >
-              <ShieldCheck className="h-5 w-5" /> Add Guard
-            </button>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex-1 md:flex-none bg-[#00704e] text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-[#005a3e] transition-all shadow-md"
-            >
-              <UserPlus className="h-5 w-5" /> Add Resident
-            </button>
+            {currentTab === "GUARD" ? (
+              <button
+                onClick={() => setShowGuardModal(true)}
+                className="flex-1 md:flex-none bg-blue-600 text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-md"
+              >
+                <Plus className="h-5 w-5" /> Add Guard
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="flex-1 md:flex-none bg-[#00704e] text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-[#005a3e] transition-all shadow-md"
+              >
+                <UserPlus className="h-5 w-5" /> Add Resident
+              </button>
+            )}
           </div>
         </div>
 
@@ -164,40 +200,24 @@ const ManageResidents = () => {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                {[
-                  "Role",
-                  "Name",
-                  "Address",
-                  "Contact",
-                  "Status",
-                  "Actions",
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider"
-                  >
-                    {h}
-                  </th>
-                ))}
+                {["Name", "Address", "Contact", "Status", "Actions"].map(
+                  (h) => (
+                    <th
+                      key={h}
+                      className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider"
+                    >
+                      {h}
+                    </th>
+                  ),
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filteredUsers.map((u) => (
+              {filteredDisplay.map((u) => (
                 <tr
                   key={u.id}
                   className="hover:bg-gray-50/50 transition-colors"
                 >
-                  <td className="px-6 py-4">
-                    <span
-                      className={`text-[10px] font-black px-2 py-1 rounded-md uppercase ${
-                        u.role === "GUARD"
-                          ? "bg-blue-50 text-blue-600"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      {u.role}
-                    </span>
-                  </td>
                   <td className="px-6 py-4 font-bold text-gray-700">
                     {u.name}
                   </td>
@@ -244,6 +264,11 @@ const ManageResidents = () => {
               ))}
             </tbody>
           </table>
+          {filteredDisplay.length === 0 && !loading && (
+            <div className="p-20 text-center text-gray-400">
+              No {currentTab.toLowerCase()}s found matching your search.
+            </div>
+          )}
           {loading && (
             <p className="p-10 text-center text-gray-500 animate-pulse">
               Syncing database records...
