@@ -26,6 +26,8 @@ import Announcement from "./pages/dashboardpages/Announcement";
 import SecurityAssistance from "./pages/dashboardpages/SecurityAssistance";
 import VisitorRegistration from "./pages/dashboardpages/VisitorRegistration";
 import ProfileSettings from "./props/ProfileSettings";
+import ReportUncollected from "./pages/dashboardpages/wastecollectionpages/ReportUncollected";
+import ReportOverflow from "./pages/dashboardpages/wastecollectionpages/ReportOverflow";
 
 // Waste
 import ScheduleBiodegradable from "./pages/dashboardpages/wastecollectionpages/BookBiodegradable";
@@ -220,6 +222,22 @@ const App = () => {
           element={
             <ProtectedRoute roles={["RESIDENT"]}>
               <VisitorRegistration />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="wastecollection/report-uncollected"
+          element={
+            <ProtectedRoute roles={["RESIDENT"]}>
+              <ReportUncollected />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="wastecollection/report-overflow"
+          element={
+            <ProtectedRoute roles={["RESIDENT"]}>
+              <ReportOverflow />
             </ProtectedRoute>
           }
         />
