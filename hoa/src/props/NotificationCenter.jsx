@@ -68,6 +68,10 @@ const Notifications = () => {
       </div>
 
       <div className="max-w-4xl mx-auto -mt-10 px-4">
+        <br />
+        <br />
+        <br />
+        <br />
         <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 overflow-hidden">
           {loading ? (
             <div className="p-20 text-center text-gray-400 font-bold uppercase tracking-widest animate-pulse">

@@ -17,19 +17,34 @@ export const getAllPayments = async (req, res) => {
   }
 };
 
-// NEW: POST Create a new bill (Issue Bill)
+// POST Create a new bill (Issue Bill) + Notification
 export const createBill = async (req, res) => {
   const { residentId, amount, billingMonth } = req.body;
 
   try {
+    // 1. Create the Bill
     const [result] = await pool.query(
       "INSERT INTO billing (resident_id, amount, billing_month, status, created_at) VALUES (?, ?, ?, ?, NOW())",
       [residentId, amount, billingMonth, "Pending"],
     );
 
+    const billingId = result.insertId;
+
+    // 2. Create a Notification for the resident
+    // Currency is formatted to PHP as an example
+    await pool.query(
+      `INSERT INTO notifications (resident_id, type, title, message, related_id) 
+       VALUES (?, 'Bill', 'New Bill Issued', ?, ?)`,
+      [
+        residentId,
+        `A new bill for ${billingMonth} amounting to ₱${Number(amount).toLocaleString()} has been posted.`,
+        billingId,
+      ],
+    );
+
     res.status(201).json({
-      message: "Bill created successfully",
-      billingId: result.insertId,
+      message: "Bill created and resident notified successfully",
+      billingId: billingId,
     });
   } catch (err) {
     console.error("SQL ERROR:", err.sqlMessage);
@@ -37,36 +52,57 @@ export const createBill = async (req, res) => {
   }
 };
 
-// PATCH update payment status
+// PATCH update payment status + Notification
 export const updatePaymentStatus = async (req, res) => {
   const { status } = req.body;
-  const { id } = req.params;
+  const { id } = req.params; // billing_id
+
   try {
-    const [result] = await pool.query(
-      "UPDATE billing SET status = ? WHERE billing_id = ?",
-      [status, id],
+    // 1. Get resident_id and month before updating to customize the notification
+    const [billDetails] = await pool.query(
+      "SELECT resident_id, billing_month FROM billing WHERE billing_id = ?",
+      [id],
     );
 
-    if (result.affectedRows === 0) {
+    if (billDetails.length === 0) {
       return res.status(404).json({ message: "Payment record not found" });
     }
 
-    res.json({ message: "Payment status updated successfully" });
+    const { resident_id, billing_month } = billDetails[0];
+
+    // 2. Update the Bill status
+    await pool.query("UPDATE billing SET status = ? WHERE billing_id = ?", [
+      status,
+      id,
+    ]);
+
+    // 3. Notify the resident about the status change (e.g., Payment Confirmed)
+    if (status === "Paid") {
+      await pool.query(
+        `INSERT INTO notifications (resident_id, type, title, message, related_id) 
+         VALUES (?, 'Bill', 'Payment Confirmed', ?, ?)`,
+        [
+          resident_id,
+          `Your payment for the ${billing_month} bill has been verified and marked as Paid.`,
+          id,
+        ],
+      );
+    }
+
+    res.json({ message: `Payment status updated to ${status}` });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
+
 // Function in your billing controller
 export const getUnpaidTotal = async (req, res) => {
   try {
-    // FIX: Change 'db.query' to 'pool.query' to match your import
     const [rows] = await pool.query(
       "SELECT SUM(amount) as totalAmount FROM billing WHERE status = 'Pending'",
     );
 
-    // If there are no pending bills, sum returns null, so we fallback to 0
     const total = rows[0].totalAmount || 0;
-
     res.json({ totalAmount: total });
   } catch (err) {
     console.error("Error fetching unpaid total:", err);
@@ -76,7 +112,6 @@ export const getUnpaidTotal = async (req, res) => {
 
 export const getMyBills = async (req, res) => {
   try {
-    // req.user.id is the account_id from your JWT token
     const accountId = req.user.id;
 
     const [rows] = await pool.query(

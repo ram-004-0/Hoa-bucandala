@@ -126,6 +126,11 @@ const Home = () => {
           </div>
         </div>
       </div>
+      <br />
+      <br />
+      <br />
+      <br />
+      <br />
 
       <div className="max-w-7xl mx-auto px-4 md:px-10 -mt-10 relative z-20">
         {/* Latest Announcement */}
