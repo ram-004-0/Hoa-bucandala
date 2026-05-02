@@ -11,6 +11,7 @@ import announcementRoutes from "./Routes/announcement.js";
 import visitorRoutes from "./Routes/visitorRoutes.js";
 import paymentsRoutes from "./Routes/payments.js";
 import guardRequestRoutes from "./Routes/guardRequestRoutes.js";
+import guardRoutes from "./Routes/guardRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,6 +39,7 @@ app.use("/api/residents", residentsRoutes);
 app.use("/api/payments", paymentsRoutes);
 app.use("/api/waste", wasteRoutes);
 app.use("/api/guard-requests", guardRequestRoutes);
+app.use("/api/guards", guardRoutes);
 
 app.use("/api", authRoutes);
 app.use("/api", reservationRoutes);

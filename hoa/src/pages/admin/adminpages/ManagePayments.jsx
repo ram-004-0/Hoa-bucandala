@@ -7,8 +7,8 @@ import {
   CircleDollarSign,
   X,
   CreditCard,
-  CalendarDays,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
@@ -17,13 +17,17 @@ const ManagePayments = () => {
   const [payments, setPayments] = useState([]);
   const [residents, setResidents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false); // New state for button loading
   const [searchTerm, setSearchTerm] = useState("");
   const [view, setView] = useState("pending");
 
-  // Modal State
   const [showModal, setShowModal] = useState(false);
   const [selectedResident, setSelectedResident] = useState(null);
   const [billData, setBillData] = useState({ amount: 1500, month: "" });
+  const [error, setError] = useState("");
+
+  // Get current month in YYYY-MM format for validation
+  const currentMonthStr = new Date().toISOString().slice(0, 7);
 
   useEffect(() => {
     fetchData();
@@ -40,9 +44,7 @@ const ManagePayments = () => {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
-
       if (!payRes.ok || !resRes.ok) throw new Error("Fetch failed");
-
       setPayments(await payRes.json());
       setResidents(await resRes.json());
     } catch (err) {
@@ -71,14 +73,30 @@ const ManagePayments = () => {
 
   const handleCreateBill = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem("token");
+    setError("");
 
-    const newBill = {
-      residentId: selectedResident.resident_id, // Ensure this isn't undefined
-      amount: billData.amount || 1500,
-      billingMonth: billData.month, // e.g., "2026-04"
-      status: "Pending",
-    };
+    // 1. Past Date Validation
+    if (billData.month < currentMonthStr) {
+      setError("Cannot issue a bill for a past month.");
+      return;
+    }
+
+    // 2. Duplicate Check (Prevent billing the same month twice)
+    const alreadyBilled = payments.find(
+      (p) =>
+        p.resident_id === selectedResident.resident_id &&
+        p.billingMonth === billData.month,
+    );
+
+    if (alreadyBilled) {
+      setError(
+        `A bill for ${billData.month} already exists for this resident.`,
+      );
+      return;
+    }
+
+    setSubmitting(true);
+    const token = localStorage.getItem("token");
 
     try {
       const res = await fetch(`${API_URL}/payments`, {
@@ -87,18 +105,26 @@ const ManagePayments = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(newBill),
+        body: JSON.stringify({
+          residentId: selectedResident.resident_id,
+          amount: billData.amount,
+          billingMonth: billData.month,
+          status: "Pending",
+        }),
       });
 
       if (res.ok) {
         setShowModal(false);
-        fetchData(); // Refresh the list
+        setBillData({ amount: 1500, month: "" });
+        fetchData();
       } else {
-        const err = await res.json();
-        console.error("Server says:", err.message);
+        const errData = await res.json();
+        setError(errData.message || "Failed to create bill.");
       }
     } catch (err) {
-      console.error("Fetch error:", err);
+      setError("Connection error. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -108,19 +134,12 @@ const ManagePayments = () => {
     if (view === "residents") {
       return residents.filter((r) => r.full_name.toLowerCase().includes(term));
     }
-    if (view === "pending") {
-      return payments.filter(
-        (p) =>
-          p.status === "Pending" && p.residentName.toLowerCase().includes(term),
-      );
-    }
-    if (view === "history") {
-      return payments.filter(
-        (p) =>
-          p.status === "Paid" && p.residentName.toLowerCase().includes(term),
-      );
-    }
-    return [];
+    return payments.filter((p) => {
+      const matchesName = p.residentName?.toLowerCase().includes(term);
+      const matchesStatus =
+        view === "pending" ? p.status === "Pending" : p.status === "Paid";
+      return matchesName && matchesStatus;
+    });
   })();
 
   const totalCollected = payments
@@ -133,212 +152,229 @@ const ManagePayments = () => {
     <div className="min-h-screen bg-gray-50 font-sans antialiased">
       <div className="bg-[#00704e] h-40 grid grid-cols-[10%_90%] p-10 text-white items-center">
         <Link to="/admin">
-          <ArrowLeftIcon className="h-10 w-10 ml-5 cursor-pointer hover:text-gray-200 transition-colors" />
+          <ArrowLeftIcon className="h-10 w-10 ml-5 cursor-pointer hover:opacity-80 transition-all" />
         </Link>
-        <h1 className="font-bold text-4xl">Payment Verification</h1>
+        <h1 className="font-bold text-4xl tracking-tight">
+          Payment Verification
+        </h1>
       </div>
 
-      <div className="m-10">
-        <div className="flex gap-4 mb-8">
+      <div className="max-w-7xl mx-auto px-6 -mt-10">
+        {/* Stats Section */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <StatCard
             title="Total Collections"
             value={`₱${totalCollected.toLocaleString()}`}
-            green
+            color="text-green-600"
           />
-          <StatCard title="Pending Review" value={pendingCount} yellow />
-          <StatCard title="Registered Residents" value={residents.length} />
+          <StatCard
+            title="Pending Review"
+            value={pendingCount}
+            color="text-yellow-600"
+          />
+          <StatCard
+            title="Total Residents"
+            value={residents.length}
+            color="text-blue-600"
+          />
         </div>
 
+        {/* Controls */}
         <div className="mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex bg-gray-200 p-1 rounded-lg">
-            <TabBtn
-              active={view === "pending"}
-              onClick={() => setView("pending")}
-              label="Pending"
-            />
-            <TabBtn
-              active={view === "history"}
-              onClick={() => setView("history")}
-              label="History"
-            />
-            <TabBtn
-              active={view === "residents"}
-              onClick={() => setView("residents")}
-              label="Resident List"
-            />
+          <div className="flex bg-gray-200 p-1 rounded-xl w-full md:w-auto">
+            {["pending", "history", "residents"].map((t) => (
+              <TabBtn
+                key={t}
+                active={view === t}
+                onClick={() => setView(t)}
+                label={t.charAt(0).toUpperCase() + t.slice(1)}
+              />
+            ))}
           </div>
 
           <div className="relative w-full md:w-80">
-            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
             <input
               type="text"
               placeholder="Search by name..."
-              className="pl-10 pr-4 py-2 border rounded-lg w-full focus:ring-2 focus:ring-[#00704e] outline-none border-gray-300"
+              className="pl-10 pr-4 py-3 border border-gray-200 rounded-xl w-full focus:ring-2 focus:ring-[#00704e] outline-none shadow-sm transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
 
-        <div className="bg-white shadow-md rounded-lg overflow-hidden border border-gray-200">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+        {/* Table */}
+        <div className="bg-white shadow-xl shadow-gray-200/50 rounded-2xl overflow-hidden border border-gray-100">
+          <table className="w-full text-left">
+            <thead className="bg-gray-50/50 border-b border-gray-100">
               <tr>
-                {view === "residents"
-                  ? ["Resident", "Address", "Status", "Action"].map((h) => (
-                      <th
-                        key={h}
-                        className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase"
-                      >
-                        {h}
-                      </th>
-                    ))
-                  : [
-                      "Resident",
-                      "Billing Month",
-                      "Amount",
-                      "Status",
-                      "Action",
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase"
-                      >
-                        {h}
-                      </th>
-                    ))}
+                <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">
+                  Resident
+                </th>
+                {view !== "residents" && (
+                  <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">
+                    Month
+                  </th>
+                )}
+                <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">
+                  {view === "residents" ? "Address" : "Amount"}
+                </th>
+                <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">
+                  Status
+                </th>
+                <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest text-center">
+                  Action
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-50">
               {displayList.map((item) => (
                 <tr
                   key={item.id || item.resident_id}
-                  className="hover:bg-gray-50 transition-colors"
+                  className="hover:bg-gray-50/50 transition-colors group"
                 >
-                  {view === "residents" ? (
-                    <>
-                      <td className="px-6 py-4 font-semibold text-gray-800">
-                        {item.full_name}
-                      </td>
-                      <td className="px-6 py-4 text-gray-600 text-sm">
-                        {item.address}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`px-2 py-1 text-xs rounded-full font-bold ${item.has_balance ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}
-                        >
-                          {item.has_balance ? "Has Dues" : "No Dues"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <button
-                          onClick={() => {
-                            setSelectedResident(item);
-                            setShowModal(true);
-                          }}
-                          className="text-[#00704e] font-bold text-xs flex items-center gap-1 hover:underline"
-                        >
-                          <CreditCard className="h-4 w-4" /> Issue Bill
-                        </button>
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td className="px-6 py-4 font-semibold text-gray-800">
-                        {item.residentName}
-                      </td>
-                      <td className="px-6 py-4 text-gray-500 text-sm italic">
-                        {item.billingMonth}
-                      </td>
-                      <td className="px-6 py-4 font-bold text-gray-900">
-                        ₱{Number(item.amount).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`px-2 py-1 text-xs rounded-full font-bold ${item.status === "Paid" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}
-                        >
-                          {item.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        {item.status === "Pending" ? (
-                          <button
-                            onClick={() => handleUpdateStatus(item.id, "Paid")}
-                            className="bg-[#00704e] text-white px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-[#005a3e]"
-                          >
-                            Verify
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() =>
-                              handleUpdateStatus(item.id, "Pending")
-                            }
-                            className="text-gray-400 hover:text-red-500 text-xs font-bold transition-colors"
-                          >
-                            Revert
-                          </button>
-                        )}
-                      </td>
-                    </>
+                  <td className="px-6 py-4">
+                    <p className="font-bold text-gray-800">
+                      {item.full_name || item.residentName}
+                    </p>
+                  </td>
+                  {view !== "residents" && (
+                    <td className="px-6 py-4 text-sm text-gray-500 font-medium">
+                      {item.billingMonth}
+                    </td>
                   )}
+                  <td className="px-6 py-4">
+                    {view === "residents" ? (
+                      <span className="text-sm text-gray-500">
+                        {item.address}
+                      </span>
+                    ) : (
+                      <span className="font-bold text-gray-900">
+                        ₱{Number(item.amount).toLocaleString()}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
+                    <StatusBadge
+                      status={
+                        view === "residents"
+                          ? item.has_balance
+                            ? "Dues"
+                            : "Clean"
+                          : item.status
+                      }
+                    />
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    {view === "residents" ? (
+                      <button
+                        onClick={() => {
+                          setSelectedResident(item);
+                          setError("");
+                          setShowModal(true);
+                        }}
+                        className="text-[#00704e] font-bold text-xs flex items-center gap-1 mx-auto hover:scale-105 transition-transform"
+                      >
+                        <CreditCard className="h-4 w-4" /> Issue Bill
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() =>
+                          handleUpdateStatus(
+                            item.id,
+                            item.status === "Pending" ? "Paid" : "Pending",
+                          )
+                        }
+                        className={`text-xs font-black uppercase tracking-tighter px-4 py-2 rounded-lg transition-all ${
+                          item.status === "Pending"
+                            ? "bg-[#00704e] text-white hover:bg-[#005a3e]"
+                            : "text-gray-400 hover:text-red-500"
+                        }`}
+                      >
+                        {item.status === "Pending"
+                          ? "Verify Payment"
+                          : "Revert"}
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+
           {displayList.length === 0 && !loading && (
-            <div className="p-20 text-center text-gray-400">
-              <ShieldCheck className="h-12 w-12 mx-auto mb-3 opacity-20" />
-              <p className="italic">No records found matching your search.</p>
+            <div className="py-20 text-center">
+              <ShieldCheck className="h-16 w-16 mx-auto mb-4 text-gray-200" />
+              <p className="text-gray-400 font-medium">
+                No records found matching your search.
+              </p>
             </div>
           )}
         </div>
       </div>
 
+      {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300">
+            <div className="p-8 border-b border-gray-50 flex justify-between items-center">
               <div className="flex items-center gap-3">
-                <CircleDollarSign className="h-6 w-6 text-[#00704e]" />
-                <h3 className="font-bold text-xl text-gray-900">
-                  Issue Monthly Bill
+                <div className="p-3 bg-green-50 rounded-2xl text-[#00704e]">
+                  <CircleDollarSign className="h-6 w-6" />
+                </div>
+                <h3 className="font-black text-2xl text-gray-900 tracking-tight">
+                  Issue Bill
                 </h3>
               </div>
-              <button onClick={() => setShowModal(false)}>
-                <X className="h-6 w-6 text-gray-400 hover:text-gray-600" />
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="h-6 w-6 text-gray-400" />
               </button>
             </div>
 
             <form onSubmit={handleCreateBill} className="p-8 space-y-6">
+              {error && (
+                <div className="bg-red-50 border border-red-100 p-4 rounded-2xl flex gap-3 text-red-700 text-sm font-bold">
+                  <AlertCircle className="h-5 w-5 shrink-0" />
+                  {error}
+                </div>
+              )}
+
               <div>
-                <p className="text-sm text-gray-500 mb-1">Resident</p>
-                <p className="font-bold text-lg text-gray-800">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block">
+                  Resident Name
+                </label>
+                <p className="font-bold text-xl text-gray-800">
                   {selectedResident?.full_name}
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-1">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
                     Billing Month
                   </label>
                   <input
                     type="month"
                     required
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 font-bold focus:ring-2 focus:ring-[#00704e] outline-none"
+                    min={currentMonthStr} // HTML5 validation for past months
+                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 font-bold focus:ring-2 focus:ring-[#00704e] outline-none"
                     onChange={(e) =>
                       setBillData({ ...billData, month: e.target.value })
                     }
                   />
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-2">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
                     Amount (₱)
                   </label>
                   <input
                     type="number"
                     defaultValue="1500"
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 font-bold focus:ring-2 focus:ring-[#00704e] outline-none"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 font-bold focus:ring-2 focus:ring-[#00704e] outline-none"
                     onChange={(e) =>
                       setBillData({ ...billData, amount: e.target.value })
                     }
@@ -346,19 +382,16 @@ const ManagePayments = () => {
                 </div>
               </div>
 
-              <div className="bg-blue-50 p-3 rounded-xl flex gap-2 border border-blue-100">
-                <AlertCircle className="h-4 w-4 text-blue-600 shrink-0" />
-                <p className="text-[11px] text-blue-800 leading-tight">
-                  This creates a "Pending" record. You will manually verify this
-                  once the resident provides proof of external payment.
-                </p>
-              </div>
-
               <button
                 type="submit"
-                className="w-full bg-[#00704e] text-white font-bold py-4 rounded-2xl hover:bg-[#005a3e] shadow-lg shadow-green-900/20 transition-all"
+                disabled={submitting}
+                className="w-full bg-[#00704e] text-white font-black py-5 rounded-[1.5rem] hover:bg-[#005a3e] shadow-xl shadow-green-900/20 transition-all disabled:opacity-50 flex justify-center items-center gap-2"
               >
-                CONFIRM & ISSUE BILL
+                {submitting ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  "CONFIRM & ISSUE BILL"
+                )}
               </button>
             </form>
           </div>
@@ -368,12 +401,12 @@ const ManagePayments = () => {
   );
 };
 
-const StatCard = ({ title, value, green, yellow, red }) => (
-  <div className="p-6 bg-white shadow-md rounded-lg flex-1 text-center border border-gray-100">
-    <h2 className="text-sm text-gray-500 mb-2 font-medium">{title}</h2>
-    <span
-      className={`text-3xl font-bold ${green ? "text-green-600" : yellow ? "text-yellow-600" : red ? "text-red-600" : "text-gray-800"}`}
-    >
+const StatCard = ({ title, value, color }) => (
+  <div className="p-8 bg-white shadow-sm rounded-[2rem] border border-gray-100">
+    <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">
+      {title}
+    </h2>
+    <span className={`text-4xl font-black tracking-tighter ${color}`}>
       {value}
     </span>
   </div>
@@ -382,10 +415,30 @@ const StatCard = ({ title, value, green, yellow, red }) => (
 const TabBtn = ({ active, onClick, label }) => (
   <button
     onClick={onClick}
-    className={`px-6 py-2 rounded-md text-sm font-bold transition-all ${active ? "bg-white text-[#00704e] shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+    className={`flex-1 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+      active
+        ? "bg-white text-[#00704e] shadow-md shadow-gray-200/50"
+        : "text-gray-400 hover:text-gray-600"
+    }`}
   >
     {label}
   </button>
 );
+
+const StatusBadge = ({ status }) => {
+  const styles = {
+    Paid: "bg-green-100 text-green-700",
+    Pending: "bg-yellow-100 text-yellow-700",
+    Dues: "bg-red-100 text-red-700",
+    Clean: "bg-green-100 text-green-700",
+  };
+  return (
+    <span
+      className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${styles[status] || "bg-gray-100 text-gray-600"}`}
+    >
+      {status}
+    </span>
+  );
+};
 
 export default ManagePayments;
