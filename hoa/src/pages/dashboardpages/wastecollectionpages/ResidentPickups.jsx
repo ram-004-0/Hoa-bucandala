@@ -26,7 +26,7 @@ const ResidentPickups = () => {
     const token = localStorage.getItem("token");
     try {
       // Updated to fetch from the general reports endpoint
-      const res = await fetch(`${API_URL}/api/reports/my-reports`, {
+      const res = await fetch(`${API_URL}/api/reports/my-history`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
