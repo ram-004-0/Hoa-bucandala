@@ -15,40 +15,38 @@ import CreateUser from "./CreateUser";
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
 const ManageResidents = () => {
-  const [residents, setResidents] = useState([]);
+  const [users, setUsers] = useState([]); // Renamed to users since it holds both
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Modal States
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showGuardModal, setShowGuardModal] = useState(false); // New state for Guard
-  const [selectedResident, setSelectedResident] = useState(null);
+  const [showGuardModal, setShowGuardModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   useEffect(() => {
-    fetchResidents();
+    fetchAllUsers();
   }, []);
 
-  const fetchResidents = async () => {
+  const fetchAllUsers = async () => {
     const token = localStorage.getItem("token");
     if (!token) return;
     try {
-      const res = await fetch(`${API_URL}/residents`, {
+      // Changed endpoint to /users to get the joined data from the controller above
+      const res = await fetch(`${API_URL}/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
 
-      // We filter or label them if the API returns both,
-      // but usually this API only returns residents.
-      const transformed = data.map((r) => ({
-        id: r.resident_id || r.id,
-        name: r.full_name,
-        email: r.email,
-        address: r.address,
-        contact: r.contact,
-        role: r.role || "RESIDENT",
-        withBalance: !!r.has_balance,
+      const transformed = data.map((u) => ({
+        id: u.id,
+        name: u.name || "Unnamed",
+        email: u.email,
+        address: u.address || "N/A",
+        contact: u.contact || "N/A",
+        role: u.role,
+        withBalance: !!u.has_balance,
       }));
-      setResidents(transformed);
+      setUsers(transformed);
     } catch (err) {
       console.error("Fetch failed:", err);
     } finally {
@@ -57,15 +55,19 @@ const ManageResidents = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this account?"))
+    if (
+      !window.confirm(
+        "Are you sure? This deletes the login account and profile.",
+      )
+    )
       return;
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`${API_URL}/residents/${id}`, {
+      const res = await fetch(`${API_URL}/users/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) setResidents((prev) => prev.filter((r) => r.id !== id));
+      if (res.ok) setUsers((prev) => prev.filter((u) => u.id !== id));
     } catch (err) {
       console.error("Delete failed:", err);
     }
@@ -73,40 +75,35 @@ const ManageResidents = () => {
 
   const handleCreateEntry = (newEntry) => {
     const formatted = {
-      id: newEntry.resident_id || newEntry.id,
-      name: newEntry.full_name,
+      id: newEntry.id,
+      name: newEntry.full_name || newEntry.username,
       email: newEntry.email,
-      address: newEntry.address,
-      contact: newEntry.contact,
-      role: newEntry.role || "RESIDENT",
+      address: newEntry.address || "N/A",
+      contact: newEntry.contact || "N/A",
+      role: newEntry.role,
       withBalance: !!newEntry.has_balance,
     };
-    setResidents((prev) => [...prev, formatted]);
+    setUsers((prev) => [...prev, formatted]);
   };
 
   const handleUpdateEntry = (updated) => {
-    setResidents((prev) =>
-      prev.map((r) =>
-        r.id === (updated.resident_id || updated.id)
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === updated.id
           ? {
-              id: updated.resident_id || updated.id,
-              name: updated.full_name,
-              email: updated.email,
-              address: updated.address,
-              contact: updated.contact,
-              role: updated.role || r.role,
-              withBalance: !!updated.has_balance,
+              ...u,
+              ...updated,
+              name: updated.full_name || updated.username || u.name,
             }
-          : r,
+          : u,
       ),
     );
-    setSelectedResident(null);
+    setSelectedUser(null);
   };
 
-  const filteredResidents = residents.filter((r) => {
-    const name = r.name || "";
-    return name.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+  const filteredUsers = users.filter((u) =>
+    u.name.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -118,25 +115,23 @@ const ManageResidents = () => {
       </div>
 
       <div className="m-10">
-        {/* Statistics Cards */}
         <div className="flex gap-4 mb-8">
           <StatCard
             title="Total Residents"
-            value={residents.filter((r) => r.role === "RESIDENT").length}
+            value={users.filter((u) => u.role === "RESIDENT").length}
           />
           <StatCard
             title="Security Staff"
-            value={residents.filter((r) => r.role === "GUARD").length}
+            value={users.filter((u) => u.role === "GUARD").length} // Fixed the variable here
             blue
           />
           <StatCard
             title="Outstanding Balance"
-            value={residents.filter((r) => r.withBalance).length}
+            value={users.filter((u) => u.withBalance).length}
             red
           />
         </div>
 
-        {/* Search and Action Buttons */}
         <div className="mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="relative w-full md:w-80">
             <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
@@ -187,41 +182,41 @@ const ManageResidents = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filteredResidents.map((r) => (
+              {filteredUsers.map((u) => (
                 <tr
-                  key={r.id}
+                  key={u.id}
                   className="hover:bg-gray-50/50 transition-colors"
                 >
                   <td className="px-6 py-4">
                     <span
                       className={`text-[10px] font-black px-2 py-1 rounded-md uppercase ${
-                        r.role === "GUARD"
+                        u.role === "GUARD"
                           ? "bg-blue-50 text-blue-600"
                           : "bg-gray-100 text-gray-500"
                       }`}
                     >
-                      {r.role}
+                      {u.role}
                     </span>
                   </td>
                   <td className="px-6 py-4 font-bold text-gray-700">
-                    {r.name}
+                    {u.name}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
-                    {r.address}
+                    {u.address}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
-                    {r.contact}
+                    {u.contact}
                   </td>
                   <td className="px-6 py-4">
-                    {r.role === "RESIDENT" ? (
+                    {u.role === "RESIDENT" ? (
                       <span
                         className={`px-3 py-1 text-xs rounded-full font-bold ${
-                          r.withBalance
+                          u.withBalance
                             ? "bg-red-100 text-red-700"
                             : "bg-green-100 text-green-700"
                         }`}
                       >
-                        {r.withBalance ? "Has Balance" : "Cleared"}
+                        {u.withBalance ? "Has Balance" : "Cleared"}
                       </span>
                     ) : (
                       <span className="px-3 py-1 text-xs rounded-full font-bold bg-blue-100 text-blue-700">
@@ -232,14 +227,14 @@ const ManageResidents = () => {
                   <td className="px-6 py-4">
                     <div className="flex gap-4">
                       <button
-                        onClick={() => setSelectedResident(r)}
-                        className="text-blue-500 hover:text-blue-700 transition-colors"
+                        onClick={() => setSelectedUser(u)}
+                        className="text-blue-500 hover:text-blue-700"
                       >
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(r.id)}
-                        className="text-red-400 hover:text-red-600 transition-colors"
+                        onClick={() => handleDelete(u.id)}
+                        className="text-red-400 hover:text-red-600"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -249,31 +244,20 @@ const ManageResidents = () => {
               ))}
             </tbody>
           </table>
-
           {loading && (
             <p className="p-10 text-center text-gray-500 animate-pulse">
               Syncing database records...
             </p>
           )}
-
-          {!loading && filteredResidents.length === 0 && (
-            <div className="p-20 text-center text-gray-400">
-              <ShieldAlert className="h-12 w-12 mx-auto mb-2 opacity-20" />
-              <p className="font-medium">No records matching your search.</p>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Modal for Resident */}
       {showCreateModal && (
         <CreateUser
           onClose={() => setShowCreateModal(false)}
           onCreate={handleCreateEntry}
         />
       )}
-
-      {/* Modal for Guard */}
       {showGuardModal && (
         <CreateUser
           isGuardRole={true}
@@ -281,13 +265,11 @@ const ManageResidents = () => {
           onCreate={handleCreateEntry}
         />
       )}
-
-      {/* Modal for Editing */}
-      {selectedResident && (
+      {selectedUser && (
         <CreateUser
-          editData={selectedResident}
-          isGuardRole={selectedResident.role === "GUARD"}
-          onClose={() => setSelectedResident(null)}
+          editData={selectedUser}
+          isGuardRole={selectedUser.role === "GUARD"}
+          onClose={() => setSelectedUser(null)}
           onCreate={handleUpdateEntry}
         />
       )}
@@ -301,9 +283,7 @@ const StatCard = ({ title, value, red, blue }) => (
       {title}
     </h2>
     <span
-      className={`text-4xl font-black ${
-        red ? "text-red-500" : blue ? "text-blue-600" : "text-gray-800"
-      }`}
+      className={`text-4xl font-black ${red ? "text-red-500" : blue ? "text-blue-600" : "text-gray-800"}`}
     >
       {value}
     </span>

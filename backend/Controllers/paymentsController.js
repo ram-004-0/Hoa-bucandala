@@ -76,7 +76,6 @@ export const getUnpaidTotal = async (req, res) => {
 
 export const getMyBills = async (req, res) => {
   try {
-    // Assuming 'req.user.id' is set by your authenticate middleware
     const residentId = req.user.id;
 
     const [rows] = await pool.query(
