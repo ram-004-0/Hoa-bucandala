@@ -6,7 +6,9 @@ import {
 } from "@heroicons/react/24/solid";
 import { Trash2, MapPin, CheckCircle, Loader2 } from "lucide-react";
 
-const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
+// Updated: Base URL consistency
+const API_URL = "https://hoa-camellabucandalav-production.up.railway.app";
+
 const ReportOverflow = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -22,6 +24,7 @@ const ReportOverflow = () => {
 
     try {
       const token = localStorage.getItem("token");
+      // Fixed URL string template
       const response = await fetch(`${API_URL}/api/reports/waste-report`, {
         method: "POST",
         headers: {
@@ -38,10 +41,11 @@ const ReportOverflow = () => {
       if (response.ok) {
         setIsSuccess(true);
       } else {
-        alert("Failed to send alert. Please try again.");
+        alert("Failed to send alert. Route not found or Server error.");
       }
     } catch (error) {
       console.error("Alert error:", error);
+      alert("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -56,8 +60,8 @@ const ReportOverflow = () => {
           </div>
           <h2 className="text-2xl font-bold text-gray-800">Alert Received</h2>
           <p className="text-gray-600 mt-2">
-            The maintenance team has been alerted to the overflowing bin. Thank
-            you for keeping the community clean!
+            The maintenance team has been alerted. Thank you for helping keep
+            the community clean!
           </p>
           <Link
             to="/wastecollection"
@@ -120,12 +124,14 @@ const ReportOverflow = () => {
                 </label>
                 <div className="grid grid-cols-2 gap-4">
                   <button
+                    type="button"
                     onClick={() => setSeverity("Moderate")}
                     className={`py-3 px-4 rounded-xl border-2 transition-all font-bold text-sm ${severity === "Moderate" ? "border-orange-500 bg-orange-50 text-orange-700" : "border-gray-100 bg-gray-50 text-gray-400"}`}
                   >
                     Moderate
                   </button>
                   <button
+                    type="button"
                     onClick={() => setSeverity("Critical")}
                     className={`py-3 px-4 rounded-xl border-2 transition-all font-bold text-sm ${severity === "Critical" ? "border-red-500 bg-red-50 text-red-700" : "border-gray-100 bg-gray-50 text-gray-400"}`}
                   >

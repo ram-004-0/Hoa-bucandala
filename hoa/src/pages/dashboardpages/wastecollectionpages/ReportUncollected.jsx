@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeftIcon, CheckCircleIcon } from "@heroicons/react/24/solid";
-import { AlertCircle, MapPin, Calendar, Camera, Loader2 } from "lucide-react";
+import { AlertCircle, MapPin, Calendar, Loader2 } from "lucide-react";
 
-const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
+// Updated: Base URL without the /api suffix to prevent doubling
+const API_URL = "https://hoa-camellabucandalav-production.up.railway.app";
+
 const ReportUncollected = () => {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -15,10 +17,21 @@ const ReportUncollected = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validation: Prevent future dates
+    const selectedDate = new Date(formData.missedDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (selectedDate > today) {
+      return alert("You cannot report a missed pickup for a future date.");
+    }
+
     setLoading(true);
 
     try {
-      const token = localStorage.getItem("token"); // Assuming your token is stored here
+      const token = localStorage.getItem("token");
+      // Fixed URL: Concatenates correctly to /api/reports/waste-report
       const response = await fetch(`${API_URL}/api/reports/waste-report`, {
         method: "POST",
         headers: {
@@ -83,8 +96,8 @@ const ReportUncollected = () => {
         <div className="bg-red-50 border border-red-100 rounded-2xl p-5 flex items-start gap-4">
           <AlertCircle className="h-6 w-6 text-red-500 shrink-0" />
           <p className="text-sm text-red-800 italic">
-            <strong>Note:</strong> Please ensure your bins were out before the
-            standard collection time (9:00 AM).
+            <strong>Note:</strong> Pickup reports are only accepted for current
+            or past dates.
           </p>
         </div>
 
@@ -118,6 +131,8 @@ const ReportUncollected = () => {
               <input
                 required
                 type="date"
+                // Prevent selecting future dates in the browser picker
+                max={new Date().toISOString().split("T")[0]}
                 value={formData.missedDate}
                 onChange={(e) =>
                   setFormData({ ...formData, missedDate: e.target.value })
@@ -135,7 +150,7 @@ const ReportUncollected = () => {
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
               }
-              placeholder="Any details (e.g., bin was outside but truck skipped the street)"
+              placeholder="e.g., bin was outside but truck skipped the street"
               className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#00704e] outline-none"
             ></textarea>
           </div>
