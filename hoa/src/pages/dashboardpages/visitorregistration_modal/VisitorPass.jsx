@@ -1,16 +1,46 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import {
   User,
   Home,
   Calendar,
   Clock,
-  FolderArchive,
-  Download,
+  RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 
-const VisitorPass = ({ onBack, onDone, visitor }) => {
-  // Structure: "ID|NAME|ADDRESS"
+const VisitorPass = ({ visitorId, onBack, onDone }) => {
+  const [visitor, setVisitor] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
+
+  useEffect(() => {
+    const fetchVisitorData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${API_URL}/visitors/${visitorId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+
+        if (!response.ok) throw new Error("Failed to fetch visitor data");
+
+        const data = await response.json();
+        setVisitor(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (visitorId) fetchVisitorData();
+  }, [visitorId]);
+
+  // QR Structure: "ID|NAME|ADDRESS"
   const qrValue = visitor?.visitor_id
     ? `${visitor.visitor_id}|${visitor.visitor_name}|${visitor.address_to_visit}`
     : "PENDING";
@@ -24,8 +54,33 @@ const VisitorPass = ({ onBack, onDone, visitor }) => {
         })
       : "---";
 
+  if (loading)
+    return (
+      <div className="w-96 bg-white p-12 rounded-2xl shadow-2xl flex flex-col items-center justify-center gap-4">
+        <RefreshCw className="animate-spin text-[#00704e]" size={40} />
+        <p className="font-bold text-gray-400 animate-pulse">
+          GENERATING PASS...
+        </p>
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className="w-96 bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center gap-4">
+        <AlertCircle className="text-red-500" size={48} />
+        <p className="text-red-600 font-bold text-center">{error}</p>
+        <button
+          onClick={onBack}
+          className="w-full py-3 bg-gray-100 rounded-xl font-bold"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+
   return (
     <div className="w-96 bg-white p-6 rounded-2xl shadow-2xl flex flex-col gap-6 items-center animate-in zoom-in duration-300">
+      {/* QR Section */}
       <div className="p-6 w-full bg-white rounded-2xl border border-gray-100 shadow-inner flex flex-col items-center gap-3">
         <QRCodeCanvas
           id="visitor-qr"
@@ -44,6 +99,7 @@ const VisitorPass = ({ onBack, onDone, visitor }) => {
         </div>
       </div>
 
+      {/* Info Details */}
       <div className="w-full space-y-4 bg-gray-50/50 p-4 rounded-xl">
         <InfoRow icon={User} label="Visitor" value={visitor?.visitor_name} />
         <InfoRow
@@ -61,6 +117,7 @@ const VisitorPass = ({ onBack, onDone, visitor }) => {
         </div>
       </div>
 
+      {/* Actions */}
       <div className="flex gap-3 w-full">
         <button
           onClick={onBack}
@@ -82,7 +139,7 @@ const VisitorPass = ({ onBack, onDone, visitor }) => {
 const InfoRow = ({ icon: Icon, label, value }) => (
   <div className="flex gap-3 items-center">
     <Icon className="text-green-600 w-4 h-4" />
-    <div className="flex flex-col">
+    <div className="flex flex-col text-left">
       <span className="text-[9px] text-gray-400 font-bold uppercase">
         {label}
       </span>

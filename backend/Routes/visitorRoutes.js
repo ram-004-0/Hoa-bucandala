@@ -36,7 +36,7 @@ router.get(
 
 /**
  * @route   GET /api/visitors/all
- * @desc    Admin/Guard views all scheduled visitors for the gate list
+ * @desc    Admin/Guard views all scheduled visitors
  * @access  Private (Admin, Guard)
  */
 router.get(
@@ -48,7 +48,7 @@ router.get(
 
 /**
  * @route   PATCH /api/visitors/:id/status
- * @desc    Guard/Admin updates visitor status (ARRIVED/DEPARTED) via Scan or Manual
+ * @desc    Update visitor status via Scan (ID|Name format) or Manual ID
  * @access  Private (Admin, Guard)
  */
 router.patch(

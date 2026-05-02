@@ -2,7 +2,6 @@ import db from "../config/db.js";
 
 /**
  * RESIDENT: Register a new visitor
- * POST /api/visitors/register
  */
 export const registerVisitor = async (req, res) => {
   try {
@@ -17,17 +16,20 @@ export const registerVisitor = async (req, res) => {
       lot,
     } = req.body;
 
+    // Get resident_id from account_id (from auth middleware)
     const [resident] = await db.query(
       "SELECT resident_id FROM residents WHERE account_id = ?",
       [req.user.id],
     );
 
-    if (!resident.length)
+    if (!resident.length) {
       return res.status(404).json({ message: "Resident profile not found" });
+    }
 
     const residentId = resident[0].resident_id;
     const fullAddress = `Phase ${phase} Block ${block} Lot ${lot}`;
 
+    // Use column names that match your MySQL schema
     const [result] = await db.query(
       `INSERT INTO visitors 
         (resident_id, visitor_name, contact_number, purpose_of_visit, expected_date, expected_time, address_to_visit) 
@@ -50,13 +52,13 @@ export const registerVisitor = async (req, res) => {
       address_to_visit: fullAddress,
     });
   } catch (err) {
+    console.error("Register Error:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 };
 
 /**
  * RESIDENT: Get their own visitor history
- * GET /api/visitors/my-history
  */
 export const getResidentVisitorHistory = async (req, res) => {
   try {
@@ -64,10 +66,16 @@ export const getResidentVisitorHistory = async (req, res) => {
       "SELECT resident_id FROM residents WHERE account_id = ?",
       [req.user.id],
     );
+
+    if (!resident.length) {
+      return res.status(404).json({ message: "Resident not found" });
+    }
+
     const [rows] = await db.query(
       "SELECT * FROM visitors WHERE resident_id = ? ORDER BY created_at DESC",
       [resident[0].resident_id],
     );
+
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -75,8 +83,7 @@ export const getResidentVisitorHistory = async (req, res) => {
 };
 
 /**
- * ADMIN/GUARD: Get all visitors in the system
- * GET /api/visitors/all
+ * ADMIN/GUARD: Get all visitors for the master list
  */
 export const getAllVisitors = async (req, res) => {
   try {
@@ -93,14 +100,14 @@ export const getAllVisitors = async (req, res) => {
 };
 
 /**
- * ADMIN/GUARD: Update visitor status (Approve Entry/Exit)
- * PATCH /api/visitors/:id/status
+ * ADMIN/GUARD: Update visitor status
  */
 export const updateVisitorStatus = async (req, res) => {
-  const { id } = req.params; // Handles "12" or "12|Name..."
-  const { status } = req.body;
+  const { id } = req.params; // Supports numeric ID or "ID|Name|Address" string
+  const { status } = req.body; // e.g., 'ARRIVED' or 'DEPARTED'
 
   try {
+    // If scanned via QR, extract the ID from the pipe-delimited string
     const numericId = id.includes("|") ? id.split("|")[0] : id;
 
     const [result] = await db.query(
@@ -108,15 +115,22 @@ export const updateVisitorStatus = async (req, res) => {
       [status, numericId],
     );
 
-    if (result.affectedRows === 0)
-      return res.status(404).json({ message: "Record not found" });
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Visitor record not found" });
+    }
 
+    // Return updated record for the Guard's success modal
     const [updated] = await db.query(
       "SELECT * FROM visitors WHERE visitor_id = ?",
       [numericId],
     );
-    res.json({ message: `Status updated to ${status}`, visitor: updated[0] });
+
+    res.json({
+      message: `Status updated to ${status}`,
+      visitor: updated[0],
+    });
   } catch (err) {
+    console.error("Update Status Error:", err);
     res.status(500).json({ error: "Server update failed" });
   }
 };
