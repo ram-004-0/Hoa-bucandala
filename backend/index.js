@@ -25,14 +25,15 @@ const app = express();
 // origin: true automatically reflects the request origin, which is great for dev and production.
 app.use(
   cors({
-    origin: [
-      "https://hoa-camella-bucandala.vercel.app",
-      "http://localhost:5173",
-      "http://localhost:3000",
-    ],
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        return callback(new Error("CORS policy block"), false);
+      }
+      return callback(null, true);
+    },
+    methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 

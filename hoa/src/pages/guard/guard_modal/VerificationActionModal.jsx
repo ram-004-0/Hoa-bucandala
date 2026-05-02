@@ -104,28 +104,34 @@ const VerificationActionModal = ({ onClose }) => {
   };
 
   const markArrived = async () => {
-    if (!visitor) return;
+    // Use || to handle different naming conventions from your API/Scanner
+    const id = visitor?.visitor_id || visitor?.id;
+
+    if (!id) {
+      alert("Error: No Visitor ID found to authorize.");
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await fetch(
-        `${API_URL}/visitors/${visitor.visitor_id}/status`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify({ status: "ARRIVED" }),
+      const res = await fetch(`${API_URL}/visitors/${id}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-      );
+        body: JSON.stringify({ status: "ARRIVED" }),
+      });
+
       if (res.ok) {
         alert(`Access Granted: ${visitor.visitor_name} has arrived.`);
         onClose();
       } else {
-        alert("Failed to update status. Check permissions.");
+        const errorData = await res.json().catch(() => ({}));
+        alert(`Failed: ${errorData.message || "Check permissions."}`);
       }
     } catch (err) {
-      alert("Error updating status");
+      alert("Connection error while updating status.");
     } finally {
       setLoading(false);
     }
