@@ -17,20 +17,17 @@ export const registerVisitor = async (req, res) => {
       lot,
     } = req.body;
 
-    // 1. Get resident_id from the logged-in user's account_id
     const [resident] = await db.query(
       "SELECT resident_id FROM residents WHERE account_id = ?",
       [req.user.id],
     );
 
-    if (!resident.length) {
+    if (!resident.length)
       return res.status(404).json({ message: "Resident profile not found" });
-    }
 
     const residentId = resident[0].resident_id;
     const fullAddress = `Phase ${phase} Block ${block} Lot ${lot}`;
 
-    // 2. Insert into visitors table
     const [result] = await db.query(
       `INSERT INTO visitors 
         (resident_id, visitor_name, contact_number, purpose_of_visit, expected_date, expected_time, address_to_visit) 
@@ -46,15 +43,13 @@ export const registerVisitor = async (req, res) => {
       ],
     );
 
-    // 3. Generate a unique ID for the QR Code (Frontend uses this string)
-    const visitorIdString = `VIS-${result.insertId}-${Math.floor(1000 + Math.random() * 9000)}`;
-
     res.status(201).json({
       message: "Visitor registered successfully",
-      visitorId: visitorIdString,
+      visitor_id: result.insertId,
+      visitor_name: visitorName,
+      address_to_visit: fullAddress,
     });
   } catch (err) {
-    console.error("Visitor registration error:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -69,16 +64,10 @@ export const getResidentVisitorHistory = async (req, res) => {
       "SELECT resident_id FROM residents WHERE account_id = ?",
       [req.user.id],
     );
-
-    if (!resident.length) {
-      return res.status(404).json({ message: "Resident not found" });
-    }
-
     const [rows] = await db.query(
       "SELECT * FROM visitors WHERE resident_id = ? ORDER BY created_at DESC",
       [resident[0].resident_id],
     );
-
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -108,43 +97,26 @@ export const getAllVisitors = async (req, res) => {
  * PATCH /api/visitors/:id/status
  */
 export const updateVisitorStatus = async (req, res) => {
-  let { id } = req.params; // This could be numeric "1" or QR string "VIS-1-4321"
-  const { status } = req.body; // Expecting 'ARRIVED', 'DEPARTED', or 'CANCELLED'
+  const { id } = req.params; // Handles "12" or "12|Name..."
+  const { status } = req.body;
 
   try {
-    // 1. Handle QR Code format parsing
-    let numericId = id;
-    if (typeof id === "string" && id.startsWith("VIS-")) {
-      // Extract the ID between the dashes: VIS-[ID]-RANDOM
-      numericId = id.split("-")[1];
-    }
+    const numericId = id.includes("|") ? id.split("|")[0] : id;
 
-    // 2. Update status and log timestamps automatically
     const [result] = await db.query(
-      `UPDATE visitors 
-       SET status = ?, 
-           arrival_time = IF(? = 'ARRIVED', NOW(), arrival_time),
-           departure_time = IF(? = 'DEPARTED', NOW(), departure_time)
-       WHERE visitor_id = ?`,
-      [status, status, status, numericId],
+      "UPDATE visitors SET status = ? WHERE visitor_id = ?",
+      [status, numericId],
     );
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Visitor record not found" });
-    }
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Record not found" });
 
-    // 3. Fetch updated info to return to the Frontend (Guard Success Modal)
-    const [updatedVisitor] = await db.query(
-      "SELECT visitor_id, visitor_name, status, address_to_visit FROM visitors WHERE visitor_id = ?",
+    const [updated] = await db.query(
+      "SELECT * FROM visitors WHERE visitor_id = ?",
       [numericId],
     );
-
-    res.json({
-      message: `Visitor marked as ${status}`,
-      visitor: updatedVisitor[0],
-    });
+    res.json({ message: `Status updated to ${status}`, visitor: updated[0] });
   } catch (err) {
-    console.error("Status update error:", err);
-    res.status(500).json({ error: "Failed to update status on server" });
+    res.status(500).json({ error: "Server update failed" });
   }
 };
