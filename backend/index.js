@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
+
+// Route Imports
 import residentsRoutes from "./Routes/residents.js";
 import authRoutes from "./Routes/auth.js";
 import wasteRoutes from "./Routes/waste.js";
@@ -12,22 +14,27 @@ import visitorRoutes from "./Routes/visitorRoutes.js";
 import paymentsRoutes from "./Routes/payments.js";
 import guardRequestRoutes from "./Routes/guardRequestRoutes.js";
 import guardRoutes from "./Routes/guardRoutes.js";
-const notificationRoutes = require("./Routes/notificationRoutes");
+import notificationRoutes from "./Routes/notificationRoutes.js"; // Changed from require to import
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// 1. CORS CONFIGURATION
+// origin: true automatically reflects the request origin, which is great for dev and production.
 app.use(
   cors({
-    origin: true,
+    origin: [
+      "https://hoa-camella-bucandala.vercel.app",
+      "http://localhost:5173",
+      "http://localhost:3000",
+    ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
-app.use(cors(corsOptions));
 
 app.use(express.json());
 
@@ -44,14 +51,17 @@ app.use("/api/guard-requests", guardRequestRoutes);
 app.use("/api/guards", guardRoutes);
 app.use("/api/notifications", notificationRoutes);
 
+// Grouped routes that might use /api as a base inside the file
 app.use("/api", authRoutes);
 app.use("/api", reservationRoutes);
 app.use("/api", reportsRoutes);
 
+// Health Check
 app.get("/", (req, res) => {
   res.send("HOA Backend is UP and RUNNING!");
 });
 
+// 4. SERVER INITIALIZATION
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 HOA Backend live on port ${PORT}`);
