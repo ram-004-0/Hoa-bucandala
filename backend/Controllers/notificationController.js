@@ -1,21 +1,17 @@
-const db = require("../config/db"); // Adjust based on your DB connection path
+import pool from "../config/db.js";
 
-const getMyNotifications = async (req, res) => {
-  const residentId = req.user.id; // Assuming your auth middleware sets req.user
+export const getMyNotifications = async (req, res) => {
+  const accountId = req.user.id; // Or resident_id depending on your auth logic
 
   try {
-    const [rows] = await db.execute(
-      "SELECT * FROM notifications WHERE resident_id = ? ORDER BY created_at DESC",
-      [residentId],
+    // Note: Adjust the query to join with residents if you are filtering by account_id
+    const [rows] = await pool.query(
+      `SELECT n.* FROM notifications n
+       JOIN residents r ON n.resident_id = r.resident_id
+       WHERE r.account_id = ? 
+       ORDER BY n.created_at DESC`,
+      [accountId],
     );
-
-    // Automatically mark unread notifications as read when the user views the inbox
-    if (rows.length > 0) {
-      await db.execute(
-        "UPDATE notifications SET status = 'Read' WHERE resident_id = ? AND status = 'Unread'",
-        [residentId],
-      );
-    }
 
     res.json(rows);
   } catch (error) {
@@ -24,22 +20,18 @@ const getMyNotifications = async (req, res) => {
   }
 };
 
-const getUnreadCount = async (req, res) => {
-  const residentId = req.user.id;
+export const getUnreadCount = async (req, res) => {
+  const accountId = req.user.id;
 
   try {
-    const [rows] = await db.execute(
-      "SELECT COUNT(*) as count FROM notifications WHERE resident_id = ? AND status = 'Unread'",
-      [residentId],
+    const [rows] = await pool.query(
+      `SELECT COUNT(*) as count FROM notifications n
+       JOIN residents r ON n.resident_id = r.resident_id
+       WHERE r.account_id = ? AND n.status = 'Unread'`,
+      [accountId],
     );
     res.json({ count: rows[0].count });
   } catch (error) {
-    console.error("Error fetching unread count:", error);
     res.status(500).json({ message: "Internal server error" });
   }
-};
-
-module.exports = {
-  getMyNotifications,
-  getUnreadCount,
 };
