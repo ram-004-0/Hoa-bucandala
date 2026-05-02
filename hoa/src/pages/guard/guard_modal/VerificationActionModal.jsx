@@ -19,7 +19,7 @@ const VerificationActionModal = ({ onClose }) => {
   const [error, setError] = useState("");
 
   // Corrected URL (removed the extra 'v')
-  const API_URL = "https://hoa-camellabucandala-production.up.railway.app/api";
+  const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
   useEffect(() => {
     let scanner = null;

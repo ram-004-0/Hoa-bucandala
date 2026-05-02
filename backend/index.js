@@ -14,30 +14,38 @@ import visitorRoutes from "./Routes/visitorRoutes.js";
 import paymentsRoutes from "./Routes/payments.js";
 import guardRequestRoutes from "./Routes/guardRequestRoutes.js";
 import guardRoutes from "./Routes/guardRoutes.js";
-import notificationRoutes from "./Routes/notificationRoutes.js"; // Changed from require to import
+import notificationRoutes from "./Routes/notificationRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// 1. CORS CONFIGURATION
-// origin: true automatically reflects the request origin, which is great for dev and production.
+// --- 1. FIXED CORS CONFIGURATION ---
+// Define allowedOrigins BEFORE calling app.use(cors)
 const allowedOrigins = [
   "https://hoa-camella-bucandala.vercel.app",
   "http://localhost:5173",
 ];
+
 app.use(
   cors({
     origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) === -1) {
-        return callback(new Error("CORS policy block"), false);
+
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        // Logs which origin was blocked for easier debugging in Railway logs
+        console.log("Blocked by CORS:", origin);
+        callback(new Error("CORS policy block"), false);
       }
-      return callback(null, true);
     },
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
+    // explicitly allow these headers to satisfy preflight checks
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
@@ -56,7 +64,6 @@ app.use("/api/guard-requests", guardRequestRoutes);
 app.use("/api/guards", guardRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/reports", reportsRoutes);
-// Grouped routes that might use /api as a base inside the file
 app.use("/api", authRoutes);
 app.use("/api", reservationRoutes);
 
