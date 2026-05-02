@@ -23,6 +23,10 @@ const app = express();
 
 // 1. CORS CONFIGURATION
 // origin: true automatically reflects the request origin, which is great for dev and production.
+const allowedOrigins = [
+  "https://hoa-camella-bucandala.vercel.app",
+  "http://localhost:5173",
+];
 app.use(
   cors({
     origin: function (origin, callback) {
