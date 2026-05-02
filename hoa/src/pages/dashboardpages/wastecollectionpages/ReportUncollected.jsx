@@ -1,19 +1,51 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  ArrowLeftIcon,
-  InformationCircleIcon,
-  CheckCircleIcon,
-} from "@heroicons/react/24/solid";
-import { AlertCircle, MapPin, Calendar, Camera } from "lucide-react";
+import { ArrowLeftIcon, CheckCircleIcon } from "@heroicons/react/24/solid";
+import { AlertCircle, MapPin, Calendar, Camera, Loader2 } from "lucide-react";
 
 const ReportUncollected = () => {
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    location: "",
+    missedDate: "",
+    description: "",
+  });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Integration logic for guard_requests or waste_pickups table would go here
-    setSubmitted(true);
+    setLoading(true);
+
+    try {
+      const token = localStorage.getItem("token"); // Assuming your token is stored here
+      const response = await fetch(
+        "http://localhost:5000/api/reports/waste-report",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            reportType: "Uncollected Garbage",
+            location: formData.location,
+            description: `Missed Date: ${formData.missedDate}. ${formData.description}`,
+          }),
+        },
+      );
+
+      if (response.ok) {
+        setSubmitted(true);
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || "Failed to submit report");
+      }
+    } catch (error) {
+      console.error("Submission error:", error);
+      alert("An error occurred. Please check your connection.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (submitted) {
@@ -39,7 +71,6 @@ const ReportUncollected = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
-      {/* Header matching WasteCollection */}
       <div className="bg-[#00704e] h-40 gap-10 grid grid-cols-[10%_90%] p-10 text-white items-center">
         <Link to="/wastecollection">
           <ArrowLeftIcon className="h-10 w-10 ml-5 cursor-pointer hover:opacity-80" />
@@ -72,8 +103,12 @@ const ReportUncollected = () => {
               <input
                 required
                 type="text"
+                value={formData.location}
+                onChange={(e) =>
+                  setFormData({ ...formData, location: e.target.value })
+                }
                 placeholder="e.g. Block 12, Lot 4"
-                className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#00704e] focus:border-transparent outline-none transition-all"
+                className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#00704e] outline-none transition-all"
               />
             </div>
 
@@ -85,6 +120,10 @@ const ReportUncollected = () => {
               <input
                 required
                 type="date"
+                value={formData.missedDate}
+                onChange={(e) =>
+                  setFormData({ ...formData, missedDate: e.target.value })
+                }
                 className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#00704e] outline-none"
               />
             </div>
@@ -94,26 +133,25 @@ const ReportUncollected = () => {
             </label>
             <textarea
               rows="3"
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
               placeholder="Any details (e.g., bin was outside but truck skipped the street)"
               className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#00704e] outline-none"
             ></textarea>
-
-            <label className="block text-sm font-bold text-gray-700 text-gray-400">
-              Attach Photo (Optional)
-            </label>
-            <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:bg-gray-50 cursor-pointer transition-all">
-              <Camera className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-              <p className="text-xs text-gray-400">
-                Click to upload photo of uncollected bin
-              </p>
-            </div>
           </div>
 
           <button
             type="submit"
-            className="w-full bg-[#00704e] text-white font-bold py-4 rounded-xl shadow-lg hover:bg-[#005a3e] transition-all transform active:scale-[0.98]"
+            disabled={loading}
+            className="w-full bg-[#00704e] text-white font-bold py-4 rounded-xl shadow-lg hover:bg-[#005a3e] transition-all flex items-center justify-center gap-2 disabled:opacity-70"
           >
-            Submit Report
+            {loading ? (
+              <Loader2 className="animate-spin h-5 w-5" />
+            ) : (
+              "Submit Report"
+            )}
           </button>
         </form>
       </div>

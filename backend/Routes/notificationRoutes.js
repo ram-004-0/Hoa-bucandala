@@ -13,4 +13,4 @@ import { authenticate } from "../middlewares/authMiddleware.js";
 router.get("/my-alerts", authenticate, getMyNotifications);
 router.get("/unread-count", authenticate, getUnreadCount);
 
-export default router; // Changed from module.exports = router;
+export default router;

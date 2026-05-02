@@ -4,10 +4,50 @@ import {
   ArrowLeftIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/solid";
-import { Trash2, MapPin, CheckCircle } from "lucide-react";
+import { Trash2, MapPin, CheckCircle, Loader2 } from "lucide-react";
 
 const ReportOverflow = () => {
   const [isSuccess, setIsSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [severity, setSeverity] = useState("Moderate");
+  const [formData, setFormData] = useState({
+    location: "",
+    description: "",
+  });
+
+  const handleSendAlert = async () => {
+    if (!formData.location) return alert("Please specify the location");
+    setLoading(true);
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        "http://localhost:5000/api/reports/waste-report",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            reportType: "Overflowing Bins",
+            location: formData.location,
+            description: `Severity: ${severity}. ${formData.description}`,
+          }),
+        },
+      );
+
+      if (response.ok) {
+        setIsSuccess(true);
+      } else {
+        alert("Failed to send alert. Please try again.");
+      }
+    } catch (error) {
+      console.error("Alert error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (isSuccess) {
     return (
@@ -34,7 +74,6 @@ const ReportOverflow = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
-      {/* Header matching WasteCollection */}
       <div className="bg-[#00704e] h-40 gap-10 grid grid-cols-[10%_90%] p-10 text-white items-center">
         <Link to="/wastecollection">
           <ArrowLeftIcon className="h-10 w-10 ml-5 cursor-pointer hover:opacity-80" />
@@ -66,6 +105,11 @@ const ReportOverflow = () => {
                   <MapPin className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
                   <input
                     type="text"
+                    required
+                    value={formData.location}
+                    onChange={(e) =>
+                      setFormData({ ...formData, location: e.target.value })
+                    }
                     placeholder="e.g. Near Community Park / Gate 2"
                     className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:ring-2 focus:ring-orange-400 transition-all"
                   />
@@ -77,10 +121,16 @@ const ReportOverflow = () => {
                   Severity Level
                 </label>
                 <div className="grid grid-cols-2 gap-4">
-                  <button className="py-3 px-4 rounded-xl border-2 border-orange-200 bg-orange-50 text-orange-700 font-bold text-sm">
+                  <button
+                    onClick={() => setSeverity("Moderate")}
+                    className={`py-3 px-4 rounded-xl border-2 transition-all font-bold text-sm ${severity === "Moderate" ? "border-orange-500 bg-orange-50 text-orange-700" : "border-gray-100 bg-gray-50 text-gray-400"}`}
+                  >
                     Moderate
                   </button>
-                  <button className="py-3 px-4 rounded-xl border-2 border-gray-100 bg-gray-50 text-gray-400 font-bold text-sm hover:border-red-200 hover:text-red-500">
+                  <button
+                    onClick={() => setSeverity("Critical")}
+                    className={`py-3 px-4 rounded-xl border-2 transition-all font-bold text-sm ${severity === "Critical" ? "border-red-500 bg-red-50 text-red-700" : "border-gray-100 bg-gray-50 text-gray-400"}`}
+                  >
                     Critical / Spilling
                   </button>
                 </div>
@@ -92,6 +142,10 @@ const ReportOverflow = () => {
                 </label>
                 <textarea
                   rows="4"
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   placeholder="Provide more context..."
                   className="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:ring-2 focus:ring-orange-400"
                 ></textarea>
@@ -99,11 +153,18 @@ const ReportOverflow = () => {
             </div>
 
             <button
-              onClick={() => setIsSuccess(true)}
-              className="w-full bg-orange-500 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-orange-600 transition-all flex items-center justify-center gap-2"
+              onClick={handleSendAlert}
+              disabled={loading}
+              className="w-full bg-orange-500 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-orange-600 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
             >
-              <ExclamationTriangleIcon className="h-5 w-5" />
-              SEND ALERT TO ADMIN
+              {loading ? (
+                <Loader2 className="animate-spin h-5 w-5" />
+              ) : (
+                <>
+                  <ExclamationTriangleIcon className="h-5 w-5" />
+                  SEND ALERT TO ADMIN
+                </>
+              )}
             </button>
           </div>
         </div>
