@@ -38,10 +38,10 @@ const HOAdues = () => {
     }
   };
 
-  // Logic: Filters only bills belonging to this resident that are still 'Pending'
+  // Logic: Filter and sum ONLY 'Pending' bills for the current resident
   const totalOutstanding = bills
     .filter((b) => b.status === "Pending")
-    .reduce((sum, b) => sum + parseFloat(b.amount), 0);
+    .reduce((sum, b) => sum + Number(b.amount), 0);
 
   return (
     <div className="min-h-screen bg-[#fcfdfc] font-sans antialiased">
@@ -57,7 +57,7 @@ const HOAdues = () => {
       </div>
 
       <div className="max-w-6xl mx-auto p-6 md:p-10 flex flex-col gap-10">
-        {/* Verification Notice */}
+        {/* Verification Notice - Data from image_cc82ec.jpg */}
         <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 flex items-start gap-4 shadow-sm">
           <InformationCircleIcon className="h-10 w-10 text-blue-500 shrink-0" />
           <div>
@@ -66,8 +66,7 @@ const HOAdues = () => {
             </h2>
             <p className="text-blue-700 text-sm">
               Please send your <strong>Proof of Payment</strong> to our official
-              channels below. The admin office will update your status within
-              24-48 hours.
+              channels. Status updates typically take 24-48 hours.
             </p>
             <div className="mt-3 flex flex-wrap gap-4 text-xs font-bold text-blue-600">
               <span className="flex items-center gap-1">
@@ -82,17 +81,17 @@ const HOAdues = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Real-time Balance Card */}
+          {/* Current Balance Card */}
           <div className="bg-white shadow-sm border border-gray-100 rounded-2xl p-8 flex flex-col gap-6">
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-6 bg-[#00704e] rounded-full"></div>
               <h3 className="font-black text-gray-800 uppercase tracking-widest text-xs">
-                Current Outstanding Balance
+                Outstanding Balance
               </h3>
             </div>
 
             {loading ? (
-              <p className="text-gray-400 animate-pulse">Loading balance...</p>
+              <p className="text-gray-400 animate-pulse">Syncing records...</p>
             ) : (
               <div className="space-y-4">
                 {bills.filter((b) => b.status === "Pending").length > 0 ? (
@@ -105,14 +104,16 @@ const HOAdues = () => {
                       >
                         <span>{bill.billingMonth} Assessment</span>
                         <span className="font-bold text-gray-900">
-                          ₱{parseFloat(bill.amount).toLocaleString()}
+                          ₱
+                          {Number(bill.amount).toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                          })}
                         </span>
                       </div>
                     ))
                 ) : (
                   <p className="text-sm text-green-600 font-medium flex items-center gap-2">
-                    <CheckCircleIcon className="h-5 w-5" /> All dues are
-                    settled!
+                    <CheckCircleIcon className="h-5 w-5" /> No pending balances!
                   </p>
                 )}
 
@@ -123,7 +124,10 @@ const HOAdues = () => {
                   <span
                     className={`text-4xl font-black tracking-tighter ${totalOutstanding > 0 ? "text-[#00704e]" : "text-gray-300"}`}
                   >
-                    ₱{totalOutstanding.toLocaleString()}
+                    ₱
+                    {totalOutstanding.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                    })}
                   </span>
                 </div>
               </div>
@@ -132,9 +136,7 @@ const HOAdues = () => {
 
           {/* Billing History */}
           <div className="bg-white shadow-sm border border-gray-100 rounded-2xl p-6 flex flex-col gap-4 overflow-y-auto max-h-[300px]">
-            <h3 className="font-bold text-gray-800 text-sm">
-              Recent Billing History
-            </h3>
+            <h3 className="font-bold text-gray-800 text-sm">Billing History</h3>
             <div className="space-y-3">
               {bills.length > 0 ? (
                 bills.map((bill) => (
@@ -147,7 +149,7 @@ const HOAdues = () => {
                         {bill.billingMonth}
                       </p>
                       <p className="text-gray-500">
-                        ₱{parseFloat(bill.amount).toLocaleString()}
+                        ₱{Number(bill.amount).toLocaleString()}
                       </p>
                     </div>
                     <span
@@ -163,14 +165,14 @@ const HOAdues = () => {
                 ))
               ) : (
                 <p className="text-gray-400 text-center py-10">
-                  No billing history found.
+                  No records found.
                 </p>
               )}
             </div>
           </div>
         </div>
 
-        {/* Payment Channels (Updated with your Image Data) */}
+        {/* Payment Channels - Data from image_cc82ec.jpg */}
         <div className="flex flex-col gap-6">
           <div className="flex items-center gap-3 border-b border-gray-100 pb-4">
             <div className="w-2 h-8 bg-[#00704e] rounded-full"></div>
@@ -183,22 +185,22 @@ const HOAdues = () => {
             <MethodCard
               icon={CreditCardIcon}
               name="Bank Transfer (RCBC)"
-              desc="Acc Name: Lessandra Bukandala Homeowners Inc."
-              subDesc="Acc No: 0025-015-941"
+              desc="Lessandra Bukandala Homeowners Inc."
+              subDesc="0025-015-941"
               color="text-blue-700"
             />
             <MethodCard
               icon={BanknotesIcon}
               name="GCash"
-              desc="Account Name: M**K A******Y I***N"
-              subDesc="Number: 0993-805-1448"
+              desc="M**K A******Y I***N"
+              subDesc="0993-805-1448"
               color="text-blue-400"
             />
             <MethodCard
               icon={BuildingOfficeIcon}
               name="Office Payment"
               desc="Visit Admin Office"
-              subDesc="Open 9AM - 5PM Daily"
+              subDesc="Mon-Sun (9AM - 5PM)"
               color="text-amber-600"
             />
           </div>

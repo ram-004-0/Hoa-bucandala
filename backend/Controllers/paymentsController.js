@@ -76,14 +76,21 @@ export const getUnpaidTotal = async (req, res) => {
 
 export const getMyBills = async (req, res) => {
   try {
-    const residentId = req.user.id;
+    // req.user.id is the account_id from your JWT token
+    const accountId = req.user.id;
 
     const [rows] = await pool.query(
-      `SELECT billing_id as id, amount, billing_month as billingMonth, status, created_at 
-       FROM billing 
-       WHERE resident_id = ? 
-       ORDER BY created_at DESC`,
-      [residentId],
+      `SELECT 
+        b.billing_id as id, 
+        b.amount, 
+        b.billing_month as billingMonth, 
+        b.status, 
+        b.created_at 
+       FROM billing b
+       JOIN residents r ON b.resident_id = r.resident_id
+       WHERE r.account_id = ? 
+       ORDER BY b.created_at DESC`,
+      [accountId],
     );
 
     res.json(rows);
