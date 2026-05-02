@@ -1,6 +1,6 @@
-// Controllers/User.js
+// Controllers/user.js
+import bcrypt from "bcryptjs";
 import db from "../config/db.js";
-const bcrypt = require("bcryptjs");
 
 export const getUser = async (req, res) => {
   try {
@@ -27,17 +27,16 @@ export const updateUser = async (req, res) => {
 
 export const createGuard = async (req, res) => {
   const { full_name, email, contact, address } = req.body;
-
-  // Use a connection from the pool to handle transactions
   const connection = await db.getConnection();
 
   try {
     await connection.beginTransaction();
 
-    // 1. Determine the next guard number for the password
+    // 1. Get guard count from 'accounts' (not 'users')
     const [countResult] = await connection.query(
       "SELECT COUNT(*) as count FROM accounts WHERE role = 'GUARD'",
     );
+
     const nextNumber = countResult[0].count + 1;
     const plainPassword = `guard${nextNumber}`;
 
@@ -45,35 +44,30 @@ export const createGuard = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(plainPassword, salt);
 
-    // 3. Insert into ACCOUNTS table
+    // 3. Insert into accounts table
     const [accountResult] = await connection.query(
       "INSERT INTO accounts (email, password, role) VALUES (?, ?, ?)",
       [email, hashedPassword, "GUARD"],
     );
-    const newAccountId = accountResult.insertId;
 
-    // 4. Insert into GUARD table (using full_name as username)
+    const accountId = accountResult.insertId;
+
+    // 4. Insert into guard table
     await connection.query(
       "INSERT INTO guard (account_id, username) VALUES (?, ?)",
-      [newAccountId, full_name],
+      [accountId, full_name], // Using full_name as the username
     );
 
     await connection.commit();
 
     res.status(201).json({
       message: "Guard account created successfully",
-      id: newAccountId,
       password: plainPassword,
     });
   } catch (error) {
     await connection.rollback();
     console.error(error);
-    if (error.code === "ER_DUP_ENTRY") {
-      return res
-        .status(400)
-        .json({ message: "Email or Username already exists" });
-    }
-    res.status(500).json({ message: "Database error during guard creation" });
+    res.status(500).json({ message: "Database error", error: error.message });
   } finally {
     connection.release();
   }
