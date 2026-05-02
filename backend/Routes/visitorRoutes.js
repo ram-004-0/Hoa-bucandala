@@ -4,6 +4,7 @@ import {
   getAllVisitors,
   getResidentVisitorHistory,
   updateVisitorStatus,
+  getVisitorById,
 } from "../Controllers/visitorController.js";
 import { authenticate } from "../middlewares/authMiddleware.js";
 import { authorizeRoles } from "../middlewares/roles.js";
@@ -56,6 +57,12 @@ router.patch(
   authenticate,
   authorizeRoles("GUARD", "ADMIN"),
   updateVisitorStatus,
+);
+
+router.get(
+  "/:id",
+  authenticate,
+  getVisitorById, // You need to create this controller function
 );
 
 export default router;
