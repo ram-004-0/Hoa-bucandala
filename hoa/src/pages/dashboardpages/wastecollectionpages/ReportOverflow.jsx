@@ -27,7 +27,7 @@ const ReportOverflow = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`${API_URL}/api/reports/waste-report`, {
+      const response = await fetch(`${API_URL}/api/reports/waste-reports`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
