@@ -1,30 +1,27 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { ArrowLeftIcon } from "@heroicons/react/24/solid";
 import {
-  ArrowLeftIcon,
   BanknotesIcon,
   TruckIcon,
   UserGroupIcon,
   CalendarDaysIcon,
   ExclamationCircleIcon,
-  CheckCircleIcon,
+  Inbox,
 } from "@heroicons/react/24/outline";
 
-const NotificationCenter = () => {
+const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
+
+const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const response = await fetch(
-          "https://hoa-camellabucandalav-production.up.railway.app/api/notifications/my-alerts",
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          },
-        );
+        const response = await fetch(`${API_URL}/notifications/my-alerts`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
         const data = await response.json();
         setNotifications(data);
       } catch (err) {
@@ -37,69 +34,78 @@ const NotificationCenter = () => {
   }, []);
 
   const getIcon = (type) => {
+    const style = "h-6 w-6";
     switch (type) {
       case "Bill":
-        return <BanknotesIcon className="h-6 w-6 text-red-500" />;
+        return <BanknotesIcon className={`${style} text-red-500`} />;
       case "Waste":
-        return <TruckIcon className="h-6 w-6 text-green-500" />;
+        return <TruckIcon className={`${style} text-green-500`} />;
       case "Visitor":
-        return <UserGroupIcon className="h-6 w-6 text-blue-500" />;
+        return <UserGroupIcon className={`${style} text-blue-500`} />;
       case "Amenity":
-        return <CalendarDaysIcon className="h-6 w-6 text-purple-500" />;
+        return <CalendarDaysIcon className={`${style} text-purple-500`} />;
       case "Report":
-        return <ExclamationCircleIcon className="h-6 w-6 text-orange-500" />;
+        return <ExclamationCircleIcon className={`${style} text-orange-500`} />;
       default:
-        return <CheckCircleIcon className="h-6 w-6 text-gray-500" />;
+        return <Inbox className={`${style} text-gray-500`} />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa] pb-10">
-      {/* Header */}
-      <div className="bg-[#00704e] h-32 flex items-center px-10 text-white shadow-lg">
+    <div className="min-h-screen bg-[#F9FAFB] pb-10">
+      <div className="bg-[#00704e] h-40 flex items-center px-6 md:px-16 text-white shadow-lg">
         <Link to="/home">
-          <ArrowLeftIcon className="h-8 w-8 mr-4 hover:scale-110 transition-transform" />
+          <ArrowLeftIcon className="h-8 w-8 mr-6 hover:scale-110 transition-transform" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold">Notification Center</h1>
-          <p className="text-xs opacity-80 uppercase tracking-widest font-semibold">
-            Stay Updated
+          <h1 className="text-3xl font-black tracking-tighter uppercase">
+            Community Inbox
+          </h1>
+          <p className="text-xs font-bold opacity-70 tracking-[0.2em]">
+            All System Notifications
           </p>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto mt-8 px-4">
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="max-w-4xl mx-auto -mt-10 px-4">
+        <div className="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 overflow-hidden">
           {loading ? (
-            <div className="p-20 text-center text-gray-400 animate-pulse">
-              Syncing your alerts...
+            <div className="p-20 text-center text-gray-400 font-bold uppercase tracking-widest animate-pulse">
+              Syncing Alerts...
             </div>
           ) : notifications.length > 0 ? (
             <div className="divide-y divide-gray-50">
               {notifications.map((notif) => (
                 <div
-                  key={notif.id}
-                  className={`p-6 flex items-start gap-4 hover:bg-gray-50 transition-colors cursor-pointer ${notif.status === "Unread" ? "bg-blue-50/30" : ""}`}
+                  key={notif.notification_id}
+                  className={`p-8 flex items-start gap-6 hover:bg-gray-50 transition-colors ${notif.status === "Unread" ? "bg-green-50/20" : ""}`}
                 >
-                  <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
+                  <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 shrink-0">
                     {getIcon(notif.type)}
                   </div>
                   <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-bold text-gray-900">{notif.title}</h3>
-                      <span className="text-[10px] font-black text-gray-400 uppercase">
+                    <div className="flex justify-between items-start mb-1">
+                      <h3 className="font-black text-gray-900 text-lg uppercase tracking-tight">
+                        {notif.title}
+                      </h3>
+                      <span className="text-[10px] font-black text-gray-300 uppercase bg-gray-50 px-2 py-1 rounded">
                         {new Date(notif.created_at).toLocaleDateString()}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-gray-600 text-sm leading-relaxed mb-3">
                       {notif.message}
                     </p>
-                    <div className="mt-3 flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-500 uppercase">
-                        {notif.type}
+                    <div className="flex items-center gap-3">
+                      <span className="px-3 py-1 rounded-lg text-[10px] font-black bg-gray-100 text-gray-500 uppercase tracking-widest">
+                        Category: {notif.type}
                       </span>
                       {notif.status === "Unread" && (
-                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
+                          <span className="text-[10px] font-black text-green-600 uppercase tracking-widest">
+                            New Alert
+                          </span>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -107,10 +113,10 @@ const NotificationCenter = () => {
               ))}
             </div>
           ) : (
-            <div className="p-20 text-center text-gray-400">
-              <CheckCircleIcon className="h-12 w-12 mx-auto mb-4 opacity-20" />
-              <p className="font-medium">
-                All caught up! No new notifications.
+            <div className="p-24 text-center">
+              <Inbox className="h-16 w-16 mx-auto mb-4 text-gray-200" />
+              <p className="font-black text-gray-400 uppercase tracking-widest text-sm">
+                Inbox is empty
               </p>
             </div>
           )}
@@ -120,4 +126,4 @@ const NotificationCenter = () => {
   );
 };
 
-export default NotificationCenter;
+export default Notifications;
