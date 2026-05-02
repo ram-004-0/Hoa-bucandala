@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { QRCodeCanvas } from "qrcode.react";
 import {
   User,
@@ -7,12 +7,17 @@ import {
   Clock,
   RefreshCw,
   AlertCircle,
+  Download,
+  ArrowLeft,
 } from "lucide-react";
 
 const VisitorPass = ({ visitorId, onBack, onDone }) => {
   const [visitor, setVisitor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Ref used to access the canvas element for downloading
+  const qrRef = useRef(null);
 
   const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
@@ -54,6 +59,23 @@ const VisitorPass = ({ visitorId, onBack, onDone }) => {
         })
       : "---";
 
+  // --- Function to Download QR Code ---
+  const downloadQRCode = () => {
+    const canvas = document.getElementById("visitor-qr");
+    if (!canvas) return;
+
+    const pngUrl = canvas
+      .toDataURL("image/png")
+      .replace("image/png", "image/octet-stream");
+
+    let downloadLink = document.createElement("a");
+    downloadLink.href = pngUrl;
+    downloadLink.download = `Pass_${visitor?.visitor_name || "Visitor"}.png`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+  };
+
   if (loading)
     return (
       <div className="w-96 bg-white p-12 rounded-2xl shadow-2xl flex flex-col items-center justify-center gap-4">
@@ -81,14 +103,24 @@ const VisitorPass = ({ visitorId, onBack, onDone }) => {
   return (
     <div className="w-96 bg-white p-6 rounded-2xl shadow-2xl flex flex-col gap-6 items-center animate-in zoom-in duration-300">
       {/* QR Section */}
-      <div className="p-6 w-full bg-white rounded-2xl border border-gray-100 shadow-inner flex flex-col items-center gap-3">
+      <div className="relative p-6 w-full bg-white rounded-2xl border border-gray-100 shadow-inner flex flex-col items-center gap-3 group">
         <QRCodeCanvas
           id="visitor-qr"
           value={qrValue}
-          size={180}
+          size={200}
           level="H"
           includeMargin={true}
         />
+
+        {/* Hover Download Overlay */}
+        <button
+          onClick={downloadQRCode}
+          className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white rounded-2xl gap-2"
+        >
+          <Download size={32} />
+          <span className="font-bold text-xs uppercase">Save to Gallery</span>
+        </button>
+
         <div className="text-center">
           <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">
             Gate Pass
@@ -118,19 +150,29 @@ const VisitorPass = ({ visitorId, onBack, onDone }) => {
       </div>
 
       {/* Actions */}
-      <div className="flex gap-3 w-full">
+      <div className="flex flex-col gap-3 w-full">
         <button
-          onClick={onBack}
-          className="flex-1 py-3 border border-gray-200 text-gray-500 font-bold rounded-xl active:scale-95"
+          onClick={downloadQRCode}
+          className="w-full py-4 bg-[#00704e] text-white font-bold rounded-xl shadow-lg active:scale-95 flex items-center justify-center gap-2 hover:bg-[#005a3e] transition-colors"
         >
-          Back
+          <Download size={20} />
+          Download Pass
         </button>
-        <button
-          onClick={onDone}
-          className="flex-1 py-3 bg-[#00704e] text-white font-bold rounded-xl shadow-lg active:scale-95"
-        >
-          Done
-        </button>
+
+        <div className="flex gap-3 w-full">
+          <button
+            onClick={onBack}
+            className="flex-1 py-3 border border-gray-200 text-gray-500 font-bold rounded-xl active:scale-95 flex items-center justify-center gap-2"
+          >
+            <ArrowLeft size={18} /> Back
+          </button>
+          <button
+            onClick={onDone}
+            className="flex-1 py-3 bg-gray-100 text-gray-800 font-bold rounded-xl active:scale-95"
+          >
+            Done
+          </button>
+        </div>
       </div>
     </div>
   );
