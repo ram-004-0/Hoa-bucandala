@@ -1,5 +1,6 @@
 // Controllers/User.js
 import db from "../config/db.js";
+const bcrypt = require("bcryptjs");
 
 export const getUser = async (req, res) => {
   try {
