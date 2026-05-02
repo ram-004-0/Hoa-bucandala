@@ -12,8 +12,18 @@ import VisitorPass from "./visitorregistration_modal/VisitorPass";
 const VisitorRegistration = () => {
   const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
+  // Helpers for Date/Time restrictions
+  const today = new Date();
+  const minDate = today.toISOString().split("T")[0]; // "YYYY-MM-DD"
+
+  // Get current time in HH:mm format for the min attribute
+  const currentTime =
+    today.getHours().toString().padStart(2, "0") +
+    ":" +
+    today.getMinutes().toString().padStart(2, "0");
+
   // UI State
-  const [activeTab, setActiveTab] = useState("register"); // 'register' or 'history'
+  const [activeTab, setActiveTab] = useState("register");
   const [showRegistered, setShowRegistered] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -25,21 +35,18 @@ const VisitorRegistration = () => {
     visitorName: "",
     contactNumber: "",
     purpose: "",
-    date: "",
+    date: minDate, // Default to today
     time: "",
     phase: "",
     block: "",
     lot: "",
   });
 
-  // Fetch History from Backend
   const fetchHistory = async () => {
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/visitors/my-history`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       if (response.ok) {
         const data = await response.json();
@@ -52,17 +59,34 @@ const VisitorRegistration = () => {
     }
   };
 
-  // Fetch history whenever user switches to history tab
   useEffect(() => {
     if (activeTab === "history") fetchHistory();
   }, [activeTab]);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.id]: e.target.value });
+    const { id, value } = e.target;
+
+    // If the user changes the date to today, check if their selected time is now in the past
+    if (id === "date" && value === minDate) {
+      if (formData.time && formData.time < currentTime) {
+        setFormData((prev) => ({ ...prev, date: value, time: "" }));
+        return;
+      }
+    }
+
+    setFormData({ ...formData, [id]: value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Final Validation Check
+    const selectedDateTime = new Date(`${formData.date}T${formData.time}`);
+    if (selectedDateTime < new Date()) {
+      alert("You cannot schedule a visit in the past.");
+      return;
+    }
+
     try {
       const response = await fetch(`${API_URL}/visitors/register`, {
         method: "POST",
@@ -74,12 +98,21 @@ const VisitorRegistration = () => {
       });
 
       const data = await response.json();
-
       if (response.ok) {
         const newVisitor = { ...formData, id: data.visitorId };
-        setFormData(newVisitor);
         setSelectedVisitor(newVisitor);
         setShowRegistered(true);
+        // Reset form to defaults
+        setFormData({
+          visitorName: "",
+          contactNumber: "",
+          purpose: "",
+          date: minDate,
+          time: "",
+          phase: "",
+          block: "",
+          lot: "",
+        });
       } else {
         alert(data.message || "Registration failed");
       }
@@ -89,7 +122,6 @@ const VisitorRegistration = () => {
   };
 
   const openPassFromHistory = (v) => {
-    // Map backend database fields to the frontend Pass props
     setSelectedVisitor({
       id: v.visitor_id,
       visitorName: v.visitor_name,
@@ -104,7 +136,6 @@ const VisitorRegistration = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
-      {/* Header Section */}
       <div className="bg-[#00704e] h-52 p-10 text-white flex flex-col justify-center">
         <div className="max-w-5xl mx-auto w-full flex justify-between items-center">
           <div>
@@ -118,7 +149,6 @@ const VisitorRegistration = () => {
           </Link>
         </div>
 
-        {/* Tab Switcher */}
         <div className="max-w-5xl mx-auto w-full flex gap-4 mt-8">
           <button
             onClick={() => setActiveTab("register")}
@@ -145,7 +175,6 @@ const VisitorRegistration = () => {
 
       <div className="max-w-5xl mx-auto px-4 mt-10">
         {activeTab === "register" ? (
-          /* REGISTRATION FORM */
           <form
             onSubmit={handleSubmit}
             className="flex flex-col items-center gap-6"
@@ -169,6 +198,7 @@ const VisitorRegistration = () => {
                     placeholder="Full Name"
                   />
                 </div>
+
                 <div className="flex flex-col">
                   <label className="font-semibold text-gray-700">
                     Contact Number <span className="text-red-500">*</span>
@@ -183,6 +213,7 @@ const VisitorRegistration = () => {
                     placeholder="09..."
                   />
                 </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col">
                     <label className="font-semibold text-gray-700">
@@ -192,6 +223,7 @@ const VisitorRegistration = () => {
                       required
                       type="date"
                       id="date"
+                      min={minDate} // RESTRICTS PAST DATES
                       value={formData.date}
                       onChange={handleChange}
                       className="border rounded-lg p-2.5 mt-2 outline-none focus:ring-2 focus:ring-green-400"
@@ -205,12 +237,15 @@ const VisitorRegistration = () => {
                       required
                       type="time"
                       id="time"
+                      // Only restrict time if the date is today
+                      min={formData.date === minDate ? currentTime : "00:00"}
                       value={formData.time}
                       onChange={handleChange}
                       className="border rounded-lg p-2.5 mt-2 outline-none focus:ring-2 focus:ring-green-400"
                     />
                   </div>
                 </div>
+
                 <div className="flex flex-col">
                   <label className="font-semibold text-gray-700">
                     Purpose <span className="text-red-500">*</span>
@@ -225,6 +260,7 @@ const VisitorRegistration = () => {
                     placeholder="Reason for visit"
                   />
                 </div>
+
                 <div className="flex flex-col">
                   <label className="font-semibold text-gray-700">
                     Address <span className="text-red-500">*</span>
@@ -269,7 +305,7 @@ const VisitorRegistration = () => {
             </div>
           </form>
         ) : (
-          /* HISTORY LIST */
+          /* HISTORY LIST remains the same... */
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {loading ? (
               <div className="col-span-2 text-center py-10 text-gray-500">
@@ -291,11 +327,7 @@ const VisitorRegistration = () => {
                     </p>
                     <div className="mt-2 flex items-center gap-2">
                       <span
-                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                          v.status === "PENDING"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-green-100 text-green-700"
-                        }`}
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${v.status === "PENDING" ? "bg-yellow-100 text-yellow-700" : "bg-green-100 text-green-700"}`}
                       >
                         {v.status}
                       </span>
@@ -349,7 +381,6 @@ const VisitorRegistration = () => {
             visitor={selectedVisitor}
             onBack={() => {
               setShowPass(false);
-              // Only go back to success modal if we just registered
               if (activeTab === "register") setShowRegistered(true);
             }}
             onDone={() => setShowPass(false)}

@@ -73,3 +73,23 @@ export const getUnpaidTotal = async (req, res) => {
     res.status(500).json({ error: "Failed to calculate unpaid dues" });
   }
 };
+
+export const getMyBills = async (req, res) => {
+  try {
+    // Assuming 'req.user.id' is set by your authenticate middleware
+    const residentId = req.user.id;
+
+    const [rows] = await pool.query(
+      `SELECT billing_id as id, amount, billing_month as billingMonth, status, created_at 
+       FROM billing 
+       WHERE resident_id = ? 
+       ORDER BY created_at DESC`,
+      [residentId],
+    );
+
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};

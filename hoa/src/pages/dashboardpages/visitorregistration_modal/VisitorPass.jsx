@@ -10,16 +10,19 @@ import {
 } from "lucide-react";
 
 const VisitorPass = ({ onBack, onDone, visitor }) => {
-  const qrValue = visitor?.id || "PENDING";
+  // --- UPDATED QR VALUE LOGIC ---
+  // Format: "ID:NAME" (e.g., "12:kian ladaga")
+  // This ensures the Guard's scanner pulls the ID but sees the name immediately
+  const qrValue = visitor?.visitor_id
+    ? `${visitor.visitor_id}:${visitor.visitor_name || "Guest"}`
+    : "PENDING";
 
-  // --- NEW DATE FORMATTER ---
   const formatDate = (dateString) => {
     if (!dateString) return "Not Specified";
     const options = { year: "numeric", month: "long", day: "numeric" };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  // --- NEW TIME FORMATTER (Optional but cleaner) ---
   const formatTime = (timeString) => {
     if (!timeString) return "Not Specified";
     const [hours, minutes] = timeString.split(":");
@@ -28,18 +31,20 @@ const VisitorPass = ({ onBack, onDone, visitor }) => {
     return `${hour12}:${minutes} ${ampm}`;
   };
 
-  const displayAddress = visitor?.address
-    ? visitor.address
+  const displayAddress = visitor?.address_to_visit
+    ? visitor.address_to_visit
     : `Phase ${visitor?.phase || ""} Block ${visitor?.block || ""} Lot ${visitor?.lot || ""}`;
 
   const downloadQR = () => {
     const canvas = document.getElementById("visitor-qr");
+    if (!canvas) return;
+
     const pngUrl = canvas
       .toDataURL("image/png")
       .replace("image/png", "image/octet-stream");
     let downloadLink = document.createElement("a");
     downloadLink.href = pngUrl;
-    downloadLink.download = `Pass_${visitor?.visitorName || "Visitor"}.png`;
+    downloadLink.download = `Pass_${visitor?.visitor_name || "Visitor"}.png`;
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
@@ -60,7 +65,8 @@ const VisitorPass = ({ onBack, onDone, visitor }) => {
             Gate Entry Pass
           </p>
           <p className="text-lg font-mono font-bold text-green-700">
-            {qrValue}
+            {/* Displaying just the ID for visual cleanliness, even if QR has more info */}
+            #{visitor?.visitor_id || "---"}
           </p>
         </div>
 
@@ -77,28 +83,27 @@ const VisitorPass = ({ onBack, onDone, visitor }) => {
         <InfoRow
           icon={User}
           label="Visitor Name"
-          value={visitor?.visitorName}
+          value={visitor?.visitor_name}
         />
         <InfoRow icon={Home} label="Visiting Address" value={displayAddress} />
 
-        {/* UPDATED FORMATTING HERE */}
         <div className="grid grid-cols-2 gap-4">
           <InfoRow
             icon={Calendar}
             label="Date"
-            value={formatDate(visitor?.date)}
+            value={formatDate(visitor?.visit_date || visitor?.date)}
           />
           <InfoRow
             icon={Clock}
             label="Time"
-            value={formatTime(visitor?.time)}
+            value={formatTime(visitor?.visit_time || visitor?.time)}
           />
         </div>
 
         <InfoRow
           icon={FolderArchive}
           label="Purpose of Visit"
-          value={visitor?.purpose}
+          value={visitor?.purpose_of_visit || visitor?.purpose}
         />
       </div>
 
