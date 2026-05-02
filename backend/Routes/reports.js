@@ -13,7 +13,7 @@ const router = express.Router();
 router.get("/all", authenticate, getAllReports);
 
 // Resident Route: Post a new report
-router.post("/waste-report", authenticate, createWasteReport);
+router.post("/waste-reports", authenticate, createWasteReport);
 
 // Resident Route: Get their own report history
 router.get("/my-history", authenticate, getMyReportHistory);
