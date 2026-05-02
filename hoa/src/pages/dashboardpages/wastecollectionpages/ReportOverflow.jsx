@@ -6,6 +6,7 @@ import {
 } from "@heroicons/react/24/solid";
 import { Trash2, MapPin, CheckCircle, Loader2 } from "lucide-react";
 
+const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 const ReportOverflow = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -21,21 +22,18 @@ const ReportOverflow = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(
-        "http://localhost:5000/api/reports/waste-report",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            reportType: "Overflowing Bins",
-            location: formData.location,
-            description: `Severity: ${severity}. ${formData.description}`,
-          }),
+      const response = await fetch(`${API_URL}/api/reports/waste-report`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify({
+          reportType: "Overflowing Bins",
+          location: formData.location,
+          description: `Severity: ${severity}. ${formData.description}`,
+        }),
+      });
 
       if (response.ok) {
         setIsSuccess(true);

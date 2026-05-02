@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeftIcon, CheckCircleIcon } from "@heroicons/react/24/solid";
 import { AlertCircle, MapPin, Calendar, Camera, Loader2 } from "lucide-react";
 
+const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 const ReportUncollected = () => {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -18,21 +19,18 @@ const ReportUncollected = () => {
 
     try {
       const token = localStorage.getItem("token"); // Assuming your token is stored here
-      const response = await fetch(
-        "http://localhost:5000/api/reports/waste-report",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            reportType: "Uncollected Garbage",
-            location: formData.location,
-            description: `Missed Date: ${formData.missedDate}. ${formData.description}`,
-          }),
+      const response = await fetch(`${API_URL}/api/reports/waste-report`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify({
+          reportType: "Uncollected Garbage",
+          location: formData.location,
+          description: `Missed Date: ${formData.missedDate}. ${formData.description}`,
+        }),
+      });
 
       if (response.ok) {
         setSubmitted(true);
