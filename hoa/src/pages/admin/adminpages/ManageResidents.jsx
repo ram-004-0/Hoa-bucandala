@@ -32,7 +32,7 @@ const ManageResidents = () => {
     if (!token) return;
     try {
       // Changed endpoint to /users to get the joined data from the controller above
-      const res = await fetch(`${API_URL}/users`, {
+      const res = await fetch(`${API_URL}/guards`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
