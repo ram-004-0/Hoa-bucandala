@@ -7,7 +7,7 @@ import {
   UserGroupIcon,
   CalendarDaysIcon,
   ExclamationCircleIcon,
-  Inbox,
+  InboxIcon,
 } from "@heroicons/react/24/outline";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
@@ -47,7 +47,7 @@ const Notifications = () => {
       case "Report":
         return <ExclamationCircleIcon className={`${style} text-orange-500`} />;
       default:
-        return <Inbox className={`${style} text-gray-500`} />;
+        return <InboxIcon className={`${style} text-gray-500`} />;
     }
   };
 
@@ -114,7 +114,7 @@ const Notifications = () => {
             </div>
           ) : (
             <div className="p-24 text-center">
-              <Inbox className="h-16 w-16 mx-auto mb-4 text-gray-200" />
+              <InboxIcon className="h-16 w-16 mx-auto mb-4 text-gray-200" />
               <p className="font-black text-gray-400 uppercase tracking-widest text-sm">
                 Inbox is empty
               </p>
