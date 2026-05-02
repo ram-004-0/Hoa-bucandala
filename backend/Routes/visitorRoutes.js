@@ -59,10 +59,6 @@ router.patch(
   updateVisitorStatus,
 );
 
-router.get(
-  "/:id",
-  authenticate,
-  getVisitorById, // You need to create this controller function
-);
+router.get("/:id", authenticate, getVisitorById);
 
 export default router;

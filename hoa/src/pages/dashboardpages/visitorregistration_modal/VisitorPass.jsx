@@ -16,33 +16,53 @@ const VisitorPass = ({ visitorId, onBack, onDone }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Ref used to access the canvas element for downloading
-  const qrRef = useRef(null);
-
-  const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
+  // Note: Check if there is an extra 'v' in your Railway URL.
+  // It should likely match your Vercel URL 'hoa-camella-bucandala'
+  const API_URL = "https://hoa-camellabucandala-production.up.railway.app/api";
 
   useEffect(() => {
+    // Debugging: See if the component is receiving the ID
+    console.log("VisitorPass received ID:", visitorId);
+
+    if (!visitorId) {
+      setError("No Visitor ID provided to generate pass.");
+      setLoading(false);
+      return;
+    }
+
     const fetchVisitorData = async () => {
       try {
         setLoading(true);
+        const token = localStorage.getItem("token");
+
+        if (!token)
+          throw new Error(
+            "No authentication token found. Please log in again.",
+          );
+
         const response = await fetch(`${API_URL}/visitors/${visitorId}`, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${token}`,
           },
         });
 
-        if (!response.ok) throw new Error("Failed to fetch visitor data");
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to fetch visitor data");
+        }
 
         const data = await response.json();
+        console.log("Visitor data fetched:", data);
         setVisitor(data);
       } catch (err) {
+        console.error("Fetch Error:", err);
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
 
-    if (visitorId) fetchVisitorData();
+    fetchVisitorData();
   }, [visitorId]);
 
   // QR Structure: "ID|NAME|ADDRESS"
@@ -59,15 +79,12 @@ const VisitorPass = ({ visitorId, onBack, onDone }) => {
         })
       : "---";
 
-  // --- Function to Download QR Code ---
   const downloadQRCode = () => {
     const canvas = document.getElementById("visitor-qr");
     if (!canvas) return;
-
     const pngUrl = canvas
       .toDataURL("image/png")
       .replace("image/png", "image/octet-stream");
-
     let downloadLink = document.createElement("a");
     downloadLink.href = pngUrl;
     downloadLink.download = `Pass_${visitor?.visitor_name || "Visitor"}.png`;
@@ -80,8 +97,12 @@ const VisitorPass = ({ visitorId, onBack, onDone }) => {
     return (
       <div className="w-96 bg-white p-12 rounded-2xl shadow-2xl flex flex-col items-center justify-center gap-4">
         <RefreshCw className="animate-spin text-[#00704e]" size={40} />
-        <p className="font-bold text-gray-400 animate-pulse">
+        <p className="font-bold text-gray-400 animate-pulse text-center">
           GENERATING PASS...
+          <br />
+          <span className="text-[10px] font-normal">
+            Fetching ID: {visitorId}
+          </span>
         </p>
       </div>
     );
@@ -102,7 +123,6 @@ const VisitorPass = ({ visitorId, onBack, onDone }) => {
 
   return (
     <div className="w-96 bg-white p-6 rounded-2xl shadow-2xl flex flex-col gap-6 items-center animate-in zoom-in duration-300">
-      {/* QR Section */}
       <div className="relative p-6 w-full bg-white rounded-2xl border border-gray-100 shadow-inner flex flex-col items-center gap-3 group">
         <QRCodeCanvas
           id="visitor-qr"
@@ -111,8 +131,6 @@ const VisitorPass = ({ visitorId, onBack, onDone }) => {
           level="H"
           includeMargin={true}
         />
-
-        {/* Hover Download Overlay */}
         <button
           onClick={downloadQRCode}
           className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white rounded-2xl gap-2"
@@ -120,7 +138,6 @@ const VisitorPass = ({ visitorId, onBack, onDone }) => {
           <Download size={32} />
           <span className="font-bold text-xs uppercase">Save to Gallery</span>
         </button>
-
         <div className="text-center">
           <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">
             Gate Pass
@@ -131,7 +148,6 @@ const VisitorPass = ({ visitorId, onBack, onDone }) => {
         </div>
       </div>
 
-      {/* Info Details */}
       <div className="w-full space-y-4 bg-gray-50/50 p-4 rounded-xl">
         <InfoRow icon={User} label="Visitor" value={visitor?.visitor_name} />
         <InfoRow
@@ -149,26 +165,23 @@ const VisitorPass = ({ visitorId, onBack, onDone }) => {
         </div>
       </div>
 
-      {/* Actions */}
       <div className="flex flex-col gap-3 w-full">
         <button
           onClick={downloadQRCode}
-          className="w-full py-4 bg-[#00704e] text-white font-bold rounded-xl shadow-lg active:scale-95 flex items-center justify-center gap-2 hover:bg-[#005a3e] transition-colors"
+          className="w-full py-4 bg-[#00704e] text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-[#005a3e]"
         >
-          <Download size={20} />
-          Download Pass
+          <Download size={20} /> Download Pass
         </button>
-
         <div className="flex gap-3 w-full">
           <button
             onClick={onBack}
-            className="flex-1 py-3 border border-gray-200 text-gray-500 font-bold rounded-xl active:scale-95 flex items-center justify-center gap-2"
+            className="flex-1 py-3 border border-gray-200 text-gray-500 font-bold rounded-xl"
           >
-            <ArrowLeft size={18} /> Back
+            Back
           </button>
           <button
             onClick={onDone}
-            className="flex-1 py-3 bg-gray-100 text-gray-800 font-bold rounded-xl active:scale-95"
+            className="flex-1 py-3 bg-gray-100 text-gray-800 font-bold rounded-xl"
           >
             Done
           </button>

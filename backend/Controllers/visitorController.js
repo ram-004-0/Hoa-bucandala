@@ -138,18 +138,22 @@ export const updateVisitorStatus = async (req, res) => {
 export const getVisitorById = async (req, res) => {
   const { id } = req.params;
   try {
+    // If ID contains the pipe from a QR scan, clean it up
+    const cleanId = id.includes("|") ? id.split("|")[0] : id;
+
     const [rows] = await db.query(
       "SELECT * FROM visitors WHERE visitor_id = ?",
-      [id],
+      [cleanId],
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ message: "Visitor not found" });
+      return res.status(404).json({ message: "Visitor record not found." });
     }
 
-    // CRITICAL: You must send the response back!
+    // This line is what sends data back to the frontend
     res.json(rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Error in getVisitorById:", err);
+    res.status(500).json({ error: "Server error fetching visitor data." });
   }
 };
