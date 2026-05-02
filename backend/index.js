@@ -50,11 +50,10 @@ app.use("/api/waste", wasteRoutes);
 app.use("/api/guard-requests", guardRequestRoutes);
 app.use("/api/guards", guardRoutes);
 app.use("/api/notifications", notificationRoutes);
-
+app.use("/api/reports", reportsRoutes);
 // Grouped routes that might use /api as a base inside the file
 app.use("/api", authRoutes);
 app.use("/api", reservationRoutes);
-app.use("/api", reportsRoutes);
 
 // Health Check
 app.get("/", (req, res) => {
