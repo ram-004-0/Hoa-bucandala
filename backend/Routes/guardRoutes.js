@@ -1,5 +1,5 @@
 import express from "express";
-import { createGuard } from "../Controllers/User.js";
+import { createGuard } from "../Controllers/user.js";
 import { authenticate } from "../middlewares/authMiddleware.js";
 import { authorizeRoles } from "../middlewares/roles.js";
 
