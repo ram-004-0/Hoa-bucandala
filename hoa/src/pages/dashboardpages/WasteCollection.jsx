@@ -3,11 +3,18 @@ import { Link } from "react-router-dom";
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
-  ClockIcon, // Added for the history icon
+  ClockIcon,
+  BellIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/solid";
-import { Leaf, Trash, Recycle, History } from "lucide-react";
+import { Trash2, AlertCircle, History, clipboardList } from "lucide-react";
 
 const WasteCollection = () => {
+  // Logic could be added here to determine if today/tomorrow is collection day
+  // For now, these are UI indicators
+  const isCollectionTomorrow = true;
+  const isCollectionToday = false;
+
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
       {/* Header */}
@@ -16,120 +23,122 @@ const WasteCollection = () => {
           <ArrowLeftIcon className="h-10 w-10 ml-5 md:ml-10 cursor-pointer text-white hover:opacity-80" />
         </Link>
         <div>
-          <h1 className="font-bold text-4xl">Waste Collection</h1>
-          <p className="opacity-90">Schedule and track your pickups</p>
+          <h1 className="font-bold text-4xl">Waste Management</h1>
+          <p className="opacity-90">Monitor collection and report issues</p>
         </div>
       </div>
 
-      <div className="m-10 flex flex-col gap-6 content-center justify-center max-w-4xl mx-auto">
-        {/* --- BOOKING CARDS --- */}
+      <div className="m-10 flex flex-col gap-6 max-w-4xl mx-auto">
+        {/* --- GARBAGE COLLECTION NOTIFICATIONS --- */}
+        <section className="space-y-3">
+          <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider ml-1">
+            Notifications
+          </h2>
 
-        <Link to="/wastecollection/bookbiodegradable" className="group">
-          <div className="pl-10 shadow-md rounded-lg p-6 grid grid-cols-[15%_70%_15%] bg-white hover:bg-green-50 transition-all border border-transparent hover:border-green-200">
-            <Leaf
-              color="green"
-              className="bg-green-200 rounded p-1 w-11 h-11"
-            />
-            <div>
-              <h1 className="font-bold text-gray-800">Biodegradable</h1>
-              <p className="text-sm text-gray-500">Food Waste, Paper, Plants</p>
+          {isCollectionTomorrow && (
+            <div className="flex items-center gap-4 bg-blue-50 border border-blue-200 p-5 rounded-2xl shadow-sm">
+              <div className="bg-blue-500 p-2 rounded-full">
+                <BellIcon className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-blue-900">Collection Tomorrow</h3>
+                <p className="text-sm text-blue-700">
+                  Please prepare your bins tonight for tomorrow's pickup.
+                </p>
+              </div>
             </div>
-            <ArrowRightIcon className="h-6 w-6 ml-auto text-gray-400 group-hover:text-green-600 transition-colors" />
-          </div>
-        </Link>
+          )}
 
-        <Link to="/wastecollection/booknonbiodegradable" className="group">
-          <div className="pl-10 shadow-md rounded-lg p-6 grid grid-cols-[15%_70%_15%] bg-white hover:bg-red-50 transition-all border border-transparent hover:border-red-200">
-            <Trash color="red" className="bg-red-100 rounded p-1 w-11 h-11" />
-            <div>
-              <h1 className="font-bold text-gray-800">Non-Biodegradable</h1>
-              <p className="text-sm text-gray-500">
-                Plastic, Styrofoam, and Rubber
-              </p>
+          {isCollectionToday && (
+            <div className="flex items-center gap-4 bg-amber-50 border border-amber-200 p-5 rounded-2xl shadow-sm animate-pulse">
+              <div className="bg-amber-500 p-2 rounded-full">
+                <Trash2 className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-amber-900">
+                  Today is Collection Day
+                </h3>
+                <p className="text-sm text-amber-700">
+                  Trucks are currently operating in the community.
+                </p>
+              </div>
             </div>
-            <ArrowRightIcon className="h-6 w-6 ml-auto text-gray-400 group-hover:text-red-600 transition-colors" />
-          </div>
-        </Link>
+          )}
+        </section>
 
-        <Link to="/wastecollection/bookrecyclable" className="group">
-          <div className="pl-10 shadow-md rounded-lg p-6 grid grid-cols-[15%_70%_15%] bg-white hover:bg-blue-50 transition-all border border-transparent hover:border-blue-200">
-            <Recycle
-              color="blue"
-              className="bg-blue-100 rounded p-1 w-11 h-11"
-            />
-            <div>
-              <h1 className="font-bold text-gray-800">Recyclable</h1>
-              <p className="text-sm text-gray-500">Glass, Metal, Cardboard</p>
-            </div>
-            <ArrowRightIcon className="h-6 w-6 ml-auto text-gray-400 group-hover:text-blue-600 transition-colors" />
-          </div>
-        </Link>
+        {/* --- WASTE MONITORING & REPORTING --- */}
+        <section className="space-y-3 mt-4">
+          <h2 className="text-sm font-bold text-gray-400 uppercase tracking-wider ml-1">
+            Waste Monitoring / Reporting
+          </h2>
 
-        {/* --- NEW RESIDENT DASHBOARD / HISTORY CARD --- */}
+          <div className="grid grid-cols-1 gap-4">
+            {/* Report: Uncollected Garbage */}
+            <Link to="/wastecollection/report-uncollected" className="group">
+              <div className="shadow-md rounded-2xl p-6 grid grid-cols-[12%_76%_12%] bg-white hover:bg-red-50 transition-all border border-transparent hover:border-red-200 items-center">
+                <AlertCircle className="text-red-500 bg-red-100 rounded-xl p-2 w-12 h-12" />
+                <div className="pl-4">
+                  <h1 className="font-bold text-gray-800 text-lg">
+                    Uncollected Garbage
+                  </h1>
+                  <p className="text-sm text-gray-500">
+                    Report if your trash was skipped during schedule
+                  </p>
+                </div>
+                <ArrowRightIcon className="h-6 w-6 ml-auto text-gray-300 group-hover:text-red-600" />
+              </div>
+            </Link>
+
+            {/* Report: Overflowing Bins */}
+            <Link to="/wastecollection/report-overflow" className="group">
+              <div className="shadow-md rounded-2xl p-6 grid grid-cols-[12%_76%_12%] bg-white hover:bg-orange-50 transition-all border border-transparent hover:border-orange-200 items-center">
+                <ExclamationTriangleIcon className="text-orange-500 bg-orange-100 rounded-xl p-2 w-12 h-12" />
+                <div className="pl-4">
+                  <h1 className="font-bold text-gray-800 text-lg">
+                    Overflowing Bins
+                  </h1>
+                  <p className="text-sm text-gray-500">
+                    Flag community bins that need immediate attention
+                  </p>
+                </div>
+                <ArrowRightIcon className="h-6 w-6 ml-auto text-gray-300 group-hover:text-orange-600" />
+              </div>
+            </Link>
+          </div>
+        </section>
+
+        {/* --- HISTORY / DASHBOARD --- */}
         <Link to="/wastecollection/my-history" className="group mt-4">
-          <div className="pl-10 shadow-lg rounded-lg p-6 grid grid-cols-[15%_70%_15%] bg-[#00704e] text-white hover:bg-[#005a3e] transition-all">
-            <History className="bg-white/20 rounded p-1 w-11 h-11" />
-            <div>
-              <h1 className="font-bold">My Pickup Dashboard</h1>
+          <div className="shadow-lg rounded-2xl p-6 grid grid-cols-[12%_76%_12%] bg-[#00704e] text-white hover:bg-[#005a3e] transition-all items-center">
+            <History className="bg-white/20 rounded-xl p-2 w-12 h-12" />
+            <div className="pl-4">
+              <h1 className="font-bold text-lg">My Reporting Dashboard</h1>
               <p className="text-sm opacity-80">
-                View history and collection status
+                Track status of your reports and collection history
               </p>
             </div>
             <ArrowRightIcon className="h-6 w-6 ml-auto text-white" />
           </div>
         </Link>
 
-        {/* --- INFO SECTION --- */}
-
-        <div className="bg-white shadow-md rounded-lg p-6 space-y-4 border border-gray-100">
+        {/* --- SCHEDULE INFO --- */}
+        <div className="bg-white shadow-sm rounded-2xl p-6 space-y-4 border border-gray-100">
           <h1 className="font-bold text-gray-800 flex items-center gap-2">
             <ClockIcon className="h-5 w-5 text-[#00704e]" />
-            Weekly Collection Schedule
+            Standard Schedule Reference
           </h1>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex items-center gap-3">
-              <Leaf
-                color="green"
-                className="bg-green-100 rounded p-1 w-8 h-8"
-              />
-              <div>
-                <p className="text-xs font-bold uppercase text-gray-400">Bio</p>
-                <p className="text-sm font-medium">Mon, Wed, Fri</p>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+              <span className="font-semibold text-gray-600">Biodegradable</span>
+              <span className="text-[#00704e] font-bold">Mon, Wed, Fri</span>
             </div>
-
-            <div className="flex items-center gap-3">
-              <Trash color="red" className="bg-red-50 rounded p-1 w-8 h-8" />
-              <div>
-                <p className="text-xs font-bold uppercase text-gray-400">
-                  Non-Bio
-                </p>
-                <p className="text-sm font-medium">Tuesday and Thursday</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Recycle
-                color="blue"
-                className="bg-blue-50 rounded p-1 w-8 h-8"
-              />
-              <div>
-                <p className="text-xs font-bold uppercase text-gray-400">
-                  Recyclable
-                </p>
-                <p className="text-sm font-medium">Tue- Thu</p>
-              </div>
+            <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+              <span className="font-semibold text-gray-600">
+                Non-Bio / Recyclable
+              </span>
+              <span className="text-blue-600 font-bold">Tue, Thu, Sat</span>
             </div>
           </div>
-        </div>
-
-        <div className="bg-amber-50 border border-amber-200 shadow-sm rounded-lg p-6">
-          <p className="text-amber-800 text-sm italic">
-            <strong>Note:</strong> Special pickups can be scheduled for large
-            items (furniture, appliances). Please contact the HOA office for
-            manual arrangements.
-          </p>
         </div>
       </div>
     </div>
