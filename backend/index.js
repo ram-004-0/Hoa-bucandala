@@ -12,7 +12,7 @@ import visitorRoutes from "./Routes/visitorRoutes.js";
 import paymentsRoutes from "./Routes/payments.js";
 import guardRequestRoutes from "./Routes/guardRequestRoutes.js";
 import guardRoutes from "./Routes/guardRoutes.js";
-const notificationRoutes = require("./routes/notificationRoutes");
+const notificationRoutes = require("./Routes/notificationRoutes");
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
