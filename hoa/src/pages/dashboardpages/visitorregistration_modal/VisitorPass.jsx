@@ -16,28 +16,26 @@ const VisitorPass = ({ visitorId, onBack, onDone }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Note: Check if there is an extra 'v' in your Railway URL.
-  // It should likely match your Vercel URL 'hoa-camella-bucandala'
+  // Ensure this URL is 100% correct. Check for the "v" at the end of "bucandala"
   const API_URL = "https://hoa-camellabucandala-production.up.railway.app/api";
 
   useEffect(() => {
-    // Debugging: See if the component is receiving the ID
-    console.log("VisitorPass received ID:", visitorId);
-
+    // 1. If ID is missing, don't throw an error immediately.
+    // It might be arriving from a state update in the parent.
     if (!visitorId) {
-      setError("No Visitor ID provided to generate pass.");
-      setLoading(false);
+      console.warn("VisitorPass: Waiting for visitorId...");
       return;
     }
 
     const fetchVisitorData = async () => {
       try {
         setLoading(true);
+        setError(null);
         const token = localStorage.getItem("token");
 
         if (!token)
           throw new Error(
-            "No authentication token found. Please log in again.",
+            "Authentication session expired. Please log in again.",
           );
 
         const response = await fetch(`${API_URL}/visitors/${visitorId}`, {
@@ -47,15 +45,16 @@ const VisitorPass = ({ visitorId, onBack, onDone }) => {
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to fetch visitor data");
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.message || `Server error: ${response.status}`,
+          );
         }
 
         const data = await response.json();
-        console.log("Visitor data fetched:", data);
         setVisitor(data);
       } catch (err) {
-        console.error("Fetch Error:", err);
+        console.error("Pass Generation Error:", err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -63,7 +62,7 @@ const VisitorPass = ({ visitorId, onBack, onDone }) => {
     };
 
     fetchVisitorData();
-  }, [visitorId]);
+  }, [visitorId]); // Runs whenever visitorId changes
 
   // QR Structure: "ID|NAME|ADDRESS"
   const qrValue = visitor?.visitor_id
@@ -93,15 +92,25 @@ const VisitorPass = ({ visitorId, onBack, onDone }) => {
     document.body.removeChild(downloadLink);
   };
 
+  // If no ID and no error yet, show a soft loading state instead of a hard error
+  if (!visitorId && !error) {
+    return (
+      <div className="w-96 bg-white p-12 rounded-2xl shadow-2xl flex flex-col items-center justify-center gap-4">
+        <RefreshCw className="animate-spin text-[#00704e]" size={40} />
+        <p className="font-bold text-gray-400">PREPARING PASS...</p>
+      </div>
+    );
+  }
+
   if (loading)
     return (
       <div className="w-96 bg-white p-12 rounded-2xl shadow-2xl flex flex-col items-center justify-center gap-4">
         <RefreshCw className="animate-spin text-[#00704e]" size={40} />
         <p className="font-bold text-gray-400 animate-pulse text-center">
-          GENERATING PASS...
+          FETCHING VISITOR DATA...
           <br />
-          <span className="text-[10px] font-normal">
-            Fetching ID: {visitorId}
+          <span className="text-[10px] font-normal uppercase tracking-widest">
+            ID: {visitorId}
           </span>
         </p>
       </div>
@@ -109,12 +118,14 @@ const VisitorPass = ({ visitorId, onBack, onDone }) => {
 
   if (error)
     return (
-      <div className="w-96 bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center gap-4">
+      <div className="w-96 bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center gap-4 animate-in fade-in zoom-in duration-200">
         <AlertCircle className="text-red-500" size={48} />
-        <p className="text-red-600 font-bold text-center">{error}</p>
+        <p className="text-red-600 font-bold text-center leading-tight">
+          {error}
+        </p>
         <button
           onClick={onBack}
-          className="w-full py-3 bg-gray-100 rounded-xl font-bold"
+          className="w-full py-3 bg-gray-100 rounded-xl font-bold hover:bg-gray-200 transition-colors"
         >
           Try Again
         </button>
@@ -168,20 +179,20 @@ const VisitorPass = ({ visitorId, onBack, onDone }) => {
       <div className="flex flex-col gap-3 w-full">
         <button
           onClick={downloadQRCode}
-          className="w-full py-4 bg-[#00704e] text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-[#005a3e]"
+          className="w-full py-4 bg-[#00704e] text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-[#005a3e] active:scale-95 transition-all"
         >
           <Download size={20} /> Download Pass
         </button>
         <div className="flex gap-3 w-full">
           <button
             onClick={onBack}
-            className="flex-1 py-3 border border-gray-200 text-gray-500 font-bold rounded-xl"
+            className="flex-1 py-3 border border-gray-200 text-gray-500 font-bold rounded-xl active:scale-95 transition-all"
           >
             Back
           </button>
           <button
             onClick={onDone}
-            className="flex-1 py-3 bg-gray-100 text-gray-800 font-bold rounded-xl"
+            className="flex-1 py-3 bg-gray-100 text-gray-800 font-bold rounded-xl active:scale-95 transition-all"
           >
             Done
           </button>
