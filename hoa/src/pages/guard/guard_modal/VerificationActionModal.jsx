@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { Html5Qrcode } from "html5-qrcode";
 import {
   Search,
   X,
@@ -17,50 +17,75 @@ const VerificationActionModal = ({ onClose }) => {
   const [visitor, setVisitor] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const scannerRef = useRef(null);
 
-  // Corrected URL (removed the extra 'v')
   const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
   useEffect(() => {
-    let scanner = null;
+    // If we switch to scan mode, start the camera
     if (activeMode === "scan") {
-      scanner = new Html5QrcodeScanner("reader", {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-      });
+      const startScanner = async () => {
+        try {
+          // Create instance
+          const html5QrCode = new Html5Qrcode("reader");
+          scannerRef.current = html5QrCode;
 
-      scanner.render(
-        (text) => {
-          console.log("QR Scanned:", text);
-          if (text.includes("|")) {
-            // Logic for the ID|NAME|ADDRESS format
-            const [id, name, addr] = text.split("|");
-            setVisitor({
-              visitor_id: id,
-              visitor_name: name,
-              address_to_visit: addr,
-              status: "PENDING",
-            });
-            setActiveMode("manual"); // Switch back to show the result
-          } else {
-            // Fallback for raw ID scans
-            handleSearch(text);
-          }
-          scanner.clear();
-        },
-        (err) => {
-          // Silent catch for scanning frame errors
-        },
-      );
+          const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+          // Start scanning with back camera
+          await html5QrCode.start(
+            { facingMode: "environment" },
+            config,
+            (text) => {
+              console.log("QR Scanned:", text);
+              handleScanSuccess(text);
+            },
+          );
+        } catch (err) {
+          console.error("Camera Start Error:", err);
+          setError(
+            "Could not access camera. Please ensure permissions are granted.",
+          );
+          setActiveMode("manual");
+        }
+      };
+
+      // Small delay to ensure the 'reader' div is rendered in the DOM
+      const timer = setTimeout(startScanner, 300);
+      return () => clearTimeout(timer);
+    } else {
+      // If we leave scan mode, stop the camera
+      stopScanner();
     }
-    return () => {
-      if (scanner) {
-        scanner
-          .clear()
-          .catch((error) => console.error("Scanner cleanup failed", error));
-      }
-    };
+
+    return () => stopScanner();
   }, [activeMode]);
+
+  const stopScanner = async () => {
+    if (scannerRef.current && scannerRef.current.isScanning) {
+      try {
+        await scannerRef.current.stop();
+        scannerRef.current.clear();
+      } catch (err) {
+        console.error("Scanner stop error", err);
+      }
+    }
+  };
+
+  const handleScanSuccess = async (text) => {
+    if (text.includes("|")) {
+      const [id, name, addr] = text.split("|");
+      setVisitor({
+        visitor_id: id,
+        visitor_name: name,
+        address_to_visit: addr,
+        status: "PENDING",
+      });
+      setActiveMode("manual"); // Close scanner and show card
+    } else {
+      handleSearch(text);
+    }
+  };
 
   const handleSearch = async (queryOverride) => {
     const query = queryOverride || searchQuery;
@@ -72,8 +97,6 @@ const VerificationActionModal = ({ onClose }) => {
 
     try {
       const token = localStorage.getItem("token");
-
-      // OPTIMIZATION: If the query is a number, fetch by ID directly
       if (!isNaN(query)) {
         const res = await fetch(`${API_URL}/visitors/${query}`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -86,7 +109,6 @@ const VerificationActionModal = ({ onClose }) => {
           setError("Visitor ID not found");
         }
       } else {
-        // Fallback: Search by name by fetching all (or use a search endpoint if you have one)
         const res = await fetch(`${API_URL}/visitors/all`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -104,9 +126,7 @@ const VerificationActionModal = ({ onClose }) => {
   };
 
   const markArrived = async () => {
-    // Use || to handle different naming conventions from your API/Scanner
     const id = visitor?.visitor_id || visitor?.id;
-
     if (!id) {
       alert("Error: No Visitor ID found to authorize.");
       return;
@@ -154,11 +174,7 @@ const VerificationActionModal = ({ onClose }) => {
           {/* Mode Switcher */}
           <div className="flex bg-gray-100 p-1.5 rounded-2xl">
             <button
-              onClick={() => {
-                setActiveMode("manual");
-                setVisitor(null);
-                setError("");
-              }}
+              onClick={() => setActiveMode("manual")}
               className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
                 activeMode === "manual"
                   ? "bg-white text-[#00704e] shadow-sm"
@@ -168,11 +184,7 @@ const VerificationActionModal = ({ onClose }) => {
               <Search size={18} /> Manual
             </button>
             <button
-              onClick={() => {
-                setActiveMode("scan");
-                setVisitor(null);
-                setError("");
-              }}
+              onClick={() => setActiveMode("scan")}
               className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
                 activeMode === "scan"
                   ? "bg-white text-[#00704e] shadow-sm"
@@ -190,7 +202,7 @@ const VerificationActionModal = ({ onClose }) => {
                 <input
                   type="text"
                   placeholder="Enter ID or Visitor Name..."
-                  className="flex-1 p-3.5 border-2 border-gray-100 rounded-2xl focus:border-[#00704e] outline-none transition-colors"
+                  className="flex-1 p-3.5 border-2 border-gray-100 rounded-2xl focus:border-[#00704e] outline-none"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && handleSearch()}
@@ -198,7 +210,7 @@ const VerificationActionModal = ({ onClose }) => {
                 <button
                   onClick={() => handleSearch()}
                   disabled={loading}
-                  className="bg-[#00704e] text-white px-6 rounded-2xl font-bold active:scale-95 transition-transform disabled:opacity-50"
+                  className="bg-[#00704e] text-white px-6 rounded-2xl font-bold active:scale-95 disabled:opacity-50"
                 >
                   {loading ? (
                     <RefreshCw className="animate-spin" size={20} />
@@ -214,10 +226,15 @@ const VerificationActionModal = ({ onClose }) => {
               )}
             </div>
           ) : (
-            <div
-              id="reader"
-              className="rounded-3xl overflow-hidden border-4 border-gray-100 shadow-inner bg-black aspect-square"
-            ></div>
+            <div className="relative">
+              <div
+                id="reader"
+                className="rounded-3xl overflow-hidden border-4 border-gray-100 shadow-inner bg-black aspect-square"
+              ></div>
+              <p className="text-center text-xs text-gray-400 mt-2">
+                Align QR code within the frame
+              </p>
+            </div>
           )}
 
           {/* Result Card */}
@@ -227,13 +244,13 @@ const VerificationActionModal = ({ onClose }) => {
                 <div className="bg-[#00704e] p-3 rounded-xl text-white shadow-lg">
                   <User size={28} />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 text-left">
                   <div className="flex justify-between items-start">
                     <h3 className="font-black text-lg text-gray-800">
                       {visitor.visitor_name}
                     </h3>
                     <span className="text-[10px] bg-[#00704e]/10 text-[#00704e] px-2 py-0.5 rounded-full font-bold">
-                      ID: {visitor.visitor_id}
+                      ID: {visitor.visitor_id || visitor.id}
                     </span>
                   </div>
                   <p className="text-sm text-gray-500 flex items-center gap-1">
