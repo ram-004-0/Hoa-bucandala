@@ -118,7 +118,14 @@ const BasketballCourt = () => {
 
       // Success: Navigate to the Success Screen and pass the reservation data
       navigate("/amenities/success", {
-        state: { data: data, amenityName: "Basketball Court" },
+        state: {
+          data: {
+            insertId: res.reservation_id,
+            reservation_date: res.reservation_date,
+            time_slot: res.time_slot,
+          },
+          amenityName: "Basketball Court",
+        },
       });
     } catch (err) {
       alert("Connection error. Please check your internet.");

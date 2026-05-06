@@ -91,7 +91,14 @@ const ClubHouse = () => {
       if (!res.ok) throw new Error(data.message || "Reservation failed");
 
       navigate("/amenities/success", {
-        state: { data: data, amenityName: "Club House" },
+        state: {
+          data: {
+            insertId: res.reservation_id,
+            reservation_date: res.reservation_date,
+            time_slot: res.time_slot,
+          },
+          amenityName: "Club House",
+        },
       });
     } catch (err) {
       alert(err.message);
