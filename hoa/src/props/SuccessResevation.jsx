@@ -11,20 +11,25 @@ import {
 const SuccessReservation = () => {
   const location = useLocation();
 
-  // Data passed from the navigation state
-  const reservationData = location.state?.data;
+  // Data passed from navigation state
+  const stateData = location.state?.data;
   const amenityName = location.state?.amenityName || "Amenity";
+  const displayDate = location.state?.displayDate;
+  const displaySlot = location.state?.displaySlot;
 
   // Redirect back if accessed directly without data
-  if (!reservationData) {
+  if (!stateData) {
     return <Navigate to="/amenities" replace />;
   }
 
-  // Determine the status dynamically
+  // Determine the status dynamically from the backend response
+  // We check for 'status' or 'reservation_status' depending on your API output
   const getStatusInfo = () => {
-    const status = reservationData.status || "Pending Approval";
+    const rawStatus =
+      stateData.status || stateData.reservation_status || "Pending Approval";
+    const status = rawStatus.toLowerCase();
 
-    if (status === "Confirmed" || status === "Approved") {
+    if (status === "confirmed" || status === "approved") {
       return {
         label: "Confirmed",
         containerClass: "bg-green-50",
@@ -33,19 +38,30 @@ const SuccessReservation = () => {
       };
     }
 
+    if (status === "pending" || status === "pending approval") {
+      return {
+        label: "Pending Approval",
+        containerClass: "bg-blue-50",
+        labelClass: "text-blue-700",
+        badgeClass: "bg-blue-200 text-blue-800",
+      };
+    }
+
+    // Default fallback
     return {
-      label: "Pending Approval",
-      containerClass: "bg-blue-50",
-      labelClass: "text-blue-700",
-      badgeClass: "bg-blue-200 text-blue-800",
+      label: rawStatus,
+      containerClass: "bg-gray-50",
+      labelClass: "text-gray-700",
+      badgeClass: "bg-gray-200 text-gray-800",
     };
   };
 
   const statusInfo = getStatusInfo();
 
-  // Format the date to be more readable
-  const formattedDate = reservationData.reservation_date
-    ? new Date(reservationData.reservation_date).toLocaleDateString("en-US", {
+  // Format the date
+  const dateToFormat = stateData.reservation_date || displayDate;
+  const formattedDate = dateToFormat
+    ? new Date(dateToFormat).toLocaleDateString("en-US", {
         month: "long",
         day: "numeric",
         year: "numeric",
@@ -61,10 +77,10 @@ const SuccessReservation = () => {
             <CheckCircleIcon className="h-12 w-12 text-[#00704e]" />
           </div>
           <h1 className="text-3xl font-black text-gray-800">
-            Booking Confirmed!
+            Booking Received!
           </h1>
           <p className="text-gray-500 mt-2">
-            Your slot has been successfully reserved.
+            Your reservation has been recorded successfully.
           </p>
         </div>
 
@@ -87,10 +103,7 @@ const SuccessReservation = () => {
                 </span>
               </div>
               <span className="font-mono font-bold text-gray-800">
-                #
-                {reservationData.insertId ||
-                  reservationData.reservation_id ||
-                  "7721"}
+                #{stateData.reservation_id || stateData.insertId || "N/A"}
               </span>
             </div>
 
@@ -111,7 +124,7 @@ const SuccessReservation = () => {
                   </span>
                 </div>
                 <p className="font-bold text-gray-700">
-                  {reservationData.time_slot || "Not Specified"}
+                  {displaySlot || stateData.time_slot || "Not Specified"}
                 </p>
               </div>
             </div>
@@ -123,7 +136,7 @@ const SuccessReservation = () => {
               <span
                 className={`${statusInfo.labelClass} text-xs font-bold uppercase`}
               >
-                Status
+                Current Status
               </span>
               <span
                 className={`${statusInfo.badgeClass} text-[10px] px-3 py-1 rounded-full font-black uppercase`}
@@ -161,8 +174,7 @@ const SuccessReservation = () => {
         </div>
       </div>
 
-      {/* Print-specific Styles */}
-      <style padding="none">{`
+      <style>{`
         @media print {
           .no-print { display: none !important; }
           body { background-color: white !important; }
