@@ -252,7 +252,7 @@ const App = () => {
           }
         />
         <Route
-          path="amenities/success-reservation"
+          path="amenities/success"
           element={
             <ProtectedRoute roles={["RESIDENT"]}>
               <SuccessReservation />
