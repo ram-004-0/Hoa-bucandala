@@ -113,6 +113,10 @@ const ClubHouse = () => {
           </p>
         </div>
       </div>
+      <br />
+      <br />
+      <br />
+      <br />
 
       <div className="max-w-4xl mx-auto -mt-10 px-4 space-y-6">
         <div className="bg-white shadow-xl rounded-[2rem] p-8 border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6">

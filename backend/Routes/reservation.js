@@ -4,6 +4,7 @@ import {
   createReservation,
   deleteReservation,
   getAvailability,
+  getMyReservations,
 } from "../Controllers/reservationController.js";
 import { authenticate } from "../middlewares/authMiddleware.js";
 import { authorizeRoles } from "../middlewares/roles.js";
@@ -31,7 +32,7 @@ router.post(
   authorizeRoles("RESIDENT"),
   createReservation,
 );
-
+router.get(authenticate, authorizeRoles("RESIDENT"), getMyReservations);
 /**
  * ADMIN
  * - Get all reservations

@@ -2,8 +2,8 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import AmenityCard from "../../props/AmenityCard";
-import icon from "../../../src/assets/homeIcons.png";
-import { Building, Waves, DumbbellIcon } from "lucide-react";
+import { Building, Waves, DumbbellIcon, CalendarClock } from "lucide-react";
+
 const AmenityReservation = () => {
   return (
     <div className="">
@@ -16,7 +16,22 @@ const AmenityReservation = () => {
           <p>Book Community Amenities</p>
         </div>
       </div>
+
       <div className="m-10 justify-center content-center flex flex-col gap-10 flex-wrap">
+        {/* NEW: Reservation History Card */}
+        <AmenityCard
+          image={
+            <CalendarClock className="w-12 h-12 text-blue-600 bg-blue-100 rounded-lg p-2"></CalendarClock>
+          }
+          name="My Reservations"
+          description="View and check the status of your current and past bookings."
+          route="/amenities/my-history"
+        />
+
+        <hr className="border-gray-200" />
+
+        <h2 className="text-xl font-bold text-gray-700">Available Amenities</h2>
+
         <AmenityCard
           image={
             <Building className="w-12 h-12 text-green-600 bg-green-100 rounded-lg p-2"></Building>
