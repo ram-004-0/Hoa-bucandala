@@ -54,7 +54,7 @@ const ManageReservation = () => {
     if (!window.confirm(`Mark this reservation as ${newStatus}?`)) return;
 
     try {
-      const res = await authFetch(`${API_URL}/reservations/${resId}/status`, {
+      const res = await authFetch(`${API_URL}/${resId}/status`, {
         method: "PATCH",
         body: JSON.stringify({
           status: newStatus,
@@ -83,7 +83,7 @@ const ManageReservation = () => {
     )
       return;
 
-    const res = await authFetch(`${API_URL}/reservations/${reservationId}`, {
+    const res = await authFetch(`${API_URL}/${reservationId}`, {
       method: "DELETE",
       // Include resident info so backend knows who to notify about the cancellation
       body: JSON.stringify({
