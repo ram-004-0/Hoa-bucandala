@@ -5,11 +5,12 @@ import {
   CalendarIcon,
   ClockIcon,
   ArrowLeftIcon,
+  InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 import { Link, useNavigate } from "react-router-dom";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
-const AMENITY_ID = 1; // Swimming Pool ID in DB
+const AMENITY_ID = 1;
 const TIME_SLOTS = [
   { label: "08:00 AM - 12:00 PM", value: "08:00-12:00" },
   { label: "12:00 PM - 04:00 PM", value: "12:00-16:00" },
@@ -24,9 +25,9 @@ const ClubHouse = () => {
     TIME_SLOTS.map((s) => ({ ...s, available: true })),
   );
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // Check JWT token expiry
   const checkTokenExpiry = () => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -38,173 +39,193 @@ const ClubHouse = () => {
       if (decoded.exp < Date.now() / 1000) {
         localStorage.removeItem("token");
         navigate("/login");
-        alert("Session expired. Please log in again.");
         return false;
       }
       return true;
     } catch {
-      localStorage.removeItem("token");
-      navigate("/login");
       return false;
     }
   };
 
-  // Fetch availability whenever date changes
   useEffect(() => {
-    if (!date) return;
-    if (!checkTokenExpiry()) return;
-
+    if (!date || !checkTokenExpiry()) return;
     const token = localStorage.getItem("token");
     setSelectedSlot(null);
+    setError("");
 
     fetch(`${API_URL}/amenities/${AMENITY_ID}/availability?date=${date}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((res) => res.json().then((data) => ({ status: res.status, data })))
-      .then(({ status, data }) => {
-        if (status === 401) {
-          localStorage.removeItem("token");
-          navigate("/login");
-          throw new Error("Unauthorized");
-        }
-
-        // Map availability
+      .then((res) => res.json())
+      .then((data) => {
         const updatedSlots = TIME_SLOTS.map((slot) => ({
           ...slot,
           available: data.availableSlots.includes(slot.value),
         }));
         setSlots(updatedSlots);
-
-        // Preselect first available slot
-        const firstAvailable = updatedSlots.find((s) => s.available) || null;
-        setSelectedSlot(firstAvailable);
+        setSelectedSlot(updatedSlots.find((s) => s.available) || null);
       })
-      .catch(() => setMessage("Failed to load availability."));
+      .catch(() => setError("Failed to load availability."));
   }, [date, navigate]);
 
-  // Handle reservation booking
   const handleBooking = async () => {
-    if (!date || !selectedSlot) {
-      alert("Select date & slot");
-      return;
-    }
-    if (!checkTokenExpiry()) return;
-
+    if (!date || !selectedSlot || !checkTokenExpiry()) return;
+    setLoading(true);
     const token = localStorage.getItem("token");
 
-    const res = await fetch(`${API_URL}/reservations`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        amenity_id: AMENITY_ID,
-        reservation_date: date,
-        time_slot: selectedSlot.value,
-      }),
-    });
+    try {
+      const res = await fetch(`${API_URL}/reservations`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          amenity_id: AMENITY_ID,
+          reservation_date: date,
+          time_slot: selectedSlot.value,
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Reservation failed");
 
-    if (!res.ok) {
-      alert(data.message || "Reservation failed");
-      return;
+      navigate("/success-reservation", {
+        state: { data: data, amenityName: "Club House" },
+      });
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
     }
-
-    setMessage("Reservation booked successfully!");
-    setDate("");
-    setSlots(TIME_SLOTS.map((s) => ({ ...s, available: true })));
-    setSelectedSlot(null);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-[#00704e] h-40 grid grid-cols-[10%_90%] p-10 text-white items-center">
-        <Link to="/amenities">
-          <ArrowLeftIcon className="h-10 w-10 ml-5 cursor-pointer" />
+    <div className="min-h-screen bg-gray-50 pb-20">
+      <div className="bg-[#00704e] h-48 flex items-center px-6 md:px-12 text-white">
+        <Link to="/amenities" className="hover:scale-110 transition-transform">
+          <ArrowLeftIcon className="h-10 w-10 mr-6 cursor-pointer" />
         </Link>
-        <h1 className="font-bold text-4xl">Club House Reservation</h1>
+        <div>
+          <h1 className="font-black text-3xl md:text-4xl">Club House</h1>
+          <p className="opacity-80 text-sm md:text-base mt-1">
+            Book your events and gatherings
+          </p>
+        </div>
       </div>
 
-      <div className="m-10 flex flex-col gap-10">
-        {/* Amenity Info */}
-        <div className="bg-white shadow-md rounded-lg p-6 space-y-2">
-          <h2 className="font-semibold">Amenity Information</h2>
-          <p>Rate: ₱500 / 2 hours</p>
-          <p>Capacity: 50 persons</p>
-          <p>Operating Hours: 8:00 AM – 12:00 AM</p>
+      <div className="max-w-4xl mx-auto -mt-10 px-4 space-y-6">
+        <div className="bg-white shadow-xl rounded-[2rem] p-8 border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-4">
+            <h2 className="font-black text-xl text-gray-800 flex items-center gap-2">
+              <InformationCircleIcon className="h-6 w-6 text-[#00704e]" />
+              Event Venue Info
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-gray-50 p-4 rounded-2xl">
+                <p className="text-[10px] font-bold text-gray-400 uppercase">
+                  Rate
+                </p>
+                <p className="font-bold text-gray-700">₱500 / 2 Hours</p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-2xl">
+                <p className="text-[10px] font-bold text-gray-400 uppercase">
+                  Capacity
+                </p>
+                <p className="font-bold text-gray-700">50 Persons Max</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-green-50 p-6 rounded-3xl border border-green-100 text-center">
+            <p className="text-xs font-bold text-[#00704e] uppercase mb-1">
+              Operating Hours
+            </p>
+            <p className="text-lg font-black text-[#00704e]">
+              8:00 AM – 12:00 AM
+            </p>
+          </div>
         </div>
 
-        {/* Reservation Form */}
-        <div className="bg-white shadow-md rounded-lg p-6 space-y-6">
-          <h2 className="font-semibold">Make a Reservation</h2>
+        <div className="bg-white shadow-xl rounded-[2rem] p-8 border border-gray-100 space-y-8">
+          <h2 className="font-black text-2xl text-gray-800">
+            Make a Reservation
+          </h2>
 
-          {/* Date Picker */}
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <CalendarIcon className="h-5 w-5 text-gray-500" />
-              <span>Select Date</span>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-gray-500 ml-1">
+              <CalendarIcon className="h-5 w-5" />
+              <span className="text-sm font-bold uppercase tracking-wider">
+                Step 1: Select Date
+              </span>
             </div>
             <input
               type="date"
+              min={new Date().toISOString().split("T")[0]}
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="p-2 border rounded-2xl w-full"
+              className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-[#00704e] outline-none transition-all font-bold text-gray-700"
             />
           </div>
 
-          {/* Time Slots */}
-          {slots.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <ClockIcon className="h-5 w-5 text-gray-500" />
-                <span>Select Time Slot</span>
+          {date && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
+              <div className="flex items-center gap-2 text-gray-500 ml-1">
+                <ClockIcon className="h-5 w-5" />
+                <span className="text-sm font-bold uppercase tracking-wider">
+                  Step 2: Choose your Slot
+                </span>
               </div>
-
               <RadioGroup
                 value={selectedSlot}
                 onChange={setSelectedSlot}
-                className="space-y-3"
+                className="grid grid-cols-1 sm:grid-cols-2 gap-4"
               >
                 {slots.map((slot) => (
                   <Radio
                     key={slot.value}
                     value={slot}
                     disabled={!slot.available}
-                    className={`group relative flex cursor-pointer rounded-lg px-5 py-4 shadow-md transition
-                      ${
-                        slot.available
-                          ? "bg-gray-200 data-checked:bg-[#00704e] data-checked:text-white"
-                          : "bg-gray-100 opacity-50 cursor-not-allowed"
-                      }`}
+                    className={({ checked }) => `
+                      relative flex cursor-pointer rounded-2xl p-5 border-2 transition-all
+                      ${!slot.available ? "bg-gray-100 opacity-40 cursor-not-allowed" : checked ? "bg-green-50 border-[#00704e] ring-2 ring-[#00704e]/20" : "bg-white border-gray-100"}
+                    `}
                   >
-                    <div className="flex w-full justify-between items-center">
-                      <p className="font-semibold">{slot.label}</p>
-                      {slot.available && (
-                        <CheckCircleIcon className="h-6 w-6 opacity-0 group-data-checked:opacity-100" />
-                      )}
-                    </div>
+                    {({ checked }) => (
+                      <div className="flex w-full justify-between items-center">
+                        <div className="text-sm">
+                          <p
+                            className={`font-black ${checked ? "text-[#00704e]" : "text-gray-700"}`}
+                          >
+                            {slot.label}
+                          </p>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">
+                            {slot.available ? "Available" : "Reserved"}
+                          </p>
+                        </div>
+                        {checked && (
+                          <CheckCircleIcon className="h-7 w-7 text-[#00704e]" />
+                        )}
+                      </div>
+                    )}
                   </Radio>
                 ))}
               </RadioGroup>
             </div>
           )}
 
-          {/* Book Button */}
-          <div className="flex justify-center">
-            <button
-              onClick={handleBooking}
-              className="bg-[#00704e] text-white px-10 py-2 rounded-2xl hover:opacity-90"
-            >
-              Book Now
-            </button>
-          </div>
-
-          {message && (
-            <p className="text-center text-green-600 font-medium">{message}</p>
-          )}
+          <button
+            onClick={handleBooking}
+            disabled={loading || !selectedSlot}
+            className={`w-full py-5 rounded-2xl font-black text-white shadow-lg transition-all flex justify-center items-center gap-3
+              ${loading || !selectedSlot ? "bg-gray-300" : "bg-[#00704e] hover:bg-[#005a3e]"}
+            `}
+          >
+            {loading ? (
+              <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              "CONFIRM RESERVATION"
+            )}
+          </button>
         </div>
       </div>
     </div>
