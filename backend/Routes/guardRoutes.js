@@ -4,6 +4,7 @@ import {
   fetchGuard,
   getUser,
   updateUser,
+  deleteGuard,
 } from "../Controllers/user.js";
 import { authenticate } from "../middlewares/authMiddleware.js";
 import { authorizeRoles } from "../middlewares/roles.js";
@@ -32,5 +33,6 @@ router.get("/:id", authenticate, authorizeRoles("ADMIN"), fetchGuard);
 
 // POST /api/guards/
 router.post("/", authenticate, authorizeRoles("ADMIN"), createGuard);
+router.delete("/:id", authenticate, authorizeRoles("ADMIN"), deleteGuard);
 
 export default router;

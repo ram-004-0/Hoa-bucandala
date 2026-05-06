@@ -58,22 +58,38 @@ const ManageResidents = () => {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (user) => {
+    // Confirm with the user's actual name for clarity
     if (
       !window.confirm(
-        "Are you sure? This deletes the login account and profile.",
+        `Are you sure you want to delete ${user.name}? This cannot be undone.`,
       )
-    )
+    ) {
       return;
+    }
+
     const token = localStorage.getItem("token");
+
+    // Decide endpoint based on role: 'RESIDENT' goes to /residents, 'GUARD' goes to /guards
+    const rolePath = user.role === "RESIDENT" ? "residents" : "guards";
+    const endpoint = `${API_URL}/${rolePath}/${user.id}`;
+
     try {
-      const res = await fetch(`${API_URL}/residents/${id}`, {
+      const res = await fetch(endpoint, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) setUsers((prev) => prev.filter((u) => u.id !== id));
+
+      if (res.ok) {
+        // Remove from local state
+        setUsers((prev) => prev.filter((u) => u.id !== user.id));
+      } else {
+        const errData = await res.json();
+        alert(`Error: ${errData.message}`);
+      }
     } catch (err) {
-      console.error("Delete failed:", err);
+      console.error("Delete request failed:", err);
+      alert("Network error. Could not reach the server.");
     }
   };
 
@@ -253,7 +269,7 @@ const ManageResidents = () => {
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(u.id)}
+                        onClick={() => handleDelete(u)}
                         className="text-red-400 hover:text-red-600"
                       >
                         <Trash2 className="h-4 w-4" />

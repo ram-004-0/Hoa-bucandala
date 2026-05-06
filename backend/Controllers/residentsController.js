@@ -105,19 +105,20 @@ export const updateResident = async (req, res) => {
 
 // 🗑️ Delete Resident
 export const deleteResident = async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.params; // This should be the account_id
   try {
-    const [resident] = await db.query(
-      "SELECT account_id FROM residents WHERE resident_id = ?",
-      [id],
-    );
-    if (resident.length === 0)
-      return res.status(404).json({ error: "Not found" });
-    await db.query("DELETE FROM accounts WHERE id = ?", [
-      resident[0].account_id,
-    ]);
-    res.json({ message: "Deleted" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    // We delete from accounts so the ON DELETE CASCADE removes the profile
+    const [result] = await db.query("DELETE FROM accounts WHERE id = ?", [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Resident account not found" });
+    }
+
+    res
+      .status(200)
+      .json({ message: "Resident and profile deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Database error" });
   }
 };
