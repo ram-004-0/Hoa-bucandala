@@ -3,7 +3,9 @@ import { Link } from "react-router-dom";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { Calendar, Clock, MapPin, Info } from "lucide-react";
 import axios from "axios";
+
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
+
 const AmenityHistory = () => {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,7 +14,6 @@ const AmenityHistory = () => {
     const fetchHistory = async () => {
       try {
         const token = localStorage.getItem("token");
-        // Update this URL to match your Railway backend endpoint
         const response = await axios.get(`${API_URL}/my-history`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -28,7 +29,8 @@ const AmenityHistory = () => {
   }, []);
 
   const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
+    // Providing a default 'pending' if status is null in DB
+    switch (status?.toLowerCase() || "pending") {
       case "approved":
         return "bg-green-100 text-green-700 border-green-200";
       case "pending":
@@ -75,7 +77,7 @@ const AmenityHistory = () => {
           <div className="grid gap-4">
             {reservations.map((res) => (
               <div
-                key={res._id}
+                key={res.reservation_id}
                 className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4"
               >
                 <div className="flex items-center gap-4">
@@ -84,15 +86,18 @@ const AmenityHistory = () => {
                   </div>
                   <div>
                     <h3 className="font-bold text-xl text-gray-800">
-                      {res.amenityName}
+                      {res.amenity_name || "Amenity"}
                     </h3>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 mt-1">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />{" "}
-                        {new Date(res.date).toLocaleDateString()}
+                        {res.reservation_date
+                          ? new Date(res.reservation_date).toLocaleDateString()
+                          : "N/A"}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" /> {res.timeSlot}
+                        <Clock className="w-4 h-4" />{" "}
+                        {res.time_slot || "No time set"}
                       </span>
                     </div>
                   </div>
@@ -102,12 +107,14 @@ const AmenityHistory = () => {
                   <span
                     className={`px-4 py-1 rounded-full text-xs font-bold border ${getStatusColor(res.status)}`}
                   >
-                    {res.status.toUpperCase()}
+                    {(res.status || "pending").toUpperCase()}
                   </span>
                   <div className="text-right">
                     <p className="text-xs text-gray-400">Reference ID</p>
                     <p className="text-sm font-mono font-bold text-gray-600">
-                      {res._id?.slice(-8).toUpperCase()}
+                      {res.reservation_id
+                        ? `#${res.reservation_id.toString().padStart(4, "0")}`
+                        : "N/A"}
                     </p>
                   </div>
                 </div>
