@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // Added useNavigate
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { Calendar, Clock, MapPin, Info } from "lucide-react";
 import axios from "axios";
@@ -9,13 +9,14 @@ const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 const AmenityHistory = () => {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate(); // Initialize the navigate hook
 
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("token"); //
         const response = await axios.get(`${API_URL}/my-history`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${token}` }, //
         });
         setReservations(response.data);
       } catch (error) {
@@ -28,8 +29,21 @@ const AmenityHistory = () => {
     fetchHistory();
   }, []);
 
+  // Function to handle the click and pass data to Success page
+  const handleRowClick = (res) => {
+    navigate("/success-reservation", {
+      state: {
+        data: {
+          insertId: res.reservation_id, // Map to the key Success page expects
+          reservation_date: res.reservation_date,
+          time_slot: res.time_slot,
+        },
+        amenityName: res.amenity_name,
+      },
+    });
+  };
+
   const getStatusColor = (status) => {
-    // Providing a default 'pending' if status is null in DB
     switch (status?.toLowerCase() || "pending") {
       case "approved":
         return "bg-green-100 text-green-700 border-green-200";
@@ -44,7 +58,6 @@ const AmenityHistory = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-[#00704e] h-40 gap-10 grid grid-cols-[10%_90%] p-10 text-white items-center">
         <Link to="/amenities">
           <ArrowLeftIcon className="h-10 w-10 ml-5 md:ml-10 cursor-pointer text-white" />
@@ -78,7 +91,8 @@ const AmenityHistory = () => {
             {reservations.map((res) => (
               <div
                 key={res.reservation_id}
-                className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4"
+                onClick={() => handleRowClick(res)} // Make the card clickable
+                className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer hover:border-[#00704e] hover:shadow-md transition-all active:scale-[0.98]"
               >
                 <div className="flex items-center gap-4">
                   <div className="bg-green-50 p-3 rounded-xl text-[#00704e]">

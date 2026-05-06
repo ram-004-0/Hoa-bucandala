@@ -5,20 +5,29 @@ import {
   CalendarIcon,
   ClockIcon,
   TicketIcon,
-  ArrowLeftIcon,
   HomeIcon,
 } from "@heroicons/react/24/outline";
 
 const SuccessReservation = () => {
   const location = useLocation();
-  // Get data passed from the navigation state
+
+  // Data passed from the navigation state
   const reservationData = location.state?.data;
-  const amenityName = location.state?.amenityName || "Basketball Court";
+  const amenityName = location.state?.amenityName || "Amenity";
 
   // Redirect back if accessed directly without data
   if (!reservationData) {
     return <Navigate to="/amenities" replace />;
   }
+
+  // Format the date to be more readable (e.g., "May 6, 2026")
+  const formattedDate = reservationData.reservation_date
+    ? new Date(reservationData.reservation_date).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "N/A";
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
@@ -46,7 +55,7 @@ const SuccessReservation = () => {
           </div>
 
           <div className="p-8 space-y-6">
-            {/* Reference Number */}
+            {/* Reference Number - Supports both 'id' and 'insertId' from MySQL */}
             <div className="flex justify-between items-center pb-4 border-b border-dashed border-gray-200">
               <div className="flex items-center gap-3">
                 <TicketIcon className="h-5 w-5 text-gray-400" />
@@ -55,7 +64,10 @@ const SuccessReservation = () => {
                 </span>
               </div>
               <span className="font-mono font-bold text-gray-800">
-                #{reservationData.id || "RES-7721"}
+                #
+                {reservationData.insertId ||
+                  reservationData.reservation_id ||
+                  "7721"}
               </span>
             </div>
 
@@ -66,9 +78,7 @@ const SuccessReservation = () => {
                   <CalendarIcon className="h-4 w-4" />
                   <span className="text-[10px] font-bold uppercase">Date</span>
                 </div>
-                <p className="font-bold text-gray-700">
-                  {reservationData.reservation_date}
-                </p>
+                <p className="font-bold text-gray-700">{formattedDate}</p>
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-gray-400">
@@ -78,7 +88,7 @@ const SuccessReservation = () => {
                   </span>
                 </div>
                 <p className="font-bold text-gray-700">
-                  {reservationData.time_slot}
+                  {reservationData.time_slot || "Not Specified"}
                 </p>
               </div>
             </div>
