@@ -67,7 +67,7 @@ const ManageResidents = () => {
       return;
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`${API_URL}/guards/${id}`, {
+      const res = await fetch(`${API_URL}/residents/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
