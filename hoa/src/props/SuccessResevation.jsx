@@ -11,7 +11,7 @@ import {
 const SuccessReservation = () => {
   const location = useLocation();
 
-  // Data passed from navigation state
+  // Data passed from navigation state (ensure these keys match your navigate() call)
   const stateData = location.state?.data;
   const amenityName = location.state?.amenityName || "Amenity";
   const displayDate = location.state?.displayDate;
@@ -22,14 +22,16 @@ const SuccessReservation = () => {
     return <Navigate to="/amenities" replace />;
   }
 
-  // Determine the status dynamically from the backend response
-  // We check for 'status' or 'reservation_status' depending on your API output
+  /**
+   * Determine the status dynamically from the backend response.
+   * This logic now correctly references 'stateData'.
+   */
   const getStatusInfo = () => {
-    // 1. Get the raw status and normalize it to lowercase for comparison
-    const rawStatus = reservationData.status || "Pending";
+    // 1. Get the raw status from backend response or fallback to 'Pending'
+    const rawStatus = stateData.status || "Pending";
     const status = rawStatus.toLowerCase();
 
-    // 2. Map the database strings to your UI styles
+    // 2. Map the database strings to UI styles
     if (status === "confirmed" || status === "approved") {
       return {
         label: "Confirmed",
@@ -48,7 +50,7 @@ const SuccessReservation = () => {
       };
     }
 
-    // Fallback for "Cancelled" or other states
+    // Fallback for "Cancelled" or other custom states
     return {
       label: rawStatus,
       containerClass: "bg-gray-50",
@@ -59,7 +61,7 @@ const SuccessReservation = () => {
 
   const statusInfo = getStatusInfo();
 
-  // Format the date
+  // Format the date for human readability
   const dateToFormat = stateData.reservation_date || displayDate;
   const formattedDate = dateToFormat
     ? new Date(dateToFormat).toLocaleDateString("en-US", {
@@ -175,6 +177,7 @@ const SuccessReservation = () => {
         </div>
       </div>
 
+      {/* Print-specific Styles */}
       <style>{`
         @media print {
           .no-print { display: none !important; }
