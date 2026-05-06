@@ -90,15 +90,13 @@ const ClubHouse = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Reservation failed");
 
-      // FIX: Access properties from 'data' (the parsed JSON), not 'res'
+      // SUCCESS: Passing the dynamic data from the backend to the Success Page
       navigate("/amenities/success", {
         state: {
-          data: {
-            insertId: data.reservation_id || data.insertId, // Check which key your backend sends
-            reservation_date: date, // You can use your local 'date' state
-            time_slot: selectedSlot.label, // Using the label looks better on the success screen
-          },
-          amenityName: AMENITY_ID === 1 ? "Club House" : "Swimming Pool",
+          data: data, // Contains reservation_id and status from backend
+          amenityName: "Club House",
+          displayDate: date,
+          displaySlot: selectedSlot.label,
         },
       });
     } catch (err) {
@@ -121,10 +119,6 @@ const ClubHouse = () => {
           </p>
         </div>
       </div>
-      <br />
-      <br />
-      <br />
-      <br />
 
       <div className="max-w-4xl mx-auto -mt-10 px-4 space-y-6">
         <div className="bg-white shadow-xl rounded-[2rem] p-8 border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -162,7 +156,6 @@ const ClubHouse = () => {
           <h2 className="font-black text-2xl text-gray-800">
             Make a Reservation
           </h2>
-
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-gray-500 ml-1">
               <CalendarIcon className="h-5 w-5" />

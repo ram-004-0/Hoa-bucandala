@@ -10,7 +10,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
-const AMENITY_ID = 2;
+const AMENITY_ID = 2; // CHANGE THIS: 1 for Club House, 3 for Swimming Pool
 const TIME_SLOTS = [
   { label: "08:00 AM - 12:00 PM", value: "08:00-12:00" },
   { label: "12:00 PM - 04:00 PM", value: "12:00-16:00" },
@@ -28,7 +28,6 @@ const BasketballCourt = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Check JWT token expiry
   const checkTokenExpiry = () => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -40,67 +39,45 @@ const BasketballCourt = () => {
       if (decoded.exp < Date.now() / 1000) {
         localStorage.removeItem("token");
         navigate("/login");
-        alert("Session expired. Please log in again.");
         return false;
       }
       return true;
     } catch {
-      localStorage.removeItem("token");
-      navigate("/login");
       return false;
     }
   };
 
-  // Fetch availability whenever date changes
   useEffect(() => {
     if (!date) return;
     if (!checkTokenExpiry()) return;
 
     const token = localStorage.getItem("token");
-    setSelectedSlot(null);
-    setError("");
-
     fetch(`${API_URL}/amenities/${AMENITY_ID}/availability?date=${date}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((res) => res.json().then((data) => ({ status: res.status, data })))
-      .then(({ status, data }) => {
-        if (status === 401) {
-          localStorage.removeItem("token");
-          navigate("/login");
-          throw new Error("Unauthorized");
-        }
-
+      .then((res) => res.json())
+      .then((data) => {
         const updatedSlots = TIME_SLOTS.map((slot) => ({
           ...slot,
           available: data.availableSlots.includes(slot.value),
         }));
         setSlots(updatedSlots);
-
-        // Preselect first available slot
-        const firstAvailable = updatedSlots.find((s) => s.available) || null;
-        setSelectedSlot(firstAvailable);
+        setSelectedSlot(updatedSlots.find((s) => s.available) || null);
       })
-      .catch(() => setError("Failed to load availability. Please try again."));
-  }, [date, navigate]);
+      .catch(() => setError("Failed to load availability."));
+  }, [date]);
 
-  // Handle reservation booking
   const handleBooking = async () => {
-    if (!date || !selectedSlot) {
-      alert("Please select both a date and a time slot.");
-      return;
-    }
+    if (!date || !selectedSlot) return;
     if (!checkTokenExpiry()) return;
 
     setLoading(true);
-    const token = localStorage.getItem("token");
-
     try {
       const res = await fetch(`${API_URL}/reservations`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify({
           amenity_id: AMENITY_ID,
@@ -109,93 +86,42 @@ const BasketballCourt = () => {
         }),
       });
 
-      const data = await res.json(); // This contains the backend response
+      const data = await res.json();
 
-      if (!res.ok) {
-        alert(data.message || "Reservation failed");
-        return;
-      }
+      if (!res.ok) throw new Error(data.message || "Failed");
 
-      // FIXED: Access 'data' instead of 'res'
+      // SUCCESS: Pass the 'data' from backend which now contains ID and Status
       navigate("/amenities/success", {
         state: {
-          data: {
-            insertId: data.insertId, // Your backend typically returns insertId
-            reservation_date: date, // Use the 'date' state from this component
-            time_slot: selectedSlot.label, // Use the label for a prettier display
-          },
-          amenityName: "Basketball Court",
+          data: data,
+          amenityName: "Basketball Court", // CHANGE THIS for other components
         },
       });
     } catch (err) {
-      alert("Connection error. Please check your internet.");
+      alert(err.message);
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header */}
       <div className="bg-[#00704e] h-48 flex items-center px-6 md:px-12 text-white">
-        <Link to="/amenities" className="hover:scale-110 transition-transform">
-          <ArrowLeftIcon className="h-10 w-10 mr-6 cursor-pointer" />
+        <Link to="/amenities">
+          <ArrowLeftIcon className="h-10 w-10 mr-6" />
         </Link>
         <div>
           <h1 className="font-black text-3xl md:text-4xl">Basketball Court</h1>
-          <p className="opacity-80 text-sm md:text-base mt-1">
-            Check availability and book your slot
-          </p>
+          <p className="opacity-80">Book your slot below</p>
         </div>
       </div>
-      <br />
-      <br />
-      <br />
-      <br />
 
       <div className="max-w-4xl mx-auto -mt-10 px-4 space-y-6">
-        {/* Amenity Info Card */}
-        <div className="bg-white shadow-xl rounded-[2rem] p-8 border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-4">
-            <h2 className="font-black text-xl text-gray-800 flex items-center gap-2">
-              <InformationCircleIcon className="h-6 w-6 text-[#00704e]" />
-              Court Rules & Info
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-gray-50 p-4 rounded-2xl">
-                <p className="text-[10px] font-bold text-gray-400 uppercase">
-                  Rate
-                </p>
-                <p className="font-bold text-gray-700">₱500 / 4 Hours</p>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-2xl">
-                <p className="text-[10px] font-bold text-gray-400 uppercase">
-                  Capacity
-                </p>
-                <p className="font-bold text-gray-700">50 Persons Max</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-green-50 p-6 rounded-3xl border border-green-100 text-center md:text-left">
-            <p className="text-xs font-bold text-[#00704e] uppercase mb-1">
-              Operating Hours
-            </p>
-            <p className="text-lg font-black text-[#00704e]">
-              8:00 AM – 12:00 AM
-            </p>
-          </div>
-        </div>
-
-        {/* Reservation Form */}
-        <div className="bg-white shadow-xl rounded-[2rem] p-8 border border-gray-100 space-y-8">
-          <h2 className="font-black text-2xl text-gray-800">
-            Make a Reservation
-          </h2>
-
-          {/* Date Picker */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-gray-500 ml-1">
+        <div className="bg-white shadow-xl rounded-[2rem] p-8 border border-gray-100">
+          <div className="space-y-3 mb-8">
+            <div className="flex items-center gap-2 text-gray-500">
               <CalendarIcon className="h-5 w-5" />
-              <span className="text-sm font-bold uppercase tracking-wider">
+              <span className="text-sm font-bold uppercase">
                 Step 1: Select Date
               </span>
             </div>
@@ -204,17 +130,16 @@ const BasketballCourt = () => {
               min={new Date().toISOString().split("T")[0]}
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-[#00704e] outline-none transition-all font-bold text-gray-700"
+              className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none font-bold"
             />
           </div>
 
-          {/* Time Slots */}
           {date && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
-              <div className="flex items-center gap-2 text-gray-500 ml-1">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-gray-500">
                 <ClockIcon className="h-5 w-5" />
-                <span className="text-sm font-bold uppercase tracking-wider">
-                  Step 2: Choose your Slot
+                <span className="text-sm font-bold uppercase">
+                  Step 2: Choose Slot
                 </span>
               </div>
 
@@ -230,24 +155,18 @@ const BasketballCourt = () => {
                     disabled={!slot.available}
                     className={({ checked }) => `
                       relative flex cursor-pointer rounded-2xl p-5 border-2 transition-all
-                      ${
-                        !slot.available
-                          ? "bg-gray-100 border-gray-100 opacity-40 cursor-not-allowed"
-                          : checked
-                            ? "bg-green-50 border-[#00704e] ring-2 ring-[#00704e]/20"
-                            : "bg-white border-gray-100 hover:border-gray-200"
-                      }
+                      ${!slot.available ? "bg-gray-100 opacity-40 cursor-not-allowed" : checked ? "bg-green-50 border-[#00704e]" : "bg-white border-gray-100"}
                     `}
                   >
                     {({ checked }) => (
                       <div className="flex w-full justify-between items-center">
-                        <div className="text-sm">
+                        <div>
                           <p
                             className={`font-black ${checked ? "text-[#00704e]" : "text-gray-700"}`}
                           >
                             {slot.label}
                           </p>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">
+                          <p className="text-[10px] uppercase font-bold">
                             {slot.available ? "Available" : "Reserved"}
                           </p>
                         </div>
@@ -262,36 +181,13 @@ const BasketballCourt = () => {
             </div>
           )}
 
-          {error && (
-            <div className="p-4 bg-red-50 text-red-600 rounded-2xl text-sm font-bold flex items-center gap-2">
-              <InformationCircleIcon className="h-5 w-5" />
-              {error}
-            </div>
-          )}
-
-          {/* Book Button */}
-          <div className="pt-4">
-            <button
-              onClick={handleBooking}
-              disabled={loading || !selectedSlot}
-              className={`w-full py-5 rounded-2xl font-black text-white shadow-lg transition-all flex justify-center items-center gap-3
-                ${
-                  loading || !selectedSlot
-                    ? "bg-gray-300 cursor-not-allowed"
-                    : "bg-[#00704e] hover:bg-[#005a3e] active:scale-[0.98] shadow-green-100"
-                }
-              `}
-            >
-              {loading ? (
-                <>
-                  <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  PROCESSING...
-                </>
-              ) : (
-                "CONFIRM RESERVATION"
-              )}
-            </button>
-          </div>
+          <button
+            onClick={handleBooking}
+            disabled={loading || !selectedSlot}
+            className="w-full mt-8 py-5 rounded-2xl font-black text-white bg-[#00704e] disabled:bg-gray-300 transition-all shadow-lg"
+          >
+            {loading ? "PROCESSING..." : "CONFIRM RESERVATION"}
+          </button>
         </div>
       </div>
     </div>

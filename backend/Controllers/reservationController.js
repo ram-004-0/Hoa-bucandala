@@ -47,13 +47,20 @@ export const createReservation = async (req, res) => {
       return res.status(403).json({ message: "Not a resident account" });
     }
 
-    // SCHEMA FIX: Table name is 'amenities_reservation'
-    await db.query(
+    // Capture the result of the INSERT
+    const [result] = await db.query(
       `INSERT INTO amenities_reservation (amenity_id, resident_id, reservation_date, time_slot) VALUES (?, ?, ?, ?)`,
       [amenity_id, resident.resident_id, reservation_date, time_slot],
     );
 
-    res.status(201).json({ message: "Reservation created" });
+    // RETURN THE DATA TO FRONTEND
+    res.status(201).json({
+      message: "Reservation created",
+      reservation_id: result.insertId, // Maps to Reference ID
+      status: "Pending Approval", // Maps to Status badge
+      reservation_date,
+      time_slot,
+    });
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY") {
       return res
@@ -115,7 +122,7 @@ export const getMyReservations = async (req, res) => {
       `
       SELECT 
         ar.reservation_id,
-        ar.status,          -- ADDED: So residents can see if they are approved
+        ar.status,         
         a.name AS amenity_name,
         ar.reservation_date,
         ar.time_slot
