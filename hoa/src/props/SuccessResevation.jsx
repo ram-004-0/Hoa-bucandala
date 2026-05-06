@@ -20,7 +20,30 @@ const SuccessReservation = () => {
     return <Navigate to="/amenities" replace />;
   }
 
-  // Format the date to be more readable (e.g., "May 6, 2026")
+  // Determine the status dynamically
+  const getStatusInfo = () => {
+    const status = reservationData.status || "Pending Approval";
+
+    if (status === "Confirmed" || status === "Approved") {
+      return {
+        label: "Confirmed",
+        containerClass: "bg-green-50",
+        labelClass: "text-green-700",
+        badgeClass: "bg-green-200 text-green-800",
+      };
+    }
+
+    return {
+      label: "Pending Approval",
+      containerClass: "bg-blue-50",
+      labelClass: "text-blue-700",
+      badgeClass: "bg-blue-200 text-blue-800",
+    };
+  };
+
+  const statusInfo = getStatusInfo();
+
+  // Format the date to be more readable
   const formattedDate = reservationData.reservation_date
     ? new Date(reservationData.reservation_date).toLocaleDateString("en-US", {
         month: "long",
@@ -33,7 +56,7 @@ const SuccessReservation = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-md animate-in fade-in zoom-in duration-300">
         {/* Success Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 no-print">
           <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircleIcon className="h-12 w-12 text-[#00704e]" />
           </div>
@@ -46,7 +69,7 @@ const SuccessReservation = () => {
         </div>
 
         {/* Receipt Card */}
-        <div className="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-gray-100">
+        <div className="bg-white rounded-[2rem] shadow-xl overflow-hidden border border-gray-100 print:shadow-none print:border-gray-300">
           <div className="bg-[#00704e] p-6 text-white text-center">
             <p className="text-sm opacity-80 uppercase font-bold tracking-widest">
               Reservation Details
@@ -55,7 +78,7 @@ const SuccessReservation = () => {
           </div>
 
           <div className="p-8 space-y-6">
-            {/* Reference Number - Supports both 'id' and 'insertId' from MySQL */}
+            {/* Reference Number */}
             <div className="flex justify-between items-center pb-4 border-b border-dashed border-gray-200">
               <div className="flex items-center gap-3">
                 <TicketIcon className="h-5 w-5 text-gray-400" />
@@ -94,12 +117,18 @@ const SuccessReservation = () => {
             </div>
 
             {/* Status Indicator */}
-            <div className="bg-blue-50 p-4 rounded-2xl flex items-center justify-between">
-              <span className="text-blue-700 text-xs font-bold uppercase">
+            <div
+              className={`${statusInfo.containerClass} p-4 rounded-2xl flex items-center justify-between`}
+            >
+              <span
+                className={`${statusInfo.labelClass} text-xs font-bold uppercase`}
+              >
                 Status
               </span>
-              <span className="bg-blue-200 text-blue-800 text-[10px] px-3 py-1 rounded-full font-black uppercase">
-                Pending Approval
+              <span
+                className={`${statusInfo.badgeClass} text-[10px] px-3 py-1 rounded-full font-black uppercase`}
+              >
+                {statusInfo.label}
               </span>
             </div>
           </div>
@@ -114,7 +143,7 @@ const SuccessReservation = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-8 flex flex-col gap-3">
+        <div className="mt-8 flex flex-col gap-3 no-print">
           <Link
             to="/amenities"
             className="w-full bg-[#00704e] text-white py-4 rounded-2xl font-black text-center shadow-lg shadow-green-100 flex items-center justify-center gap-2 hover:bg-[#005a3e] transition-all"
@@ -131,6 +160,15 @@ const SuccessReservation = () => {
           </button>
         </div>
       </div>
+
+      {/* Print-specific Styles */}
+      <style padding="none">{`
+        @media print {
+          .no-print { display: none !important; }
+          body { background-color: white !important; }
+          .min-h-screen { min-height: auto !important; padding: 0 !important; }
+        }
+      `}</style>
     </div>
   );
 };
