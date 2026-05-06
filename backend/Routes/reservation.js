@@ -32,7 +32,12 @@ router.post(
   authorizeRoles("RESIDENT"),
   createReservation,
 );
-router.get(authenticate, authorizeRoles("RESIDENT"), getMyReservations);
+router.get(
+  "/my-history",
+  authenticate,
+  authorizeRoles("RESIDENT"),
+  getMyReservations,
+);
 /**
  * ADMIN
  * - Get all reservations
