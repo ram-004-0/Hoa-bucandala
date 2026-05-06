@@ -31,7 +31,7 @@ const AmenityHistory = () => {
 
   // Function to handle the click and pass data to Success page
   const handleRowClick = (res) => {
-    navigate("/success-reservation", {
+    navigate("/amenities/success", {
       state: {
         data: {
           insertId: res.reservation_id, // Map to the key Success page expects
