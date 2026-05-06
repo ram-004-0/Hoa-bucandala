@@ -109,20 +109,20 @@ const BasketballCourt = () => {
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json(); // This contains the backend response
 
       if (!res.ok) {
         alert(data.message || "Reservation failed");
         return;
       }
 
-      // Success: Navigate to the Success Screen and pass the reservation data
+      // FIXED: Access 'data' instead of 'res'
       navigate("/amenities/success", {
         state: {
           data: {
-            insertId: res.reservation_id,
-            reservation_date: res.reservation_date,
-            time_slot: res.time_slot,
+            insertId: data.insertId, // Your backend typically returns insertId
+            reservation_date: date, // Use the 'date' state from this component
+            time_slot: selectedSlot.label, // Use the label for a prettier display
           },
           amenityName: "Basketball Court",
         },
@@ -133,7 +133,6 @@ const BasketballCourt = () => {
       setLoading(false);
     }
   };
-
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}

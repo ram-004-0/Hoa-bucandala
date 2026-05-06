@@ -90,14 +90,15 @@ const ClubHouse = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Reservation failed");
 
+      // FIX: Access properties from 'data' (the parsed JSON), not 'res'
       navigate("/amenities/success", {
         state: {
           data: {
-            insertId: res.reservation_id,
-            reservation_date: res.reservation_date,
-            time_slot: res.time_slot,
+            insertId: data.reservation_id || data.insertId, // Check which key your backend sends
+            reservation_date: date, // You can use your local 'date' state
+            time_slot: selectedSlot.label, // Using the label looks better on the success screen
           },
-          amenityName: "Club House",
+          amenityName: AMENITY_ID === 1 ? "Club House" : "Swimming Pool",
         },
       });
     } catch (err) {
