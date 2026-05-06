@@ -134,17 +134,16 @@ export const getMyReservations = async (req, res) => {
     // Fetch reservations for this specific resident
     const [rows] = await db.query(
       `
-      SELECT 
-        ar.reservation_id,
-        a.name AS amenity_name,
-        ar.reservation_date,
-        ar.time_slot,
-        ar.created_at
-      FROM amenities_reservation ar
-      JOIN amenities a ON ar.amenity_id = a.amenity_id
-      WHERE ar.resident_id = ?
-      ORDER BY ar.reservation_date DESC
-    `,
+  SELECT 
+    ar.reservation_id,
+    a.name AS amenity_name,
+    ar.reservation_date,
+    ar.time_slot
+  FROM amenities_reservation ar
+  JOIN amenities a ON ar.amenity_id = a.amenity_id
+  WHERE ar.resident_id = ?
+  ORDER BY ar.reservation_date DESC
+`,
       [resident.resident_id],
     );
 
