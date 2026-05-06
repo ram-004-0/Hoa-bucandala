@@ -16,10 +16,6 @@ const AmenityReservation = () => {
           <p>Book Community Amenities</p>
         </div>
       </div>
-      <br />
-      <br />
-      <br />
-      <br />
 
       <div className="m-10 justify-center content-center flex flex-col gap-10 flex-wrap">
         {/* NEW: Reservation History Card */}

@@ -30,6 +30,7 @@ import ReportUncollected from "./pages/dashboardpages/wastecollectionpages/Repor
 import ReportOverflow from "./pages/dashboardpages/wastecollectionpages/ReportOverflow";
 import NotificationCenter from "./props/NotificationCenter.jsx";
 import SuccessReservation from "./props/SuccessResevation.jsx";
+import AmenityHistory from "./pages/dashboardpages/amenitypages/AmenityHistory.jsx";
 
 // Waste
 import ScheduleBiodegradable from "./pages/dashboardpages/wastecollectionpages/BookBiodegradable";
@@ -256,6 +257,14 @@ const App = () => {
           element={
             <ProtectedRoute roles={["RESIDENT"]}>
               <SuccessReservation />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="amenities/my-history"
+          element={
+            <ProtectedRoute roles={["RESIDENT"]}>
+              <AmenityHistory />
             </ProtectedRoute>
           }
         />
