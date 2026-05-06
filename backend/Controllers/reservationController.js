@@ -10,6 +10,8 @@ export const getAllReservations = async (req, res) => {
     const [rows] = await db.query(`
       SELECT 
         ar.reservation_id,
+        ar.resident_id,     
+        ar.status,          
         r.full_name, 
         a.name AS amenity_name,
         ar.reservation_date,
@@ -99,9 +101,7 @@ export const getAvailability = async (req, res) => {
  */
 export const getMyReservations = async (req, res) => {
   try {
-    const accountId = req.user.id; // From authenticate middleware
-
-    // First, find the resident_id associated with this account
+    const accountId = req.user.id;
     const [[resident]] = await db.query(
       "SELECT resident_id FROM residents WHERE account_id = ?",
       [accountId],
@@ -111,25 +111,24 @@ export const getMyReservations = async (req, res) => {
       return res.status(403).json({ message: "Resident profile not found" });
     }
 
-    // Fetch reservations for this specific resident
     const [rows] = await db.query(
       `
-  SELECT 
-    ar.reservation_id,
-    a.name AS amenity_name,
-    ar.reservation_date,
-    ar.time_slot
-  FROM amenities_reservation ar
-  JOIN amenities a ON ar.amenity_id = a.amenity_id
-  WHERE ar.resident_id = ?
-  ORDER BY ar.reservation_date DESC
-`,
+      SELECT 
+        ar.reservation_id,
+        ar.status,          -- ADDED: So residents can see if they are approved
+        a.name AS amenity_name,
+        ar.reservation_date,
+        ar.time_slot
+      FROM amenities_reservation ar
+      JOIN amenities a ON ar.amenity_id = a.amenity_id
+      WHERE ar.resident_id = ?
+      ORDER BY ar.reservation_date DESC
+    `,
       [resident.resident_id],
     );
 
     res.json(rows);
   } catch (err) {
-    console.error("Get personal reservations error:", err);
     res.status(500).json({ message: "Failed to fetch your history" });
   }
 };
