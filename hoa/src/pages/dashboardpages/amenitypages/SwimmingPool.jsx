@@ -90,7 +90,7 @@ const SwimmingPool = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Reservation failed");
 
-      navigate("/success-reservation", {
+      navigate("/amenities/success", {
         state: { data: data, amenityName: "Swimming Pool" },
       });
     } catch (err) {

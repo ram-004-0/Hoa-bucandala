@@ -29,7 +29,7 @@ import ProfileSettings from "./props/ProfileSettings";
 import ReportUncollected from "./pages/dashboardpages/wastecollectionpages/ReportUncollected";
 import ReportOverflow from "./pages/dashboardpages/wastecollectionpages/ReportOverflow";
 import NotificationCenter from "./props/NotificationCenter.jsx";
-// import SuccessReservation from "./props/SuccessResevation.jsx";
+import SuccessReservation from "./props/SuccessResevation.jsx";
 
 // Waste
 import ScheduleBiodegradable from "./pages/dashboardpages/wastecollectionpages/BookBiodegradable";
@@ -248,6 +248,14 @@ const App = () => {
           element={
             <ProtectedRoute roles={["RESIDENT"]}>
               <NotificationCenter />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="amenities/success-reservation"
+          element={
+            <ProtectedRoute roles={["RESIDENT"]}>
+              <SuccessReservation />
             </ProtectedRoute>
           }
         />

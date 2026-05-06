@@ -90,7 +90,7 @@ const ClubHouse = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Reservation failed");
 
-      navigate("/success-reservation", {
+      navigate("/amenities/success", {
         state: { data: data, amenityName: "Club House" },
       });
     } catch (err) {
