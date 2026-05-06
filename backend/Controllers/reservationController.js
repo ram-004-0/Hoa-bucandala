@@ -64,26 +64,6 @@ export const createReservation = async (req, res) => {
 
 /**
  * ============================
- * ADMIN: Delete reservation
- * ============================
- */
-export const deleteReservation = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const [result] = await db.query(
-      "DELETE FROM amenities_reservation WHERE reservation_id = ?",
-      [id],
-    );
-    if (result.affectedRows === 0)
-      return res.status(404).json({ message: "Not found" });
-    res.json({ message: "Reservation deleted" });
-  } catch (err) {
-    res.status(500).json({ message: "Failed to delete" });
-  }
-};
-
-/**
- * ============================
  * AVAILABILITY (Resident/Admin)
  * ============================
  */
@@ -151,5 +131,62 @@ export const getMyReservations = async (req, res) => {
   } catch (err) {
     console.error("Get personal reservations error:", err);
     res.status(500).json({ message: "Failed to fetch your history" });
+  }
+};
+
+// PATCH /api/reservations/:id/status
+export const updateReservationStatus = async (req, res) => {
+  const { id } = req.params;
+  const { status, resident_id, amenity_name } = req.body;
+
+  try {
+    await db.query(
+      "UPDATE amenities_reservation SET status = ? WHERE reservation_id = ?",
+      [status, id],
+    );
+
+    // Notify the Resident
+    const title =
+      status === "Approved"
+        ? "Reservation Confirmed! ✅"
+        : "Reservation Update";
+    const message = `Your reservation for ${amenity_name} has been ${status.toLowerCase()}.`;
+
+    await db.query(
+      "INSERT INTO notifications (resident_id, type, title, message, related_id) VALUES (?, 'Amenity', ?, ?, ?)",
+      [resident_id, title, message, id],
+    );
+
+    res.status(200).json({ message: "Status updated and resident notified" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// DELETE /api/reservations/:id
+export const deleteReservation = async (req, res) => {
+  const { id } = req.params;
+  const { resident_id, amenity_name } = req.body; // Passed from frontend
+
+  try {
+    // Notify BEFORE deleting so the foreign key doesn't break if related_id is used
+    if (resident_id) {
+      await db.query(
+        "INSERT INTO notifications (resident_id, type, title, message) VALUES (?, 'Amenity', ?, ?)",
+        [
+          resident_id,
+          "Reservation Cancelled ❌",
+          `Your reservation for ${amenity_name} was cancelled by administration.`,
+        ],
+      );
+    }
+
+    await db.query(
+      "DELETE FROM amenities_reservation WHERE reservation_id = ?",
+      [id],
+    );
+    res.status(200).json({ message: "Deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };

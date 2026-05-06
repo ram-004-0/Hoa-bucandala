@@ -5,6 +5,7 @@ import {
   deleteReservation,
   getAvailability,
   getMyReservations,
+  updateReservationStatus,
 } from "../Controllers/reservationController.js";
 import { authenticate } from "../middlewares/authMiddleware.js";
 import { authorizeRoles } from "../middlewares/roles.js";
@@ -58,6 +59,12 @@ router.delete(
   authenticate,
   authorizeRoles("ADMIN"),
   deleteReservation,
+);
+router.patch(
+  "/reservations/:id/status",
+  authenticate,
+  authorizeRoles("ADMIN"),
+  updateReservationStatus,
 );
 
 export default router;
