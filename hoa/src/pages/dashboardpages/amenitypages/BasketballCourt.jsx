@@ -94,7 +94,10 @@ const BasketballCourt = () => {
       navigate("/amenities/success", {
         state: {
           data: data,
-          amenityName: "Basketball Court", // CHANGE THIS for other components
+          status: data.status, // Explicitly passing the status from the backend
+          amenityName: "Basketball Court", // or "Clubhouse"
+          displayDate: date,
+          displaySlot: selectedSlot.label,
         },
       });
     } catch (err) {

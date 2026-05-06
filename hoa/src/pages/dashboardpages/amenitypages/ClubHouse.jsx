@@ -93,8 +93,9 @@ const ClubHouse = () => {
       // SUCCESS: Passing the dynamic data from the backend to the Success Page
       navigate("/amenities/success", {
         state: {
-          data: data, // Contains reservation_id and status from backend
-          amenityName: "Club House",
+          data: data,
+          status: data.status, // Explicitly passing the status from the backend
+          amenityName: "Club House", // or "Clubhouse"
           displayDate: date,
           displaySlot: selectedSlot.label,
         },

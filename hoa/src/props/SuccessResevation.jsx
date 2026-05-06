@@ -11,8 +11,9 @@ import {
 const SuccessReservation = () => {
   const location = useLocation();
 
-  // Data passed from navigation state (ensure these keys match your navigate() call)
+  // 1. Extract values directly from location.state
   const stateData = location.state?.data;
+  const explicitStatus = location.state?.status; // The new key you added to state
   const amenityName = location.state?.amenityName || "Amenity";
   const displayDate = location.state?.displayDate;
   const displaySlot = location.state?.displaySlot;
@@ -23,15 +24,14 @@ const SuccessReservation = () => {
   }
 
   /**
-   * Determine the status dynamically from the backend response.
-   * This logic now correctly references 'stateData'.
+   * Determine the status UI dynamically.
+   * Priority: explicitStatus > stateData.status > Fallback "Pending"
    */
   const getStatusInfo = () => {
-    // 1. Get the raw status from backend response or fallback to 'Pending'
-    const rawStatus = stateData.status || "Pending";
+    const rawStatus = explicitStatus || stateData?.status || "Pending";
     const status = rawStatus.toLowerCase();
 
-    // 2. Map the database strings to UI styles
+    // UI for Confirmed/Approved
     if (status === "confirmed" || status === "approved") {
       return {
         label: "Confirmed",
@@ -41,7 +41,8 @@ const SuccessReservation = () => {
       };
     }
 
-    if (status === "pending" || status === "pending approval") {
+    // UI for anything containing "pending" (catches "Pending" and "Pending Approval")
+    if (status.includes("pending")) {
       return {
         label: "Pending Approval",
         containerClass: "bg-blue-50",
@@ -52,7 +53,7 @@ const SuccessReservation = () => {
 
     // Fallback for "Cancelled" or other custom states
     return {
-      label: rawStatus,
+      label: rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1),
       containerClass: "bg-gray-50",
       labelClass: "text-gray-700",
       badgeClass: "bg-gray-200 text-gray-800",
@@ -177,7 +178,6 @@ const SuccessReservation = () => {
         </div>
       </div>
 
-      {/* Print-specific Styles */}
       <style>{`
         @media print {
           .no-print { display: none !important; }

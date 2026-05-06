@@ -93,8 +93,9 @@ const SwimmingPool = () => {
       // SUCCESS: Passing the dynamic data from the backend to the Success Page
       navigate("/amenities/success", {
         state: {
-          data: data, // Dynamic ID and Status from Railway backend
-          amenityName: "Swimming Pool",
+          data: data,
+          status: data.status, // Explicitly passing the status from the backend
+          amenityName: "Swimming Pool", // or "Clubhouse"
           displayDate: date,
           displaySlot: selectedSlot.label,
         },
