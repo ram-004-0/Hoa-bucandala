@@ -47,17 +47,22 @@ export const createReservation = async (req, res) => {
       return res.status(403).json({ message: "Not a resident account" });
     }
 
-    // Capture the result of the INSERT
     const [result] = await db.query(
       `INSERT INTO amenities_reservation (amenity_id, resident_id, reservation_date, time_slot) VALUES (?, ?, ?, ?)`,
       [amenity_id, resident.resident_id, reservation_date, time_slot],
     );
 
-    // RETURN THE DATA TO FRONTEND
+    // Fetch the newly created reservation to get the actual database status
+    const [[newReservation]] = await db.query(
+      "SELECT status FROM amenities_reservation WHERE reservation_id = ?",
+      [result.insertId],
+    );
+
     res.status(201).json({
       message: "Reservation created",
-      reservation_id: result.insertId, // Maps to Reference ID
-      status: "Pending Approval", // Maps to Status badge
+      reservation_id: result.insertId,
+      // Use the actual status from the DB, fallback to 'Pending' if something goes wrong
+      status: newReservation?.status || "Pending",
       reservation_date,
       time_slot,
     });

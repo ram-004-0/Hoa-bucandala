@@ -25,10 +25,11 @@ const SuccessReservation = () => {
   // Determine the status dynamically from the backend response
   // We check for 'status' or 'reservation_status' depending on your API output
   const getStatusInfo = () => {
-    const rawStatus =
-      stateData.status || stateData.reservation_status || "Pending Approval";
+    // 1. Get the raw status and normalize it to lowercase for comparison
+    const rawStatus = reservationData.status || "Pending";
     const status = rawStatus.toLowerCase();
 
+    // 2. Map the database strings to your UI styles
     if (status === "confirmed" || status === "approved") {
       return {
         label: "Confirmed",
@@ -47,7 +48,7 @@ const SuccessReservation = () => {
       };
     }
 
-    // Default fallback
+    // Fallback for "Cancelled" or other states
     return {
       label: rawStatus,
       containerClass: "bg-gray-50",
