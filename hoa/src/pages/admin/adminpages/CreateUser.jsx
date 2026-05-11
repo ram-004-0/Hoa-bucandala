@@ -9,10 +9,9 @@ import {
   Key,
 } from "lucide-react";
 
-// --- Sub-component for the Success View ---
+// --- SuccessModal Component (No changes needed here) ---
 const SuccessModal = ({ data, onClose, isGuardRole }) => {
   const [copied, setCopied] = useState(false);
-
   const handleCopy = () => {
     navigator.clipboard.writeText(data.password);
     setCopied(true);
@@ -25,15 +24,12 @@ const SuccessModal = ({ data, onClose, isGuardRole }) => {
         <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
           <CheckCircle2 size={40} />
         </div>
-
         <h3 className="text-2xl font-black text-gray-800 mb-2">
           Account Created!
         </h3>
         <p className="text-gray-500 text-sm mb-8">
-          The {isGuardRole ? "guard" : "resident"} account is ready. Please
-          share the temporary password below.
+          The {isGuardRole ? "guard" : "resident"} account is ready.
         </p>
-
         <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl p-6 mb-8 relative group">
           <label className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">
             Temporary Password
@@ -46,16 +42,15 @@ const SuccessModal = ({ data, onClose, isGuardRole }) => {
           </div>
           <button
             onClick={handleCopy}
-            className="mt-4 flex items-center gap-2 mx-auto text-xs font-bold text-gray-400 hover:text-[#00704e] transition-colors"
+            className="mt-4 flex items-center gap-2 mx-auto text-xs font-bold text-gray-400 hover:text-[#00704e]"
           >
             {copied ? <CheckCircle2 size={14} /> : <Copy size={14} />}
-            {copied ? "COPIED TO CLIPBOARD" : "CLICK TO COPY"}
+            {copied ? "COPIED" : "CLICK TO COPY"}
           </button>
         </div>
-
         <button
           onClick={onClose}
-          className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black hover:bg-black transition-all"
+          className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black"
         >
           DONE
         </button>
@@ -83,7 +78,9 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
         address: editData.address || "",
         contact: editData.contact || "",
         withBalance:
-          editData.has_balance === 1 || editData.withBalance === true,
+          editData.has_balance === 1 ||
+          editData.has_balance === true ||
+          editData.withBalance === true,
       });
     }
   }, [editData]);
@@ -95,17 +92,19 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
     const BASE_URL =
       "https://hoa-camellabucandalav-production.up.railway.app/api";
 
-    let url = `${BASE_URL}/residents`;
+    // 1. Determine Method and URL early
+    const isEditing = !!editData;
+    const method = isEditing ? "PUT" : "POST";
 
-    // Updated Logic: Matches your backend router.put("edit/:id", ...)
-    if (editData) {
+    let url = "";
+
+    if (isEditing) {
+      // Use resident_id specifically from your DB schema
       const id = editData.resident_id || editData.id;
       url = `${BASE_URL}/residents/edit/${id}`;
-    } else if (isGuardRole) {
-      url = `${BASE_URL}/guards`;
+    } else {
+      url = isGuardRole ? `${BASE_URL}/guards` : `${BASE_URL}/residents`;
     }
-
-    const method = editData ? "PUT" : "POST";
 
     try {
       const res = await fetch(url, {
@@ -119,27 +118,32 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
           email: formData.email,
           address: formData.address,
           contact: formData.contact,
-          has_balance: formData.withBalance,
+          has_balance: formData.withBalance ? 1 : 0, // Ensure numeric for SQL
         }),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        if (editData) {
-          // If editing, we pass the updated data back to the parent and close
+        if (isEditing) {
+          // If the update was successful in DB, notify parent and close
           onCreate(data);
           onClose();
         } else {
-          // If creating new, show the success modal (password view)
+          // Show the temporary password for new accounts
           setSuccessData(data);
         }
       } else {
-        alert(data.error || data.message || "Action failed");
+        // This will now catch 404, 400, or 500 errors from your backend
+        alert(
+          `Error: ${data.error || data.message || "Failed to update database"}`,
+        );
       }
     } catch (err) {
-      console.error(err);
-      alert("Server connection error");
+      console.error("Submit Error:", err);
+      alert(
+        "Connection to server failed. Check your internet or Railway status.",
+      );
     } finally {
       setLoading(false);
     }
@@ -176,7 +180,7 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
               {isGuardRole ? <ShieldCheck /> : <User />}
             </div>
             {editData
-              ? "Edit User"
+              ? "Edit User Profile"
               : isGuardRole
                 ? "Register Guard"
                 : "Register Resident"}
@@ -190,8 +194,7 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
                     Full Name
                   </label>
                   <input
-                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-[#00704e] outline-none transition-all"
-                    placeholder="John Doe"
+                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-[#00704e]"
                     value={formData.name}
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
@@ -204,8 +207,7 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
                     Email Address
                   </label>
                   <input
-                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-[#00704e] outline-none transition-all"
-                    placeholder="john@example.com"
+                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-[#00704e]"
                     type="email"
                     value={formData.email}
                     onChange={(e) =>
@@ -221,8 +223,7 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
                   Physical Address
                 </label>
                 <textarea
-                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-[#00704e] outline-none transition-all"
-                  placeholder="Block & Lot Number"
+                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-[#00704e]"
                   rows="2"
                   value={formData.address}
                   onChange={(e) =>
@@ -237,8 +238,7 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
                   Contact Number
                 </label>
                 <input
-                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-[#00704e] outline-none transition-all"
-                  placeholder="0912 345 6789"
+                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-[#00704e]"
                   value={formData.contact}
                   onChange={(e) =>
                     setFormData({ ...formData, contact: e.target.value })
@@ -248,7 +248,7 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
               </div>
 
               {!isGuardRole && (
-                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-gray-100 transition-colors">
+                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-gray-100">
                   <input
                     type="checkbox"
                     className="w-5 h-5 accent-[#00704e]"
@@ -260,8 +260,8 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
                       })
                     }
                   />
-                  <span className="text-sm font-bold text-gray-600 uppercase tracking-tight">
-                    Mark as having outstanding balance
+                  <span className="text-sm font-bold text-gray-600 uppercase">
+                    Outstanding Balance
                   </span>
                 </label>
               )}
@@ -270,16 +270,16 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full py-5 rounded-[1.25rem] font-black text-white shadow-lg transition-all flex justify-center items-center gap-2 ${
+              className={`w-full py-5 rounded-[1.25rem] font-black text-white shadow-lg flex justify-center items-center gap-2 ${
                 isGuardRole
-                  ? "bg-blue-600 hover:bg-blue-700 shadow-blue-200"
-                  : "bg-[#00704e] hover:bg-[#005a3e] shadow-green-200"
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-[#00704e] hover:bg-[#005a3e]"
               }`}
             >
               {loading ? (
                 <Loader2 className="animate-spin" />
               ) : editData ? (
-                "SAVE UPDATES"
+                "CONFIRM UPDATES"
               ) : (
                 "CREATE ACCOUNT"
               )}
