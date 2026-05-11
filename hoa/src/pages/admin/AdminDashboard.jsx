@@ -138,11 +138,22 @@ const AdminDashboard = () => {
   ];
 
   const handleLogout = () => {
-    // 1. Stop any pending state updates immediately
-    isMounted.current = false;
-    // 2. Clear session
+    // 1. Immediately wipe the token to prevent further authorized fetches
     localStorage.removeItem("token");
-    // 3. Navigate away using React Router (smoother than window.location)
+
+    // 2. Clear all local state to trigger a re-render of empty data
+    if (setUsers) setUsers([]);
+    if (setStatsData)
+      setStatsData({
+        residents: 0,
+        unpaidDues: 0,
+        reservations: 0,
+        visitorCount: 0,
+        securityReports: 0,
+      });
+
+    // 3. Force a "Replace" navigation
+    // This prevents the browser from trying to keep the "Admin" page in the back-stack
     navigate("/login", { replace: true });
   };
 
