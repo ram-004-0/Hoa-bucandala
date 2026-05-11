@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom"; // Added useNavigate
-import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeftIcon, Trash2 } from "lucide-react"; // Added Trash2 for the cancel icon
 import { Calendar, Clock, MapPin, Info } from "lucide-react";
 import axios from "axios";
 
@@ -9,14 +9,15 @@ const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 const AmenityHistory = () => {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate(); // Initialize the navigate hook
+  const [cancellingId, setCancellingId] = useState(null); // Track which item is being cancelled
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const token = localStorage.getItem("token"); //
+        const token = localStorage.getItem("token");
         const response = await axios.get(`${API_URL}/my-history`, {
-          headers: { Authorization: `Bearer ${token}` }, //
+          headers: { Authorization: `Bearer ${token}` },
         });
         setReservations(response.data);
       } catch (error) {
@@ -34,13 +35,46 @@ const AmenityHistory = () => {
     navigate("/amenities/success", {
       state: {
         data: {
-          insertId: res.reservation_id, // Map to the key Success page expects
+          insertId: res.reservation_id,
           reservation_date: res.reservation_date,
           time_slot: res.time_slot,
         },
         amenityName: res.amenity_name,
       },
     });
+  };
+
+  // NEW: Function to handle cancellation
+  const handleCancel = async (e, reservationId) => {
+    e.stopPropagation(); // Prevents navigating to success page when clicking cancel
+
+    const confirmCancel = window.confirm(
+      "Are you sure you want to cancel this reservation? This action cannot be undone.",
+    );
+
+    if (!confirmCancel) return;
+
+    setCancellingId(reservationId);
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`${API_URL}/reservations/${reservationId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Remove the cancelled reservation from local state
+      setReservations((prev) =>
+        prev.filter((res) => res.reservation_id !== reservationId),
+      );
+      alert("Reservation cancelled successfully.");
+    } catch (error) {
+      console.error("Error cancelling reservation:", error);
+      alert(
+        error.response?.data?.message ||
+          "Failed to cancel reservation. Please try again.",
+      );
+    } finally {
+      setCancellingId(null);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -51,6 +85,8 @@ const AmenityHistory = () => {
         return "bg-yellow-100 text-yellow-700 border-yellow-200";
       case "rejected":
         return "bg-red-100 text-red-700 border-red-200";
+      case "cancelled":
+        return "bg-gray-100 text-gray-500 border-gray-200";
       default:
         return "bg-gray-100 text-gray-700 border-gray-200";
     }
@@ -91,8 +127,8 @@ const AmenityHistory = () => {
             {reservations.map((res) => (
               <div
                 key={res.reservation_id}
-                onClick={() => handleRowClick(res)} // Make the card clickable
-                className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer hover:border-[#00704e] hover:shadow-md transition-all active:scale-[0.98]"
+                onClick={() => handleRowClick(res)}
+                className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer hover:border-[#00704e] hover:shadow-md transition-all active:scale-[0.98] relative overflow-hidden"
               >
                 <div className="flex items-center gap-4">
                   <div className="bg-green-50 p-3 rounded-xl text-[#00704e]">
@@ -117,20 +153,41 @@ const AmenityHistory = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between md:justify-end gap-4 border-t md:border-none pt-3 md:pt-0">
-                  <span
-                    className={`px-4 py-1 rounded-full text-xs font-bold border ${getStatusColor(res.status)}`}
-                  >
-                    {(res.status || "pending").toUpperCase()}
-                  </span>
-                  <div className="text-right">
-                    <p className="text-xs text-gray-400">Reference ID</p>
-                    <p className="text-sm font-mono font-bold text-gray-600">
-                      {res.reservation_id
-                        ? `#${res.reservation_id.toString().padStart(4, "0")}`
-                        : "N/A"}
-                    </p>
+                <div className="flex flex-col md:items-end gap-3 border-t md:border-none pt-3 md:pt-0">
+                  <div className="flex items-center justify-between md:justify-end gap-4 w-full">
+                    <span
+                      className={`px-4 py-1 rounded-full text-xs font-bold border ${getStatusColor(
+                        res.status,
+                      )}`}
+                    >
+                      {(res.status || "pending").toUpperCase()}
+                    </span>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-400">Reference ID</p>
+                      <p className="text-sm font-mono font-bold text-gray-600">
+                        {res.reservation_id
+                          ? `#${res.reservation_id.toString().padStart(4, "0")}`
+                          : "N/A"}
+                      </p>
+                    </div>
                   </div>
+
+                  {/* Cancel Button - Only shows if status is not 'rejected' or 'cancelled' */}
+                  {res.status?.toLowerCase() !== "rejected" &&
+                    res.status?.toLowerCase() !== "cancelled" && (
+                      <button
+                        onClick={(e) => handleCancel(e, res.reservation_id)}
+                        disabled={cancellingId === res.reservation_id}
+                        className="flex items-center justify-center gap-2 px-4 py-2 border border-red-200 text-red-600 rounded-xl text-xs font-bold hover:bg-red-50 transition-colors disabled:opacity-50"
+                      >
+                        {cancellingId === res.reservation_id ? (
+                          <div className="h-3 w-3 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                        CANCEL BOOKING
+                      </button>
+                    )}
                 </div>
               </div>
             ))}

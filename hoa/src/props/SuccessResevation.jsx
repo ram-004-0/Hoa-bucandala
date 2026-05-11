@@ -6,6 +6,8 @@ import {
   ClockIcon,
   TicketIcon,
   HomeIcon,
+  InformationCircleIcon,
+  EnvelopeIcon,
 } from "@heroicons/react/24/outline";
 
 const SuccessReservation = () => {
@@ -156,6 +158,29 @@ const SuccessReservation = () => {
               Please present this confirmation to the security guard upon
               arrival at the facility.
             </p>
+          </div>
+        </div>
+
+        {/* NEW: Admin Verification Tip Section */}
+        <div className="mt-6 bg-blue-50 border-l-4 border-blue-500 p-5 rounded-r-2xl no-print shadow-sm">
+          <div className="flex items-start gap-3">
+            <InformationCircleIcon className="h-6 w-6 text-blue-600 mt-0.5 shrink-0" />
+            <div>
+              <h3 className="text-sm font-black text-blue-900 uppercase tracking-tight">
+                Wait! One more step...
+              </h3>
+              <p className="text-xs text-blue-700 leading-relaxed mt-1 font-medium">
+                To confirm your booking, please send a screenshot of your
+                <strong> payment receipt</strong> to our admin email. This
+                allows the admin to verify and confirm your reservation.
+              </p>
+              <div className="mt-3 flex items-center gap-2 bg-white/60 p-2.5 rounded-xl border border-blue-200 w-fit">
+                <EnvelopeIcon className="h-4 w-4 text-blue-600" />
+                <span className="text-xs font-black text-blue-900 select-all">
+                  lessandrabukandala2021@gmail.com
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
