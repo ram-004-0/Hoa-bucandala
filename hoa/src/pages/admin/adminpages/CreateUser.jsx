@@ -72,12 +72,8 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
 
   useEffect(() => {
     if (editData) {
-      // Prioritize full_name for residents, name for general/guards
-      const newName = editData.full_name || editData.name || "";
-
-      // Update form state with the latest data from props
       setFormData({
-        name: newName,
+        name: editData.full_name || editData.name || "",
         email: editData.email || "",
         address: editData.address || "",
         contact: editData.contact || "",
