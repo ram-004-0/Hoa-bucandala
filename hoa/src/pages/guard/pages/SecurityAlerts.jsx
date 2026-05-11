@@ -10,6 +10,8 @@ import {
   Phone,
   ExternalLink,
   ShieldAlert,
+  FileText,
+  X,
 } from "lucide-react";
 import axios from "axios";
 
@@ -19,6 +21,12 @@ const SecurityAlerts = () => {
   const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // New States for Report Modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRequestId, setSelectedRequestId] = useState(null);
+  const [guardReport, setGuardReport] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchRequests = async () => {
     try {
@@ -34,23 +42,45 @@ const SecurityAlerts = () => {
     }
   };
 
-  const handleResolve = async (id) => {
+  // Opens the modal instead of resolving immediately
+  const openResolveModal = (id) => {
+    setSelectedRequestId(id);
+    setIsModalOpen(true);
+    setGuardReport("");
+  };
+
+  const handleResolve = async () => {
+    if (!guardReport.trim()) {
+      alert("Please enter a resolution report before closing the incident.");
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       const token = localStorage.getItem("token");
       await axios.patch(
-        `${API_URL}/guard-requests/${id}/status`,
-        { status: "RESOLVED" },
+        `${API_URL}/guard-requests/${selectedRequestId}/status`,
+        {
+          status: "RESOLVED",
+          report: guardReport, // Sending the new report column data
+        },
         { headers: { Authorization: `Bearer ${token}` } },
       );
+
+      setIsModalOpen(false);
       fetchRequests();
     } catch (err) {
-      alert("Failed to update status");
+      alert(
+        "Failed to update status. Ensure the 'report' column exists in your backend.",
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   useEffect(() => {
     fetchRequests();
-    const interval = setInterval(fetchRequests, 15000); // Auto-refresh every 15s
+    const interval = setInterval(fetchRequests, 15000);
     return () => clearInterval(interval);
   }, []);
 
@@ -217,18 +247,33 @@ const SecurityAlerts = () => {
                   </div>
                 )}
 
-                {/* Actions */}
+                {/* Actions & Resolution History */}
                 {req.status === "PENDING" ? (
                   <button
-                    onClick={() => handleResolve(req.request_id)}
+                    onClick={() => openResolveModal(req.request_id)}
                     className="w-full bg-[#00704e] text-white font-black py-4 rounded-2xl shadow-[0_10px_20px_-10px_rgba(0,112,78,0.4)] hover:bg-[#005a3e] hover:-translate-y-1 active:translate-y-0 transition-all flex items-center justify-center gap-3 uppercase tracking-widest text-sm"
                   >
                     <CheckCircle size={20} />
                     Resolve Incident
                   </button>
                 ) : (
-                  <div className="text-center py-2 flex items-center justify-center gap-2 text-gray-400 font-bold text-xs uppercase italic">
-                    <CheckCircle size={14} /> This issue has been addressed
+                  <div className="flex flex-col gap-3">
+                    <div className="text-center py-2 flex items-center justify-center gap-2 text-gray-400 font-bold text-xs uppercase italic">
+                      <CheckCircle size={14} /> This issue has been addressed
+                    </div>
+                    {req.report && (
+                      <div className="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100 shadow-sm">
+                        <div className="flex items-center gap-2 mb-2">
+                          <FileText className="w-3 h-3 text-[#00704e]" />
+                          <p className="text-[10px] font-black text-[#00704e] uppercase tracking-wider">
+                            Guard's Resolution Narrative:
+                          </p>
+                        </div>
+                        <p className="text-sm text-slate-700 leading-relaxed font-medium">
+                          {req.report}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -236,6 +281,58 @@ const SecurityAlerts = () => {
           ))
         )}
       </div>
+
+      {/* RESOLUTION MODAL */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-md rounded-[2rem] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="bg-[#00704e] p-6 text-white flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <FileText className="w-6 h-6" />
+                <h2 className="font-black uppercase tracking-tight">
+                  Incident Report
+                </h2>
+              </div>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="hover:rotate-90 transition-transform"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-8">
+              <p className="text-sm text-gray-500 mb-4 leading-relaxed">
+                Please provide a brief narrative of how the incident was
+                resolved. This will be stored as an official record.
+              </p>
+
+              <textarea
+                value={guardReport}
+                onChange={(e) => setGuardReport(e.target.value)}
+                placeholder="Ex: Dispatched unit to location. Verified identity and resolved the noise complaint..."
+                className="w-full h-32 p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-[#00704e] focus:bg-white outline-none transition-all text-sm text-gray-700 resize-none mb-6"
+              />
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="flex-1 py-3 font-bold text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleResolve}
+                  disabled={isSubmitting || !guardReport.trim()}
+                  className="flex-[2] bg-[#00704e] text-white font-black py-3 rounded-xl shadow-lg hover:bg-[#005a3e] disabled:opacity-50 disabled:hover:translate-y-0 transition-all flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? "Saving..." : "Submit & Resolve"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

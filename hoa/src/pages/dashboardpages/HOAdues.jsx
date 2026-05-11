@@ -9,6 +9,7 @@ import {
   CheckCircleIcon,
   PhoneIcon,
   EnvelopeIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/solid";
 
 const HOAdues = () => {
@@ -39,9 +40,15 @@ const HOAdues = () => {
   };
 
   // Logic: Filter and sum ONLY 'Pending' bills for the current resident
-  const totalOutstanding = bills
-    .filter((b) => b.status === "Pending")
-    .reduce((sum, b) => sum + Number(b.amount), 0);
+  const pendingBills = bills.filter((b) => b.status === "Pending");
+
+  const totalOutstanding = pendingBills.reduce(
+    (sum, b) => sum + Number(b.amount),
+    0,
+  );
+
+  // New Logic: Check if there are 3 or more months of unpaid dues
+  const isDelinquent = pendingBills.length >= 3;
 
   return (
     <div className="min-h-screen bg-[#fcfdfc] font-sans antialiased">
@@ -56,8 +63,27 @@ const HOAdues = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto p-6 md:p-10 flex flex-col gap-10">
-        {/* Verification Notice - Data from image_cc82ec.jpg */}
+      <div className="max-w-6xl mx-auto p-6 md:p-10 flex flex-col gap-6">
+        {/* --- DELINQUENCY WARNING --- */}
+        {isDelinquent && (
+          <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 flex items-center gap-5 shadow-md animate-pulse">
+            <div className="bg-red-500 p-3 rounded-full shrink-0">
+              <ExclamationTriangleIcon className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <h2 className="font-black text-red-800 text-lg uppercase tracking-tight">
+                Urgent: Payment Overdue
+              </h2>
+              <p className="text-red-700 text-sm font-medium">
+                You have <strong>{pendingBills.length} months</strong> of unpaid
+                dues. Please settle your balance immediately or visit the Admin
+                Office to avoid service interruptions or penalties.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Verification Notice */}
         <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 flex items-start gap-4 shadow-sm">
           <InformationCircleIcon className="h-10 w-10 text-blue-500 shrink-0" />
           <div>
@@ -84,7 +110,9 @@ const HOAdues = () => {
           {/* Current Balance Card */}
           <div className="bg-white shadow-sm border border-gray-100 rounded-2xl p-8 flex flex-col gap-6">
             <div className="flex items-center gap-3">
-              <div className="w-1.5 h-6 bg-[#00704e] rounded-full"></div>
+              <div
+                className={`w-1.5 h-6 ${isDelinquent ? "bg-red-500" : "bg-[#00704e]"} rounded-full`}
+              ></div>
               <h3 className="font-black text-gray-800 uppercase tracking-widest text-xs">
                 Outstanding Balance
               </h3>
@@ -94,23 +122,21 @@ const HOAdues = () => {
               <p className="text-gray-400 animate-pulse">Syncing records...</p>
             ) : (
               <div className="space-y-4">
-                {bills.filter((b) => b.status === "Pending").length > 0 ? (
-                  bills
-                    .filter((b) => b.status === "Pending")
-                    .map((bill) => (
-                      <div
-                        key={bill.id}
-                        className="flex justify-between text-gray-600"
-                      >
-                        <span>{bill.billingMonth} Assessment</span>
-                        <span className="font-bold text-gray-900">
-                          ₱
-                          {Number(bill.amount).toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                          })}
-                        </span>
-                      </div>
-                    ))
+                {pendingBills.length > 0 ? (
+                  pendingBills.map((bill) => (
+                    <div
+                      key={bill.id}
+                      className="flex justify-between text-gray-600"
+                    >
+                      <span>{bill.billingMonth} Assessment</span>
+                      <span className="font-bold text-gray-900">
+                        ₱
+                        {Number(bill.amount).toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                        })}
+                      </span>
+                    </div>
+                  ))
                 ) : (
                   <p className="text-sm text-green-600 font-medium flex items-center gap-2">
                     <CheckCircleIcon className="h-5 w-5" /> No pending balances!
@@ -122,7 +148,13 @@ const HOAdues = () => {
                     Total to Pay
                   </span>
                   <span
-                    className={`text-4xl font-black tracking-tighter ${totalOutstanding > 0 ? "text-[#00704e]" : "text-gray-300"}`}
+                    className={`text-4xl font-black tracking-tighter ${
+                      isDelinquent
+                        ? "text-red-600"
+                        : totalOutstanding > 0
+                          ? "text-[#00704e]"
+                          : "text-gray-300"
+                    }`}
                   >
                     ₱
                     {totalOutstanding.toLocaleString(undefined, {
@@ -172,7 +204,7 @@ const HOAdues = () => {
           </div>
         </div>
 
-        {/* Payment Channels - Data from image_cc82ec.jpg */}
+        {/* Payment Channels */}
         <div className="flex flex-col gap-6">
           <div className="flex items-center gap-3 border-b border-gray-100 pb-4">
             <div className="w-2 h-8 bg-[#00704e] rounded-full"></div>

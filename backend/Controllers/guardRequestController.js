@@ -50,6 +50,7 @@ export const getAllRequests = async (req, res) => {
         gr.location, 
         gr.photo_url, 
         gr.status, 
+        gr.report,
         gr.created_at,
         rt.type_name, 
         rt.priority_level, 
@@ -80,17 +81,20 @@ export const getPendingRequests = async (req, res) => {
   }
 };
 
-// GUARD: Update status (RESOLVE)
+// GUARD: Update status (RESOLVE) with mandatory report
 export const updateRequestStatus = async (req, res) => {
   const { id } = req.params;
-  const { status } = req.body;
+  const { status, report } = req.body;
+
   try {
+    // If resolving, we ensure the report is included in the update
     await pool.query(
-      "UPDATE guard_requests SET status = ? WHERE request_id = ?",
-      [status, id],
+      "UPDATE guard_requests SET status = ?, report = ? WHERE request_id = ?",
+      [status, report || null, id],
     );
     res.json({ message: `Request marked as ${status}` });
   } catch (err) {
+    console.error("Update error:", err);
     res.status(500).json({ message: "Update failed" });
   }
 };
