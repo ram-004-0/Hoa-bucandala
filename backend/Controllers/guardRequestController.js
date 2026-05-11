@@ -4,7 +4,6 @@ import multer from "multer";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 
 // 1. Cloudinary Configuration
-// Note: You should ideally put these in your .env file
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -15,9 +14,9 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: "hoa-security-reports", // Folder name in Cloudinary
+    folder: "hoa-security-reports",
     allowed_formats: ["jpg", "png", "jpeg"],
-    transformation: [{ width: 800, height: 600, crop: "limit" }], // Optional: Resize to save space
+    transformation: [{ width: 800, height: 600, crop: "limit" }],
   },
 });
 
@@ -29,6 +28,7 @@ export const createGuardRequest = async (req, res) => {
   const accountId = req.user.id;
 
   // Cloudinary returns the full URL in req.file.path
+  // This URL is permanent and won't disappear on refresh
   const photoUrl = req.file ? req.file.path : null;
 
   try {
@@ -65,7 +65,7 @@ export const createGuardRequest = async (req, res) => {
   }
 };
 
-// GUARD: Get all requests
+// GUARD/ADMIN: Get all requests
 export const getAllRequests = async (req, res) => {
   try {
     const [rows] = await pool.query(`
@@ -90,6 +90,7 @@ export const getAllRequests = async (req, res) => {
     `);
     res.json(rows);
   } catch (err) {
+    console.error("Fetch Error:", err);
     res.status(500).json({ message: "Failed to fetch requests" });
   }
 };

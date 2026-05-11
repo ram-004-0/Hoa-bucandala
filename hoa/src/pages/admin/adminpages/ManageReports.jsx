@@ -1,18 +1,36 @@
 import React, { useEffect, useState } from "react";
-import { ShieldCheck, ArrowLeftIcon } from "lucide-react";
+import { ShieldCheck, ArrowLeftIcon, Loader2, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
 const ManageReports = () => {
   const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch reports from backend
+  // Fetch reports from backend with Authorization
   useEffect(() => {
-    fetch(`${API_URL}/guard-requests`)
-      .then((res) => res.json())
-      .then(setReports)
-      .catch(console.error);
+    const fetchReports = async () => {
+      const token = localStorage.getItem("token");
+      try {
+        const res = await fetch(`${API_URL}/guard-requests`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) throw new Error("Unauthorized or Server Error");
+
+        const data = await res.json();
+        setReports(data);
+      } catch (err) {
+        console.error("Fetch Error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReports();
   }, []);
 
   return (
@@ -26,32 +44,70 @@ const ManageReports = () => {
       </div>
 
       <div className="m-10">
-        {/* Table */}
-        {reports.length > 0 ? (
-          <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <Loader2 className="animate-spin h-10 w-10 text-[#00704e]" />
+          </div>
+        ) : reports.length > 0 ? (
+          <div className="bg-white shadow-md rounded-2xl overflow-hidden border border-gray-100">
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  {["Title", "Type", "Date", "Status", "Actions"].map((h) => (
+                  {[
+                    "Resident",
+                    "Type",
+                    "Location",
+                    "Date",
+                    "Status",
+                    "Actions",
+                  ].map((h) => (
                     <th
                       key={h}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                      className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider"
                     >
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody className="divide-y divide-gray-100">
                 {reports.map((r) => (
-                  <tr key={r.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 font-medium">{r.title}</td>
-                    <td className="px-6 py-4 text-gray-600">{r.type}</td>
-                    <td className="px-6 py-4 text-gray-600">{r.date}</td>
-                    <td className="px-6 py-4 text-gray-600">{r.status}</td>
+                  <tr
+                    key={r.request_id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-6 py-4 font-bold text-gray-700">
+                      <div>{r.full_name}</div>
+                      <div className="text-[10px] text-gray-400 uppercase tracking-tighter">
+                        {r.contact}
+                      </div>
+                    </td>
                     <td className="px-6 py-4">
-                      {/* Actions placeholder */}
-                      <span className="text-blue-600 cursor-pointer">View</span>
+                      <span className="text-sm font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-md">
+                        {r.type_name}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-gray-600 text-sm">
+                      {r.location}
+                    </td>
+                    <td className="px-6 py-4 text-gray-500 text-sm">
+                      {new Date(r.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-3 py-1 text-xs rounded-full font-black uppercase ${
+                          r.status === "PENDING"
+                            ? "bg-orange-100 text-orange-600"
+                            : "bg-green-100 text-green-600"
+                        }`}
+                      >
+                        {r.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <button className="flex items-center gap-1 text-[#00704e] font-bold hover:underline">
+                        <Eye size={16} /> VIEW
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -59,10 +115,14 @@ const ManageReports = () => {
             </table>
           </div>
         ) : (
-          <div className="bg-white shadow-md rounded-lg p-8 text-center mt-8">
-            <ShieldCheck className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium">No reports found</h3>
-            <p className="text-gray-500">Reports will appear here once added</p>
+          <div className="bg-white shadow-md rounded-2xl p-12 text-center mt-8 border-2 border-dashed border-gray-100">
+            <ShieldCheck className="h-16 w-16 mx-auto text-gray-200 mb-4" />
+            <h3 className="text-xl font-black text-gray-400">
+              No security reports found
+            </h3>
+            <p className="text-gray-400 text-sm">
+              Community security logs will appear here.
+            </p>
           </div>
         )}
       </div>
