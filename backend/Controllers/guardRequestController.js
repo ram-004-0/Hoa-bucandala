@@ -1,10 +1,35 @@
 import pool from "../config/db.js";
+import { v2 as cloudinary } from "cloudinary";
+import multer from "multer";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+
+// 1. Cloudinary Configuration
+// Note: You should ideally put these in your .env file
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// 2. Setup Cloudinary Storage for Multer
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "hoa-security-reports", // Folder name in Cloudinary
+    allowed_formats: ["jpg", "png", "jpeg"],
+    transformation: [{ width: 800, height: 600, crop: "limit" }], // Optional: Resize to save space
+  },
+});
+
+export const upload = multer({ storage: storage });
 
 // RESIDENT: Create a new request
 export const createGuardRequest = async (req, res) => {
   const { situation_details, location, request_type_name } = req.body;
   const accountId = req.user.id;
-  const photoUrl = req.file ? `/uploads/${req.file.filename}` : null;
+
+  // Cloudinary returns the full URL in req.file.path
+  const photoUrl = req.file ? req.file.path : null;
 
   try {
     const [resident] = await pool.query(
@@ -40,7 +65,7 @@ export const createGuardRequest = async (req, res) => {
   }
 };
 
-// GUARD: Get all requests (Sorted by Priority/Status)
+// GUARD: Get all requests
 export const getAllRequests = async (req, res) => {
   try {
     const [rows] = await pool.query(`
@@ -81,20 +106,17 @@ export const getPendingRequests = async (req, res) => {
   }
 };
 
-// GUARD: Update status (RESOLVE) with mandatory report
+// GUARD: Update status (RESOLVE)
 export const updateRequestStatus = async (req, res) => {
   const { id } = req.params;
   const { status, report } = req.body;
-
   try {
-    // If resolving, we ensure the report is included in the update
     await pool.query(
       "UPDATE guard_requests SET status = ?, report = ? WHERE request_id = ?",
       [status, report || null, id],
     );
     res.json({ message: `Request marked as ${status}` });
   } catch (err) {
-    console.error("Update error:", err);
     res.status(500).json({ message: "Update failed" });
   }
 };
