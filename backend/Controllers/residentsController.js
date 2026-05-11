@@ -60,46 +60,42 @@ export const getResidents = async (req, res) => {
   }
 };
 
-// 🛠️ Update Resident (The critical part for the Edit button)
+// --- controllers/residentController.js ---
 export const updateResident = async (req, res) => {
-  const { id } = req.params; // resident_id from URL
+  const { id } = req.params; // This will be '3'
   const { full_name, email, address, contact, has_balance } = req.body;
 
   try {
-    const [resident] = await db.query(
+    // 1. Find the account_id first so we can update the email in the accounts table
+    const [residentRows] = await db.query(
       "SELECT account_id FROM residents WHERE resident_id = ?",
       [id],
     );
-    if (resident.length === 0)
-      return res.status(404).json({ error: "Not found" });
 
-    const accountId = resident[0].account_id;
+    if (residentRows.length === 0) {
+      return res.status(404).json({ error: "Resident not found in database" });
+    }
 
-    // Update Email in Accounts
+    const accountId = residentRows[0].account_id;
+
+    // 2. Update Email in Accounts Table
     await db.query("UPDATE accounts SET email = ? WHERE id = ?", [
       email,
       accountId,
     ]);
 
-    // Update Profile in Residents
     await db.query(
       "UPDATE residents SET full_name = ?, address = ?, contact = ?, has_balance = ? WHERE resident_id = ?",
       [full_name, address, contact, has_balance ? 1 : 0, id],
     );
 
-    res.json({
-      message: "Updated",
-      resident_id: id,
-      full_name,
-      email,
-      address,
-      contact,
-      has_balance,
-    });
+    res.json({ message: "Update successful", resident_id: id });
   } catch (err) {
-    if (err.code === "ER_DUP_ENTRY")
+    console.error(err);
+    if (err.code === "ER_DUP_ENTRY") {
       return res.status(400).json({ error: "Email already in use" });
-    res.status(500).json({ error: err.message });
+    }
+    res.status(500).json({ error: "Database update failed" });
   }
 };
 
