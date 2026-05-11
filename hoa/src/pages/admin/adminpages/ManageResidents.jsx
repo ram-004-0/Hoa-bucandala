@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   ShieldCheck,
   ArrowLeftIcon,
@@ -24,24 +24,19 @@ const ManageResidents = () => {
   const [showGuardModal, setShowGuardModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
-  useEffect(() => {
-    fetchAllUsers();
-  }, []);
-
-  const fetchAllUsers = async () => {
+  // Use useCallback to stabilize the fetch function
+  const fetchAllUsers = useCallback(async () => {
     const token = localStorage.getItem("token");
     if (!token) return;
     try {
-      // Fetching from residents instead of guards to get the full list
       const res = await fetch(`${API_URL}/residents`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
 
-      // Transform data to match UI state needs
       const transformed = data.map((u) => ({
         id: u.resident_id || u.id,
-        account_id: u.account_id, // CRITICAL: Store this for the update reference
+        account_id: u.account_id,
         name: u.full_name || u.name || u.username,
         email: u.email,
         address: u.address,
@@ -56,36 +51,30 @@ const ManageResidents = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchAllUsers();
+  }, [fetchAllUsers]);
 
   const handleDelete = async (user) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete ${user.name}? This cannot be undone.`,
-      )
-    ) {
+    if (!window.confirm(`Are you sure you want to delete ${user.name}?`))
       return;
-    }
 
     const token = localStorage.getItem("token");
     const rolePath = user.role === "RESIDENT" ? "residents" : "guards";
-    const endpoint = `${API_URL}/${rolePath}/${user.id}`;
 
     try {
-      const res = await fetch(endpoint, {
+      const res = await fetch(`${API_URL}/${rolePath}/${user.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (res.ok) {
         setUsers((prev) => prev.filter((u) => u.id !== user.id));
-      } else {
-        const errData = await res.json();
-        alert(`Error: ${errData.message}`);
       }
     } catch (err) {
-      console.error("Delete request failed:", err);
-      alert("Network error. Could not reach the server.");
+      console.error("Delete failed:", err);
     }
   };
 
@@ -108,14 +97,15 @@ const ManageResidents = () => {
   };
 
   const handleUpdateEntry = (updated) => {
+    // 1. Close the modal first to break any render cycles
+    setSelectedUser(null);
+
+    // 2. Update the state
     setUsers((prev) =>
       prev.map((u) => {
-        // Match by account_id since that's what we are using in the backend now
         const isMatch =
           u.account_id === updated.account_id ||
-          u.id === updated.resident_id ||
-          u.id === updated.id;
-
+          u.id === (updated.resident_id || updated.id);
         if (isMatch) {
           return {
             ...u,
@@ -132,7 +122,6 @@ const ManageResidents = () => {
         return u;
       }),
     );
-    setSelectedUser(null);
   };
 
   const filteredDisplay = users.filter(
@@ -168,14 +157,13 @@ const ManageResidents = () => {
           />
         </div>
 
-        {/* Tab Selection */}
         <div className="flex border-b border-gray-200 mb-6">
           <button
             onClick={() => setCurrentTab("RESIDENT")}
             className={`px-6 py-3 font-bold text-sm transition-all flex items-center gap-2 ${
               currentTab === "RESIDENT"
                 ? "border-b-2 border-[#00704e] text-[#00704e]"
-                : "text-gray-400 hover:text-gray-600"
+                : "text-gray-400"
             }`}
           >
             <Users className="h-4 w-4" /> Residents
@@ -185,7 +173,7 @@ const ManageResidents = () => {
             className={`px-6 py-3 font-bold text-sm transition-all flex items-center gap-2 ${
               currentTab === "GUARD"
                 ? "border-b-2 border-blue-600 text-blue-600"
-                : "text-gray-400 hover:text-gray-600"
+                : "text-gray-400"
             }`}
           >
             <ShieldCheck className="h-4 w-4" /> Security Guards
@@ -198,40 +186,32 @@ const ManageResidents = () => {
             <input
               type="text"
               placeholder={`Search ${currentTab.toLowerCase()}s...`}
-              className="pl-10 pr-4 py-2 border rounded-xl w-full outline-none focus:ring-2 focus:ring-[#00704e] bg-white shadow-sm"
+              className="pl-10 pr-4 py-2 border rounded-xl w-full outline-none focus:ring-2 focus:ring-[#00704e] bg-white"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-
-          <div className="flex gap-3 w-full md:w-auto">
-            {currentTab === "GUARD" ? (
-              <button
-                onClick={() => setShowGuardModal(true)}
-                className="flex-1 md:flex-none bg-blue-600 text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-md"
-              >
-                <Plus className="h-5 w-5" /> Add Guard
-              </button>
-            ) : (
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="flex-1 md:flex-none bg-[#00704e] text-white px-6 py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-[#005a3e] transition-all shadow-md"
-              >
-                <UserPlus className="h-5 w-5" /> Add Resident
-              </button>
-            )}
-          </div>
+          <button
+            onClick={() =>
+              currentTab === "GUARD"
+                ? setShowGuardModal(true)
+                : setShowCreateModal(true)
+            }
+            className={`px-6 py-2.5 rounded-xl text-white font-bold flex items-center gap-2 ${currentTab === "GUARD" ? "bg-blue-600" : "bg-[#00704e]"}`}
+          >
+            {currentTab === "GUARD" ? <Plus /> : <UserPlus />} Add {currentTab}
+          </button>
         </div>
 
         <div className="bg-white shadow-sm rounded-2xl overflow-hidden border border-gray-200">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-100">
+            <thead className="bg-gray-50">
               <tr>
                 {["Name", "Address", "Contact", "Status", "Actions"].map(
                   (h) => (
                     <th
                       key={h}
-                      className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase tracking-wider"
+                      className="px-6 py-4 text-left text-xs font-bold text-gray-400 uppercase"
                     >
                       {h}
                     </th>
@@ -241,10 +221,7 @@ const ManageResidents = () => {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filteredDisplay.map((u) => (
-                <tr
-                  key={u.account_id || u.id}
-                  className="hover:bg-gray-50/50 transition-colors"
-                >
+                <tr key={u.account_id || u.id}>
                   <td className="px-6 py-4 font-bold text-gray-700">
                     {u.name}
                   </td>
@@ -255,48 +232,34 @@ const ManageResidents = () => {
                     {u.contact}
                   </td>
                   <td className="px-6 py-4">
-                    {u.role === "RESIDENT" ? (
-                      <span
-                        className={`px-3 py-1 text-xs rounded-full font-bold ${u.withBalance ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}
-                      >
-                        {u.withBalance ? "Has Balance" : "Cleared"}
-                      </span>
-                    ) : (
-                      <span className="px-3 py-1 text-xs rounded-full font-bold bg-blue-100 text-blue-700">
-                        Active Duty
-                      </span>
-                    )}
+                    <span
+                      className={`px-3 py-1 text-xs rounded-full font-bold ${u.withBalance ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}
+                    >
+                      {u.role === "GUARD"
+                        ? "Active Duty"
+                        : u.withBalance
+                          ? "Has Balance"
+                          : "Cleared"}
+                    </span>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex gap-4">
-                      <button
-                        onClick={() => setSelectedUser(u)}
-                        className="text-blue-500 hover:text-blue-700"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(u)}
-                        className="text-red-400 hover:text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                  <td className="px-6 py-4 flex gap-4">
+                    <button
+                      onClick={() => setSelectedUser(u)}
+                      className="text-blue-500"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(u)}
+                      className="text-red-400"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {filteredDisplay.length === 0 && !loading && (
-            <div className="p-20 text-center text-gray-400">
-              No {currentTab.toLowerCase()}s found matching your search.
-            </div>
-          )}
-          {loading && (
-            <p className="p-10 text-center text-gray-500 animate-pulse">
-              Syncing database records...
-            </p>
-          )}
         </div>
       </div>
 
@@ -318,7 +281,7 @@ const ManageResidents = () => {
           editData={selectedUser}
           isGuardRole={selectedUser.role === "GUARD"}
           onClose={() => setSelectedUser(null)}
-          onCreate={handleUpdateEntry} // This handles the state update immediately
+          onCreate={handleUpdateEntry}
         />
       )}
     </div>
@@ -327,7 +290,7 @@ const ManageResidents = () => {
 
 const StatCard = ({ title, value, red, blue }) => (
   <div className="p-6 bg-white shadow-sm rounded-2xl flex-1 border border-gray-100">
-    <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
+    <h2 className="text-[10px] font-black text-gray-400 uppercase mb-1">
       {title}
     </h2>
     <span

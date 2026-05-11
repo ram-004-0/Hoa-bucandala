@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   User,
   X,
@@ -19,7 +19,7 @@ const SuccessModal = ({ data, onClose, isGuardRole }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
       <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center shadow-2xl animate-in zoom-in duration-300">
         <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
           <CheckCircle2 size={40} />
@@ -30,7 +30,7 @@ const SuccessModal = ({ data, onClose, isGuardRole }) => {
         <p className="text-gray-500 text-sm mb-8">
           The {isGuardRole ? "guard" : "resident"} account is ready.
         </p>
-        <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl p-6 mb-8 relative group">
+        <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl p-6 mb-8 relative">
           <label className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">
             Temporary Password
           </label>
@@ -60,7 +60,10 @@ const SuccessModal = ({ data, onClose, isGuardRole }) => {
 };
 
 const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
-  // Initialize state directly from editData to prevent flicker
+  // Use a ref to track if the component is mounted to prevent state updates on unmounted component
+  const isMounted = useRef(true);
+
+  // INITIAL STATE: This prevents the flicker by setting data immediately on the first render
   const [formData, setFormData] = useState({
     name: editData?.full_name || editData?.name || "",
     email: editData?.email || "",
@@ -72,8 +75,9 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
   const [loading, setLoading] = useState(false);
   const [successData, setSuccessData] = useState(null);
 
-  // Sync state if editData changes while modal is open
   useEffect(() => {
+    isMounted.current = true;
+    // Only update if editData exists and is actually different from current form (prevents loop)
     if (editData) {
       setFormData({
         name: editData.full_name || editData.name || "",
@@ -83,10 +87,15 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
         withBalance: !!(editData.has_balance || editData.withBalance),
       });
     }
+    return () => {
+      isMounted.current = false;
+    };
   }, [editData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
+
     setLoading(true);
     const token = localStorage.getItem("token");
     const BASE_URL =
@@ -95,16 +104,13 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
     const isEditing = !!editData;
     const method = isEditing ? "PUT" : "POST";
 
-    let url = "";
-
-    if (isEditing) {
-      // Use account_id as the primary reference for the edit URL
-      const id = editData.account_id || editData.resident_id || editData.id;
-      const typePath = isGuardRole ? "guards" : "residents";
-      url = `${BASE_URL}/${typePath}/edit/${id}`;
-    } else {
-      url = isGuardRole ? `${BASE_URL}/guards` : `${BASE_URL}/residents`;
-    }
+    // We target the account_id specifically to avoid the "Resident not found" error
+    const targetId =
+      editData?.account_id || editData?.resident_id || editData?.id;
+    const typePath = isGuardRole ? "guards" : "residents";
+    const url = isEditing
+      ? `${BASE_URL}/${typePath}/edit/${targetId}`
+      : `${BASE_URL}/${typePath}`;
 
     try {
       const res = await fetch(url, {
@@ -126,31 +132,23 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
 
       if (res.ok) {
         if (isEditing) {
-          // Success: merge backend data with what we already have for immediate UI update
+          // Send back the merged data so the parent table updates instantly without a refresh
           onCreate({ ...editData, ...formData, ...data });
           onClose();
         } else {
           setSuccessData(data);
         }
       } else {
-        console.error("Backend Error Response:", data);
         alert(
           `Error: ${data.error || data.message || "Failed to process request"}`,
         );
       }
     } catch (err) {
       console.error("Submit Error:", err);
-      alert(
-        "Connection to server failed. Please check your internet connection.",
-      );
+      alert("Connection failed. Please check your internet.");
     } finally {
-      setLoading(false);
+      if (isMounted.current) setLoading(false);
     }
-  };
-
-  const handleFinalize = () => {
-    onCreate(successData);
-    onClose();
   };
 
   return (
@@ -159,7 +157,10 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
         <SuccessModal
           data={successData}
           isGuardRole={isGuardRole}
-          onClose={handleFinalize}
+          onClose={() => {
+            onCreate(successData);
+            onClose();
+          }}
         />
       )}
 
@@ -174,11 +175,7 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
 
           <h2 className="text-2xl font-black mb-8 flex items-center gap-3 text-gray-800">
             <div
-              className={`p-2 rounded-lg ${
-                isGuardRole
-                  ? "bg-blue-100 text-blue-600"
-                  : "bg-green-100 text-[#00704e]"
-              }`}
+              className={`p-2 rounded-lg ${isGuardRole ? "bg-blue-100 text-blue-600" : "bg-green-100 text-[#00704e]"}`}
             >
               {isGuardRole ? <ShieldCheck /> : <User />}
             </div>
@@ -190,85 +187,80 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">
-                    Full Name
-                  </label>
-                  <input
-                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-[#00704e]"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">
-                    Email Address
-                  </label>
-                  <input
-                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-[#00704e]"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData({ ...formData, email: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-              </div>
-
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">
-                  Physical Address
-                </label>
-                <textarea
-                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-[#00704e]"
-                  rows="2"
-                  value={formData.address}
-                  onChange={(e) =>
-                    setFormData({ ...formData, address: e.target.value })
-                  }
-                  required
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">
-                  Contact Number
+                  Full Name
                 </label>
                 <input
                   className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-[#00704e]"
-                  value={formData.contact}
+                  value={formData.name}
                   onChange={(e) =>
-                    setFormData({ ...formData, contact: e.target.value })
+                    setFormData({ ...formData, name: e.target.value })
                   }
                   required
                 />
               </div>
-
-              {!isGuardRole && (
-                <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-gray-100">
-                  <input
-                    type="checkbox"
-                    className="w-5 h-5 accent-[#00704e]"
-                    checked={formData.withBalance}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        withBalance: e.target.checked,
-                      })
-                    }
-                  />
-                  <span className="text-sm font-bold text-gray-600 uppercase">
-                    Outstanding Balance
-                  </span>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">
+                  Email Address
                 </label>
-              )}
+                <input
+                  className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-[#00704e]"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                  required
+                />
+              </div>
             </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">
+                Physical Address
+              </label>
+              <textarea
+                className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-[#00704e]"
+                rows="2"
+                value={formData.address}
+                onChange={(e) =>
+                  setFormData({ ...formData, address: e.target.value })
+                }
+                required
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-gray-400 uppercase ml-1">
+                Contact Number
+              </label>
+              <input
+                className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-[#00704e]"
+                value={formData.contact}
+                onChange={(e) =>
+                  setFormData({ ...formData, contact: e.target.value })
+                }
+                required
+              />
+            </div>
+
+            {!isGuardRole && (
+              <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-gray-100">
+                <input
+                  type="checkbox"
+                  className="w-5 h-5 accent-[#00704e]"
+                  checked={formData.withBalance}
+                  onChange={(e) =>
+                    setFormData({ ...formData, withBalance: e.target.checked })
+                  }
+                />
+                <span className="text-sm font-bold text-gray-600 uppercase">
+                  Outstanding Balance
+                </span>
+              </label>
+            )}
 
             <button
               type="submit"
