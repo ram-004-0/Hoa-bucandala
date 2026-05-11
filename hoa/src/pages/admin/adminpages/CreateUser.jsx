@@ -73,16 +73,17 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
     withBalance: false,
   });
   const [loading, setLoading] = useState(false);
-  const [successData, setSuccessData] = useState(null); // Track success state
+  const [successData, setSuccessData] = useState(null);
 
   useEffect(() => {
     if (editData) {
       setFormData({
-        name: editData.name,
-        email: editData.email,
-        address: editData.address,
-        contact: editData.contact,
-        withBalance: editData.withBalance,
+        name: editData.full_name || editData.name || "",
+        email: editData.email || "",
+        address: editData.address || "",
+        contact: editData.contact || "",
+        withBalance:
+          editData.has_balance === 1 || editData.withBalance === true,
       });
     }
   }, [editData]);
@@ -91,12 +92,17 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
     e.preventDefault();
     setLoading(true);
     const token = localStorage.getItem("token");
+    const BASE_URL =
+      "https://hoa-camellabucandalav-production.up.railway.app/api";
 
-    let url = `https://hoa-camellabucandalav-production.up.railway.app/api/residents`;
+    let url = `${BASE_URL}/residents`;
+
+    // Updated Logic: Matches your backend router.put("edit/:id", ...)
     if (editData) {
-      url = `https://hoa-camellabucandalav-production.up.railway.app/api/residents/${editData.id}`;
+      const id = editData.resident_id || editData.id;
+      url = `${BASE_URL}/residents/edit/${id}`;
     } else if (isGuardRole) {
-      url = `https://hoa-camellabucandalav-production.up.railway.app/api/guards`;
+      url = `${BASE_URL}/guards`;
     }
 
     const method = editData ? "PUT" : "POST";
@@ -121,14 +127,15 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
 
       if (res.ok) {
         if (editData) {
+          // If editing, we pass the updated data back to the parent and close
           onCreate(data);
           onClose();
         } else {
-          // If creating new, show the success modal instead of alert
+          // If creating new, show the success modal (password view)
           setSuccessData(data);
         }
       } else {
-        alert(data.message || "Action failed");
+        alert(data.error || data.message || "Action failed");
       }
     } catch (err) {
       console.error(err);
@@ -145,7 +152,6 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
 
   return (
     <>
-      {/* Show Success Modal if we have data and aren't in edit mode */}
       {successData && (
         <SuccessModal
           data={successData}

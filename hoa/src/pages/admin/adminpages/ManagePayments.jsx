@@ -214,7 +214,7 @@ const ManagePayments = () => {
                 </th>
                 {view !== "residents" && (
                   <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">
-                    Month
+                    Year & Month
                   </th>
                 )}
                 <th className="px-6 py-4 text-xs font-black text-gray-400 uppercase tracking-widest">
