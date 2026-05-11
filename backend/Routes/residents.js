@@ -20,7 +20,7 @@ router.get("/", authenticate, authorizeRoles("ADMIN"), getResidents);
 router.post("/", authenticate, authorizeRoles("ADMIN"), createResident);
 
 // ID-based routes for Update and Delete
-router.put("edit/:id", authenticate, authorizeRoles("ADMIN"), updateResident);
+router.put("/edit/:id", authenticate, authorizeRoles("ADMIN"), updateResident);
 router.delete("/:id", authenticate, authorizeRoles("ADMIN"), deleteResident);
 
 export default router;
