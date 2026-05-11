@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Radio, RadioGroup } from "@headlessui/react";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import {
@@ -13,7 +13,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 const AMENITY_ID = 3;
-const MAX_CAPACITY = 20; // Define max capacity constant
+const MAX_CAPACITY = 20;
 const TIME_SLOTS = [
   { label: "08:00 AM - 12:00 PM", value: "08:00-12:00" },
   { label: "12:00 PM - 04:00 PM", value: "12:00-16:00" },
@@ -32,7 +32,7 @@ const SwimmingPool = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const checkTokenExpiry = () => {
+  const checkTokenExpiry = useCallback(() => {
     const token = localStorage.getItem("token");
     if (!token) {
       navigate("/login");
@@ -49,44 +49,60 @@ const SwimmingPool = () => {
     } catch {
       return false;
     }
-  };
+  }, [navigate]);
+
+  const fetchAvailability = useCallback(async () => {
+    if (!date) return;
+    const token = localStorage.getItem("token");
+
+    try {
+      const res = await fetch(
+        `${API_URL}/amenities/${AMENITY_ID}/availability?date=${date}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      const data = await res.json();
+
+      const updatedSlots = TIME_SLOTS.map((slot) => {
+        // Find the summed guest count for this slot from the new backend response
+        const slotData = data.slotDetails?.find(
+          (d) => d.time_slot === slot.value,
+        ) || { total_guests: 0 };
+
+        const currentTotal = parseInt(slotData.total_guests) || 0;
+
+        return {
+          ...slot,
+          currentPax: currentTotal,
+          available: currentTotal < MAX_CAPACITY,
+        };
+      });
+
+      setSlots(updatedSlots);
+
+      // If the currently selected slot becomes full due to an update, clear selection
+      if (selectedSlot) {
+        const current = updatedSlots.find(
+          (s) => s.value === selectedSlot.value,
+        );
+        if (current && current.currentPax >= MAX_CAPACITY)
+          setSelectedSlot(null);
+      }
+    } catch (err) {
+      setError("Failed to load availability.");
+    }
+  }, [date, selectedSlot]);
 
   useEffect(() => {
-    if (!date || !checkTokenExpiry()) return;
-    const token = localStorage.getItem("token");
-    setSelectedSlot(null);
-    setError("");
-
-    // Fetch availability which should ideally return the current guest count per slot
-    fetch(`${API_URL}/amenities/${AMENITY_ID}/availability?date=${date}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        const updatedSlots = TIME_SLOTS.map((slot) => {
-          // Find if this slot has existing bookings in the data returned by backend
-          const slotData = data.slotDetails?.find(
-            (d) => d.time_slot === slot.value,
-          ) || { total_guests: 0 };
-          const currentTotal = slotData.total_guests || 0;
-
-          return {
-            ...slot,
-            currentPax: currentTotal,
-            // Slot is available ONLY if current total is less than MAX_CAPACITY
-            available: currentTotal < MAX_CAPACITY,
-          };
-        });
-        setSlots(updatedSlots);
-        setSelectedSlot(updatedSlots.find((s) => s.available) || null);
-      })
-      .catch(() => setError("Failed to load availability."));
-  }, [date, navigate]);
+    if (date && checkTokenExpiry()) {
+      fetchAvailability();
+    }
+  }, [date, checkTokenExpiry, fetchAvailability]);
 
   const handleBooking = async () => {
     if (!date || !selectedSlot || !checkTokenExpiry()) return;
 
-    // Validation for user's input against remaining capacity
     const remaining = MAX_CAPACITY - selectedSlot.currentPax;
     if (pax > remaining) {
       alert(`Only ${remaining} spots left for this slot.`);
@@ -150,11 +166,7 @@ const SwimmingPool = () => {
         </div>
       </div>
 
-      <br />
-      <br />
-      <br />
-
-      <div className="max-w-4xl mx-auto -mt-10 px-4 space-y-6">
+      <div className="max-w-4xl mx-auto -mt-10 px-4 space-y-6 pt-10">
         <div className="bg-white shadow-xl rounded-[2rem] p-8 border border-gray-100 space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-4">
@@ -252,6 +264,7 @@ const SwimmingPool = () => {
               >
                 {slots.map((slot) => {
                   const isFull = slot.currentPax >= MAX_CAPACITY;
+                  const remaining = MAX_CAPACITY - slot.currentPax;
                   return (
                     <Radio
                       key={slot.value}
@@ -275,7 +288,7 @@ const SwimmingPool = () => {
                             >
                               {isFull
                                 ? "Slot Full"
-                                : `Available (${MAX_CAPACITY - slot.currentPax} left)`}
+                                : `Available (${remaining} left)`}
                             </p>
                           </div>
                           {checked && (

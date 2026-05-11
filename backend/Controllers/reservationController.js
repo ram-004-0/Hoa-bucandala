@@ -36,9 +36,9 @@ export const getAllReservations = async (req, res) => {
  */
 export const createReservation = async (req, res) => {
   try {
-    // Added guest_count to destructuring
     const { amenity_id, reservation_date, time_slot, guest_count } = req.body;
     const accountId = req.user.id;
+    const MAX_POOL_CAPACITY = 20;
 
     const [[resident]] = await db.query(
       "SELECT resident_id FROM residents WHERE account_id = ?",
@@ -49,7 +49,22 @@ export const createReservation = async (req, res) => {
       return res.status(403).json({ message: "Not a resident account" });
     }
 
-    // Updated INSERT to include guest_count
+    // SERVER-SIDE CAPACITY CHECK (Especially for Swimming Pool - Amenity ID 3)
+    if (amenity_id === 3 || amenity_id === "3") {
+      const [[capacityCheck]] = await db.query(
+        `SELECT SUM(guest_count) as total FROM amenities_reservation 
+         WHERE amenity_id = ? AND reservation_date = ? AND time_slot = ? AND status = 'Approved'`,
+        [amenity_id, reservation_date, time_slot],
+      );
+
+      const currentTotal = parseInt(capacityCheck.total) || 0;
+      if (currentTotal + parseInt(guest_count) > MAX_POOL_CAPACITY) {
+        return res.status(400).json({
+          message: `Booking failed. Only ${MAX_POOL_CAPACITY - currentTotal} spots remaining.`,
+        });
+      }
+    }
+
     const [result] = await db.query(
       `INSERT INTO amenities_reservation (amenity_id, resident_id, reservation_date, time_slot, guest_count) VALUES (?, ?, ?, ?, ?)`,
       [
@@ -61,7 +76,6 @@ export const createReservation = async (req, res) => {
       ],
     );
 
-    // Fetch the newly created reservation to get the actual database status
     const [[newReservation]] = await db.query(
       "SELECT status, guest_count FROM amenities_reservation WHERE reservation_id = ?",
       [result.insertId],
@@ -96,8 +110,19 @@ export const getAvailability = async (req, res) => {
     const { id } = req.params; // amenity_id
     const { date } = req.query;
 
+    // 1. Get detailed counts for the Swimming Pool (or all amenities)
+    // This SUMs up guest_counts ONLY for Approved reservations
+    const [slotDetails] = await db.query(
+      `SELECT time_slot, SUM(guest_count) as total_guests 
+       FROM amenities_reservation 
+       WHERE amenity_id = ? AND reservation_date = ? AND status = 'Approved'
+       GROUP BY time_slot`,
+      [id, date],
+    );
+
+    // 2. legacy check for "fully blocked" slots (for amenities like Basketball that are 1 group only)
     const [rows] = await db.query(
-      "SELECT time_slot FROM amenities_reservation WHERE amenity_id = ? AND reservation_date = ?",
+      "SELECT time_slot FROM amenities_reservation WHERE amenity_id = ? AND reservation_date = ? AND status != 'Rejected'",
       [id, date],
     );
 
@@ -111,8 +136,10 @@ export const getAvailability = async (req, res) => {
 
     res.json({
       availableSlots: allSlots.filter((slot) => !bookedSlots.includes(slot)),
+      slotDetails: slotDetails, // Frontend uses this to calculate "X left"
     });
   } catch (err) {
+    console.error("Availability error:", err);
     res.status(500).json({ message: "Error loading availability" });
   }
 };
@@ -138,7 +165,7 @@ export const getMyReservations = async (req, res) => {
       `
       SELECT 
         ar.reservation_id,
-        ar.status,         
+        ar.status,          
         ar.guest_count,
         a.name AS amenity_name,
         ar.reservation_date,
@@ -200,8 +227,6 @@ export const deleteReservation = async (req, res) => {
   const { resident_id, amenity_name, is_resident_action } = req.body;
 
   try {
-    // Only send a notification if it's the ADMIN deleting it.
-    // If a resident cancels their own, they don't need a notification.
     if (resident_id && !is_resident_action) {
       await db.query(
         "INSERT INTO notifications (resident_id, type, title, message) VALUES (?, 'Amenity', ?, ?)",
