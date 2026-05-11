@@ -17,14 +17,6 @@ const UserMenuPopUp = ({ logout }) => {
         <span className="text-sm font-bold">My Profile</span>
       </Link>
 
-      <Link
-        to="/settings"
-        className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 text-gray-700 transition-colors"
-      >
-        <Cog6ToothIcon className="w-5 h-5 text-gray-400" />
-        <span className="text-sm font-bold">Settings</span>
-      </Link>
-
       <div className="border-t border-gray-50 my-1"></div>
 
       <button
