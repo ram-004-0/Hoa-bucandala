@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState, useRef } from "react";
+import { Link, useNavigate } from "react-router-dom"; // Added useNavigate
 import {
   LogOutIcon,
   ShieldCheck,
@@ -17,6 +17,9 @@ import Card from "../../props/AdminComponent";
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
+  const isMounted = useRef(true); // Track if component is still active
+
   const [statsData, setStatsData] = useState({
     residents: 0,
     unpaidDues: 0,
@@ -29,9 +32,9 @@ const AdminDashboard = () => {
   const token = localStorage.getItem("token");
 
   const fetchStats = async () => {
+    if (!token) return;
     setLoading(true);
     try {
-      // Removed wasteRequests fetch since the table is deleted
       const results = await Promise.allSettled([
         fetch(`${API_URL}/residents/count`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -50,6 +53,9 @@ const AdminDashboard = () => {
         }),
       ]);
 
+      // CRITICAL: If the user logged out while waiting for these fetches, STOP here.
+      if (!isMounted.current) return;
+
       const newData = { ...statsData };
 
       const parseResult = async (res) => {
@@ -67,15 +73,15 @@ const AdminDashboard = () => {
       const res1 = await parseResult(results[1]);
       if (res1) newData.reservations = Array.isArray(res1) ? res1.length : 0;
 
-      // 3. Security Reports (Index 2 in results array)
+      // 3. Security Reports
       const res2 = await parseResult(results[2]);
       if (res2) newData.securityReports = Array.isArray(res2) ? res2.length : 0;
 
-      // 4. Uncollected Dues (Index 3 in results array)
+      // 4. Uncollected Dues
       const res3 = await parseResult(results[3]);
       if (res3) newData.unpaidDues = res3.totalAmount || 0;
 
-      // 5. Visitor Count (Index 4 in results array)
+      // 5. Visitor Count
       const res4 = await parseResult(results[4]);
       if (res4) newData.visitorCount = Array.isArray(res4) ? res4.length : 0;
 
@@ -83,12 +89,19 @@ const AdminDashboard = () => {
     } catch (err) {
       console.error("Dashboard Fetch Error:", err);
     } finally {
-      setLoading(false);
+      // Only set loading false if we are still on the page
+      if (isMounted.current) setLoading(false);
     }
   };
 
   useEffect(() => {
+    isMounted.current = true;
     fetchStats();
+
+    // Cleanup function: runs when the component unmounts (logout)
+    return () => {
+      isMounted.current = false;
+    };
   }, []);
 
   const dynamicStats = [
@@ -125,8 +138,12 @@ const AdminDashboard = () => {
   ];
 
   const handleLogout = () => {
+    // 1. Stop any pending state updates immediately
+    isMounted.current = false;
+    // 2. Clear session
     localStorage.removeItem("token");
-    window.location.href = "/login";
+    // 3. Navigate away using React Router (smoother than window.location)
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -204,7 +221,6 @@ const AdminDashboard = () => {
                 image={<BanknoteIcon className="text-red-700 w-6 h-6" />}
               />
             </Link>
-            {/* Waste Pickups Card Removed */}
             <Link to="/admin/manage-reports">
               <Card
                 name="Security Logs"
