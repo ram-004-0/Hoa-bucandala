@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeftIcon, Trash2 } from "lucide-react"; // Added Trash2 for the cancel icon
-import { Calendar, Clock, MapPin, Info } from "lucide-react";
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { Calendar, Clock, MapPin, Info, Trash2, Loader2 } from "lucide-react";
 import axios from "axios";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
@@ -9,7 +9,7 @@ const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 const AmenityHistory = () => {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [cancellingId, setCancellingId] = useState(null); // Track which item is being cancelled
+  const [cancellingId, setCancellingId] = useState(null); // To track loading for specific cancel buttons
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -44,34 +44,31 @@ const AmenityHistory = () => {
     });
   };
 
-  // NEW: Function to handle cancellation
-  const handleCancel = async (e, reservationId) => {
-    e.stopPropagation(); // Prevents navigating to success page when clicking cancel
+  /**
+   * HANDLE CANCEL RESERVATION
+   * Sends a DELETE request and updates the local state.
+   */
+  const handleCancel = async (e, resId) => {
+    e.stopPropagation(); // CRITICAL: Prevents the row click from firing
 
-    const confirmCancel = window.confirm(
-      "Are you sure you want to cancel this reservation? This action cannot be undone.",
-    );
+    if (!window.confirm("Are you sure you want to cancel this reservation?"))
+      return;
 
-    if (!confirmCancel) return;
-
-    setCancellingId(reservationId);
+    setCancellingId(resId);
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`${API_URL}/reservations/${reservationId}`, {
+      await axios.delete(`${API_URL}/reservations/${resId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // Remove the cancelled reservation from local state
+      // Filter out the cancelled reservation from UI
       setReservations((prev) =>
-        prev.filter((res) => res.reservation_id !== reservationId),
+        prev.filter((item) => item.reservation_id !== resId),
       );
       alert("Reservation cancelled successfully.");
     } catch (error) {
-      console.error("Error cancelling reservation:", error);
-      alert(
-        error.response?.data?.message ||
-          "Failed to cancel reservation. Please try again.",
-      );
+      console.error("Cancellation Error:", error);
+      alert(error.response?.data?.message || "Could not cancel reservation.");
     } finally {
       setCancellingId(null);
     }
@@ -85,8 +82,6 @@ const AmenityHistory = () => {
         return "bg-yellow-100 text-yellow-700 border-yellow-200";
       case "rejected":
         return "bg-red-100 text-red-700 border-red-200";
-      case "cancelled":
-        return "bg-gray-100 text-gray-500 border-gray-200";
       default:
         return "bg-gray-100 text-gray-700 border-gray-200";
     }
@@ -94,6 +89,7 @@ const AmenityHistory = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header */}
       <div className="bg-[#00704e] h-40 gap-10 grid grid-cols-[10%_90%] p-10 text-white items-center">
         <Link to="/amenities">
           <ArrowLeftIcon className="h-10 w-10 ml-5 md:ml-10 cursor-pointer text-white" />
@@ -128,7 +124,7 @@ const AmenityHistory = () => {
               <div
                 key={res.reservation_id}
                 onClick={() => handleRowClick(res)}
-                className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer hover:border-[#00704e] hover:shadow-md transition-all active:scale-[0.98] relative overflow-hidden"
+                className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer hover:border-[#00704e] hover:shadow-md transition-all active:scale-[0.98]"
               >
                 <div className="flex items-center gap-4">
                   <div className="bg-green-50 p-3 rounded-xl text-[#00704e]">
@@ -172,22 +168,21 @@ const AmenityHistory = () => {
                     </div>
                   </div>
 
-                  {/* Cancel Button - Only shows if status is not 'rejected' or 'cancelled' */}
-                  {res.status?.toLowerCase() !== "rejected" &&
-                    res.status?.toLowerCase() !== "cancelled" && (
-                      <button
-                        onClick={(e) => handleCancel(e, res.reservation_id)}
-                        disabled={cancellingId === res.reservation_id}
-                        className="flex items-center justify-center gap-2 px-4 py-2 border border-red-200 text-red-600 rounded-xl text-xs font-bold hover:bg-red-50 transition-colors disabled:opacity-50"
-                      >
-                        {cancellingId === res.reservation_id ? (
-                          <div className="h-3 w-3 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
-                        ) : (
-                          <Trash2 className="w-3.5 h-3.5" />
-                        )}
-                        CANCEL BOOKING
-                      </button>
-                    )}
+                  {/* CANCEL BUTTON */}
+                  {res.status?.toLowerCase() === "pending" && (
+                    <button
+                      onClick={(e) => handleCancel(e, res.reservation_id)}
+                      disabled={cancellingId === res.reservation_id}
+                      className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-100 transition-colors border border-red-100"
+                    >
+                      {cancellingId === res.reservation_id ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5" />
+                      )}
+                      Cancel Reservation
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
