@@ -6,7 +6,6 @@ import { fileURLToPath } from "url";
 // Route Imports
 import residentsRoutes from "./Routes/residents.js";
 import authRoutes from "./Routes/auth.js";
-import wasteRoutes from "./Routes/waste.js";
 import reservationRoutes from "./Routes/reservation.js";
 import reportsRoutes from "./Routes/reports.js";
 import announcementRoutes from "./Routes/announcement.js";
@@ -59,7 +58,6 @@ app.use("/api/announcements", announcementRoutes);
 app.use("/api/visitors", visitorRoutes);
 app.use("/api/residents", residentsRoutes);
 app.use("/api/payments", paymentsRoutes);
-app.use("/api/waste", wasteRoutes);
 app.use("/api/guard-requests", guardRequestRoutes);
 app.use("/api/guards", guardRoutes);
 app.use("/api/notifications", notificationRoutes);
