@@ -6,7 +6,6 @@ import {
   User2,
   DollarSign,
   Calendar,
-  Trash,
   TriangleAlert,
   RefreshCcw,
   Megaphone,
@@ -22,7 +21,6 @@ const AdminDashboard = () => {
     residents: 0,
     unpaidDues: 0,
     reservations: 0,
-    wasteRequests: 0,
     visitorCount: 0,
     securityReports: 0,
   });
@@ -33,7 +31,7 @@ const AdminDashboard = () => {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      // Cleaned up the array to remove duplicate calls
+      // Removed wasteRequests fetch since the table is deleted
       const results = await Promise.allSettled([
         fetch(`${API_URL}/residents/count`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -44,7 +42,6 @@ const AdminDashboard = () => {
         fetch(`${API_URL}/guard-requests`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        // Assuming your router now points to payments for this logic
         fetch(`${API_URL}/payments/unpaid-total`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
@@ -55,7 +52,6 @@ const AdminDashboard = () => {
 
       const newData = { ...statsData };
 
-      // Helper to parse JSON only once and check for OK status
       const parseResult = async (res) => {
         if (res.status === "fulfilled" && res.value.ok) {
           return await res.value.json();
@@ -71,17 +67,17 @@ const AdminDashboard = () => {
       const res1 = await parseResult(results[1]);
       if (res1) newData.reservations = Array.isArray(res1) ? res1.length : 0;
 
-      // 4. Security Reports
+      // 3. Security Reports (Index 2 in results array)
+      const res2 = await parseResult(results[2]);
+      if (res2) newData.securityReports = Array.isArray(res2) ? res2.length : 0;
+
+      // 4. Uncollected Dues (Index 3 in results array)
       const res3 = await parseResult(results[3]);
-      if (res3) newData.securityReports = Array.isArray(res3) ? res3.length : 0;
+      if (res3) newData.unpaidDues = res3.totalAmount || 0;
 
-      // 5. Unverified Dues (from billing table where status = 'Pending')
+      // 5. Visitor Count (Index 4 in results array)
       const res4 = await parseResult(results[4]);
-      if (res4) newData.unpaidDues = res4.totalAmount || 0;
-
-      // 6. Visitor Count
-      const res5 = await parseResult(results[5]);
-      if (res5) newData.visitorCount = Array.isArray(res5) ? res5.length : 0;
+      if (res4) newData.visitorCount = Array.isArray(res4) ? res4.length : 0;
 
       setStatsData(newData);
     } catch (err) {
@@ -114,7 +110,6 @@ const AdminDashboard = () => {
       value: statsData.reservations,
       color: "#7c3aed",
     },
-
     {
       icon: Users,
       label: "Visitor Count",
@@ -209,13 +204,7 @@ const AdminDashboard = () => {
                 image={<DollarSign className="text-red-700 w-6 h-6" />}
               />
             </Link>
-            <Link to="/admin/view-pickups">
-              <Card
-                name="Waste Requests"
-                desc="Manage pickup schedules"
-                image={<Trash className="text-green-700 w-6 h-6" />}
-              />
-            </Link>
+            {/* Waste Pickups Card Removed */}
             <Link to="/admin/manage-reports">
               <Card
                 name="Security Logs"
