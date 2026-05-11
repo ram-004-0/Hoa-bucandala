@@ -8,7 +8,7 @@ import {
 
 const UserMenuPopUp = ({ logout }) => {
   return (
-    <div className="absolute right-0 mt-2 w-48 bg-white shadow-xl rounded-2xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in duration-150">
+    <div className="absolute right-0 mt-2 w-48 bg-white shadow-xl rounded-2xl border border-gray-100 py-2 z-100 animate-in fade-in zoom-in duration-150">
       <Link
         to="/profile"
         className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 text-gray-700 transition-colors"

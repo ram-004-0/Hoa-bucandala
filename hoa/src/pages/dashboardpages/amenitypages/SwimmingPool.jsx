@@ -13,6 +13,7 @@ import { Link, useNavigate } from "react-router-dom";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 const AMENITY_ID = 3;
+const MAX_CAPACITY = 20; // Define max capacity constant
 const TIME_SLOTS = [
   { label: "08:00 AM - 12:00 PM", value: "08:00-12:00" },
   { label: "12:00 PM - 04:00 PM", value: "12:00-16:00" },
@@ -23,9 +24,9 @@ const TIME_SLOTS = [
 const SwimmingPool = () => {
   const navigate = useNavigate();
   const [date, setDate] = useState("");
-  const [pax, setPax] = useState(1); // Added pax state
+  const [pax, setPax] = useState(1);
   const [slots, setSlots] = useState(
-    TIME_SLOTS.map((s) => ({ ...s, available: true })),
+    TIME_SLOTS.map((s) => ({ ...s, available: true, currentPax: 0 })),
   );
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -56,15 +57,26 @@ const SwimmingPool = () => {
     setSelectedSlot(null);
     setError("");
 
+    // Fetch availability which should ideally return the current guest count per slot
     fetch(`${API_URL}/amenities/${AMENITY_ID}/availability?date=${date}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
       .then((data) => {
-        const updatedSlots = TIME_SLOTS.map((slot) => ({
-          ...slot,
-          available: data.availableSlots.includes(slot.value),
-        }));
+        const updatedSlots = TIME_SLOTS.map((slot) => {
+          // Find if this slot has existing bookings in the data returned by backend
+          const slotData = data.slotDetails?.find(
+            (d) => d.time_slot === slot.value,
+          ) || { total_guests: 0 };
+          const currentTotal = slotData.total_guests || 0;
+
+          return {
+            ...slot,
+            currentPax: currentTotal,
+            // Slot is available ONLY if current total is less than MAX_CAPACITY
+            available: currentTotal < MAX_CAPACITY,
+          };
+        });
         setSlots(updatedSlots);
         setSelectedSlot(updatedSlots.find((s) => s.available) || null);
       })
@@ -73,6 +85,13 @@ const SwimmingPool = () => {
 
   const handleBooking = async () => {
     if (!date || !selectedSlot || !checkTokenExpiry()) return;
+
+    // Validation for user's input against remaining capacity
+    const remaining = MAX_CAPACITY - selectedSlot.currentPax;
+    if (pax > remaining) {
+      alert(`Only ${remaining} spots left for this slot.`);
+      return;
+    }
 
     if (pax < 1 || pax > 20) {
       alert("Please enter a valid number of persons (Max 20).");
@@ -93,14 +112,13 @@ const SwimmingPool = () => {
           amenity_id: AMENITY_ID,
           reservation_date: date,
           time_slot: selectedSlot.value,
-          guest_count: pax, // Included guest count
+          guest_count: pax,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Reservation failed");
 
-      // SUCCESS: Passing the dynamic data from the backend to the Success Page
       navigate("/amenities/success", {
         state: {
           data: data,
@@ -108,7 +126,7 @@ const SwimmingPool = () => {
           amenityName: "Swimming Pool",
           displayDate: date,
           displaySlot: selectedSlot.label,
-          pax: pax, // Pass pax for the receipt
+          pax: pax,
         },
       });
     } catch (err) {
@@ -165,7 +183,6 @@ const SwimmingPool = () => {
             </div>
           </div>
 
-          {/* Policy Tip - Same as Clubhouse */}
           <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-2xl flex gap-3">
             <ExclamationTriangleIcon className="h-6 w-6 text-amber-600 shrink-0" />
             <p className="text-sm text-amber-800 font-medium">
@@ -182,7 +199,6 @@ const SwimmingPool = () => {
             Make a Reservation
           </h2>
 
-          {/* Step 1: Date */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-gray-500 ml-1">
               <CalendarIcon className="h-5 w-5" />
@@ -199,7 +215,6 @@ const SwimmingPool = () => {
             />
           </div>
 
-          {/* Step 2: Pax */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-gray-500 ml-1">
               <UserGroupIcon className="h-5 w-5" />
@@ -231,35 +246,42 @@ const SwimmingPool = () => {
                 onChange={setSelectedSlot}
                 className="grid grid-cols-1 sm:grid-cols-2 gap-4"
               >
-                {slots.map((slot) => (
-                  <Radio
-                    key={slot.value}
-                    value={slot}
-                    disabled={!slot.available}
-                    className={({ checked }) => `
-                      relative flex cursor-pointer rounded-2xl p-5 border-2 transition-all
-                      ${!slot.available ? "bg-gray-100 opacity-40 cursor-not-allowed" : checked ? "bg-green-50 border-[#00704e] ring-2 ring-[#00704e]/20" : "bg-white border-gray-100"}
-                    `}
-                  >
-                    {({ checked }) => (
-                      <div className="flex w-full justify-between items-center">
-                        <div className="text-sm">
-                          <p
-                            className={`font-black ${checked ? "text-[#00704e]" : "text-gray-700"}`}
-                          >
-                            {slot.label}
-                          </p>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">
-                            {slot.available ? "Available" : "Reserved"}
-                          </p>
+                {slots.map((slot) => {
+                  const isFull = slot.currentPax >= MAX_CAPACITY;
+                  return (
+                    <Radio
+                      key={slot.value}
+                      value={slot}
+                      disabled={isFull}
+                      className={({ checked }) => `
+                        relative flex cursor-pointer rounded-2xl p-5 border-2 transition-all
+                        ${isFull ? "bg-gray-100 opacity-40 cursor-not-allowed" : checked ? "bg-green-50 border-[#00704e] ring-2 ring-[#00704e]/20" : "bg-white border-gray-100"}
+                      `}
+                    >
+                      {({ checked }) => (
+                        <div className="flex w-full justify-between items-center">
+                          <div className="text-sm">
+                            <p
+                              className={`font-black ${checked ? "text-[#00704e]" : "text-gray-700"}`}
+                            >
+                              {slot.label}
+                            </p>
+                            <p
+                              className={`text-[10px] font-bold uppercase mt-1 ${isFull ? "text-red-500" : "text-gray-400"}`}
+                            >
+                              {isFull
+                                ? "Slot Full"
+                                : `Available (${MAX_CAPACITY - slot.currentPax} left)`}
+                            </p>
+                          </div>
+                          {checked && (
+                            <CheckCircleIcon className="h-7 w-7 text-[#00704e]" />
+                          )}
                         </div>
-                        {checked && (
-                          <CheckCircleIcon className="h-7 w-7 text-[#00704e]" />
-                        )}
-                      </div>
-                    )}
-                  </Radio>
-                ))}
+                      )}
+                    </Radio>
+                  );
+                })}
               </RadioGroup>
             </div>
           )}
