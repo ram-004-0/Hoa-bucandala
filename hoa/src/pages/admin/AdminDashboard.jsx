@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom"; // Added useNavigate
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   LogOutIcon,
   ShieldCheck,
@@ -18,7 +18,8 @@ const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const isMounted = useRef(true); // Track if component is still active
+  const isMounted = useRef(true);
+  const abortControllerRef = useRef(null); // Reference to cancel network requests
 
   const [statsData, setStatsData] = useState({
     residents: 0,
@@ -29,31 +30,44 @@ const AdminDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  const token = localStorage.getItem("token");
+  const fetchStats = useCallback(async () => {
+    const token = localStorage.getItem("token");
 
-  const fetchStats = async () => {
+    // Safety 1: If no token (logged out), stop immediately
     if (!token) return;
+
+    // Safety 2: Cancel any existing fetch before starting a new one
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
     setLoading(true);
     try {
       const results = await Promise.allSettled([
         fetch(`${API_URL}/residents/count`, {
           headers: { Authorization: `Bearer ${token}` },
+          signal: abortControllerRef.current.signal,
         }),
         fetch(`${API_URL}/reservations`, {
           headers: { Authorization: `Bearer ${token}` },
+          signal: abortControllerRef.current.signal,
         }),
         fetch(`${API_URL}/guard-requests`, {
           headers: { Authorization: `Bearer ${token}` },
+          signal: abortControllerRef.current.signal,
         }),
         fetch(`${API_URL}/payments/unpaid-total`, {
           headers: { Authorization: `Bearer ${token}` },
+          signal: abortControllerRef.current.signal,
         }),
         fetch(`${API_URL}/visitors/all`, {
           headers: { Authorization: `Bearer ${token}` },
+          signal: abortControllerRef.current.signal,
         }),
       ]);
 
-      // CRITICAL: If the user logged out while waiting for these fetches, STOP here.
+      // Safety 3: If component unmounted during fetch, do not update state
       if (!isMounted.current) return;
 
       const newData = { ...statsData };
@@ -65,44 +79,44 @@ const AdminDashboard = () => {
         return null;
       };
 
-      // 1. Resident Count
       const res0 = await parseResult(results[0]);
       if (res0) newData.residents = res0.count || 0;
 
-      // 2. Reservations
       const res1 = await parseResult(results[1]);
       if (res1) newData.reservations = Array.isArray(res1) ? res1.length : 0;
 
-      // 3. Security Reports
       const res2 = await parseResult(results[2]);
       if (res2) newData.securityReports = Array.isArray(res2) ? res2.length : 0;
 
-      // 4. Uncollected Dues
       const res3 = await parseResult(results[3]);
       if (res3) newData.unpaidDues = res3.totalAmount || 0;
 
-      // 5. Visitor Count
       const res4 = await parseResult(results[4]);
       if (res4) newData.visitorCount = Array.isArray(res4) ? res4.length : 0;
 
       setStatsData(newData);
     } catch (err) {
-      console.error("Dashboard Fetch Error:", err);
+      if (err.name === "AbortError") {
+        console.log("Fetch aborted safely");
+      } else {
+        console.error("Dashboard Fetch Error:", err);
+      }
     } finally {
-      // Only set loading false if we are still on the page
       if (isMounted.current) setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     isMounted.current = true;
     fetchStats();
 
-    // Cleanup function: runs when the component unmounts (logout)
     return () => {
       isMounted.current = false;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
     };
-  }, []);
+  }, [fetchStats]);
 
   const dynamicStats = [
     {
@@ -138,23 +152,21 @@ const AdminDashboard = () => {
   ];
 
   const handleLogout = () => {
-    // 1. Immediately wipe the token to prevent further authorized fetches
+    // 1. Set the mounted ref to false first to stop all state updates
+    isMounted.current = false;
+
+    // 2. Kill pending network requests immediately
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // 3. Clear the token
     localStorage.removeItem("token");
+    localStorage.removeItem("role"); // Also clear role
 
-    // 2. Clear all local state to trigger a re-render of empty data
-    if (setUsers) setUsers([]);
-    if (setStatsData)
-      setStatsData({
-        residents: 0,
-        unpaidDues: 0,
-        reservations: 0,
-        visitorCount: 0,
-        securityReports: 0,
-      });
-
-    // 3. Force a "Replace" navigation
-    // This prevents the browser from trying to keep the "Admin" page in the back-stack
-    navigate("/login", { replace: true });
+    // 4. Use a hard window navigation to clear the React state and memory entirely.
+    // This is the "Nuclear Option" that guarantees the flicker stops.
+    window.location.href = "/login";
   };
 
   return (

@@ -80,9 +80,21 @@ const ManageResidents = () => {
 
   // Updated Logout logic to prevent the "Node not found" error
   const handleLogout = () => {
+    // 1. Set the mounted ref to false first to stop all state updates
     isMounted.current = false;
+
+    // 2. Kill pending network requests immediately
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // 3. Clear the token
     localStorage.removeItem("token");
-    navigate("/login", { replace: true });
+    localStorage.removeItem("role"); // Also clear role
+
+    // 4. Use a hard window navigation to clear the React state and memory entirely.
+    // This is the "Nuclear Option" that guarantees the flicker stops.
+    window.location.href = "/login";
   };
 
   const handleDelete = async (user) => {
