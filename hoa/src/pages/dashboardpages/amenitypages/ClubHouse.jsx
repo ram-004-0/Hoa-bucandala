@@ -131,6 +131,10 @@ const ClubHouse = () => {
         </div>
       </div>
 
+      <br />
+      <br />
+      <br />
+
       <div className="max-w-4xl mx-auto -mt-10 px-4 space-y-6">
         {/* Venue Info & Policy */}
         <div className="bg-white shadow-xl rounded-[2rem] p-8 border border-gray-100 space-y-6">

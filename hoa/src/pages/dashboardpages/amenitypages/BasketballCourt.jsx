@@ -6,11 +6,13 @@ import {
   ClockIcon,
   ArrowLeftIcon,
   InformationCircleIcon,
+  ExclamationTriangleIcon,
+  UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import { Link, useNavigate } from "react-router-dom";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
-const AMENITY_ID = 2; // CHANGE THIS: 1 for Club House, 3 for Swimming Pool
+const AMENITY_ID = 2;
 const TIME_SLOTS = [
   { label: "08:00 AM - 12:00 PM", value: "08:00-12:00" },
   { label: "12:00 PM - 04:00 PM", value: "12:00-16:00" },
@@ -65,7 +67,7 @@ const BasketballCourt = () => {
         setSelectedSlot(updatedSlots.find((s) => s.available) || null);
       })
       .catch(() => setError("Failed to load availability."));
-  }, [date]);
+  }, [date, navigate]);
 
   const handleBooking = async () => {
     if (!date || !selectedSlot) return;
@@ -88,14 +90,14 @@ const BasketballCourt = () => {
 
       const data = await res.json();
 
-      if (!res.ok) throw new Error(data.message || "Failed");
+      if (!res.ok) throw new Error(data.message || "Failed to submit request");
 
-      // SUCCESS: Pass the 'data' from backend which now contains ID and Status
+      // SUCCESS: The admin will see this in the Manage Reservations table
       navigate("/amenities/success", {
         state: {
           data: data,
-          status: data.status, // Explicitly passing the status from the backend
-          amenityName: "Basketball Court", // or "Clubhouse"
+          status: data.status || "Pending",
+          amenityName: "Basketball Court",
           displayDate: date,
           displaySlot: selectedSlot.label,
         },
@@ -110,21 +112,78 @@ const BasketballCourt = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <div className="bg-[#00704e] h-48 flex items-center px-6 md:px-12 text-white">
-        <Link to="/amenities">
+        <Link to="/amenities" className="hover:scale-110 transition-transform">
           <ArrowLeftIcon className="h-10 w-10 mr-6" />
         </Link>
         <div>
           <h1 className="font-black text-3xl md:text-4xl">Basketball Court</h1>
-          <p className="opacity-80">Book your slot below</p>
+          <p className="opacity-80 mt-1">Schedule your practice or game</p>
         </div>
       </div>
 
+      <br />
+      <br />
+      <br />
+
       <div className="max-w-4xl mx-auto -mt-10 px-4 space-y-6">
-        <div className="bg-white shadow-xl rounded-[2rem] p-8 border border-gray-100">
-          <div className="space-y-3 mb-8">
-            <div className="flex items-center gap-2 text-gray-500">
+        {/* Regulation & Info Card */}
+        <div className="bg-white shadow-xl rounded-[2rem] p-8 border border-gray-100 space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-4">
+              <h2 className="font-black text-xl text-gray-800 flex items-center gap-2">
+                <InformationCircleIcon className="h-6 w-6 text-[#00704e]" />
+                Court Regulations
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-gray-50 p-4 rounded-2xl">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">
+                    Fee
+                  </p>
+                  <p className="font-bold text-gray-700 text-sm">
+                    FREE (Residents Only)
+                  </p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-2xl">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">
+                    Attire
+                  </p>
+                  <p className="font-bold text-gray-700 text-sm">
+                    Rubber Shoes Required
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-green-50 p-6 rounded-3xl border border-green-100 text-center">
+              <p className="text-xs font-bold text-[#00704e] uppercase mb-1">
+                Status
+              </p>
+              <p className="text-lg font-black text-[#00704e]">By Approval</p>
+            </div>
+          </div>
+
+          {/* Policy Tip */}
+          <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-2xl flex gap-3">
+            <ExclamationTriangleIcon className="h-6 w-6 text-amber-600 shrink-0" />
+            <p className="text-sm text-amber-800 font-medium">
+              <span className="font-black">Policy:</span> Reservations are
+              subject to admin review. Please bring your own ball. Only one
+              team/group is allowed per slot to avoid overcrowding.
+              Non-residents must be accompanied by a homeowner.
+            </p>
+          </div>
+        </div>
+
+        {/* Reservation Form */}
+        <div className="bg-white shadow-xl rounded-[2rem] p-8 border border-gray-100 space-y-8">
+          <h2 className="font-black text-2xl text-gray-800">
+            Request a Schedule
+          </h2>
+
+          {/* Step 1: Date */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-gray-500 ml-1">
               <CalendarIcon className="h-5 w-5" />
-              <span className="text-sm font-bold uppercase">
+              <span className="text-sm font-bold uppercase tracking-wider">
                 Step 1: Select Date
               </span>
             </div>
@@ -133,19 +192,19 @@ const BasketballCourt = () => {
               min={new Date().toISOString().split("T")[0]}
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none font-bold"
+              className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-[#00704e] outline-none transition-all font-bold text-gray-700"
             />
           </div>
 
+          {/* Step 2: Slots */}
           {date && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-gray-500">
+            <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
+              <div className="flex items-center gap-2 text-gray-500 ml-1">
                 <ClockIcon className="h-5 w-5" />
-                <span className="text-sm font-bold uppercase">
-                  Step 2: Choose Slot
+                <span className="text-sm font-bold uppercase tracking-wider">
+                  Step 2: Choose your Slot
                 </span>
               </div>
-
               <RadioGroup
                 value={selectedSlot}
                 onChange={setSelectedSlot}
@@ -158,19 +217,19 @@ const BasketballCourt = () => {
                     disabled={!slot.available}
                     className={({ checked }) => `
                       relative flex cursor-pointer rounded-2xl p-5 border-2 transition-all
-                      ${!slot.available ? "bg-gray-100 opacity-40 cursor-not-allowed" : checked ? "bg-green-50 border-[#00704e]" : "bg-white border-gray-100"}
+                      ${!slot.available ? "bg-gray-100 opacity-40 cursor-not-allowed" : checked ? "bg-green-50 border-[#00704e] ring-2 ring-[#00704e]/20" : "bg-white border-gray-100"}
                     `}
                   >
                     {({ checked }) => (
                       <div className="flex w-full justify-between items-center">
-                        <div>
+                        <div className="text-sm">
                           <p
                             className={`font-black ${checked ? "text-[#00704e]" : "text-gray-700"}`}
                           >
                             {slot.label}
                           </p>
-                          <p className="text-[10px] uppercase font-bold">
-                            {slot.available ? "Available" : "Reserved"}
+                          <p className="text-[10px] text-gray-400 font-bold uppercase mt-1">
+                            {slot.available ? "Available" : "Full / Reserved"}
                           </p>
                         </div>
                         {checked && (
@@ -184,13 +243,26 @@ const BasketballCourt = () => {
             </div>
           )}
 
-          <button
-            onClick={handleBooking}
-            disabled={loading || !selectedSlot}
-            className="w-full mt-8 py-5 rounded-2xl font-black text-white bg-[#00704e] disabled:bg-gray-300 transition-all shadow-lg"
-          >
-            {loading ? "PROCESSING..." : "CONFIRM RESERVATION"}
-          </button>
+          <div className="space-y-4 pt-4">
+            <button
+              onClick={handleBooking}
+              disabled={loading || !selectedSlot}
+              className={`w-full py-5 rounded-2xl font-black text-white shadow-lg transition-all flex justify-center items-center gap-3
+                ${loading || !selectedSlot ? "bg-gray-300" : "bg-[#00704e] hover:bg-[#005a3e]"}
+              `}
+            >
+              {loading ? (
+                <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                "SUBMIT REQUEST"
+              )}
+            </button>
+
+            <p className="text-center text-xs text-gray-400 font-medium italic">
+              *Your request will be sent to the HOA admin for approval. No
+              payment required.
+            </p>
+          </div>
         </div>
       </div>
     </div>
