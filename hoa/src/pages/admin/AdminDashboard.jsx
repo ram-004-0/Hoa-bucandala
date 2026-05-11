@@ -41,17 +41,14 @@ const AdminDashboard = () => {
         fetch(`${API_URL}/reservations`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch(`${API_URL}/waste/all-pickups`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${API_URL}/reports`, {
+        fetch(`${API_URL}/guard-requests`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
         // Assuming your router now points to payments for this logic
         fetch(`${API_URL}/payments/unpaid-total`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch(`${API_URL}/visitors`, {
+        fetch(`${API_URL}/visitors/all`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -73,10 +70,6 @@ const AdminDashboard = () => {
       // 2. Reservations
       const res1 = await parseResult(results[1]);
       if (res1) newData.reservations = Array.isArray(res1) ? res1.length : 0;
-
-      // 3. Waste Requests
-      const res2 = await parseResult(results[2]);
-      if (res2) newData.wasteRequests = Array.isArray(res2) ? res2.length : 0;
 
       // 4. Security Reports
       const res3 = await parseResult(results[3]);
@@ -111,7 +104,7 @@ const AdminDashboard = () => {
     },
     {
       icon: DollarSign,
-      label: "Unverified Dues",
+      label: "Uncollected Dues",
       value: `₱${Number(statsData.unpaidDues).toLocaleString()}`,
       color: "#dc2626",
     },
@@ -121,12 +114,7 @@ const AdminDashboard = () => {
       value: statsData.reservations,
       color: "#7c3aed",
     },
-    {
-      icon: Trash,
-      label: "Waste Requests",
-      value: statsData.wasteRequests,
-      color: "#16a34a",
-    },
+
     {
       icon: Users,
       label: "Visitor Count",

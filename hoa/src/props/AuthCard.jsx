@@ -124,7 +124,7 @@ const AuthCard = () => {
             value={email}
             onChange={(e) => {
               setEmail(e.target.value);
-              if (error) setError("");
+              if (error) setError("invalid email address");
             }}
             className={`w-full p-3 border text-gray-800 rounded-lg focus:ring-2 focus:ring-[#00704e] outline-none transition-all ${
               error && error.toLowerCase().includes("email")
@@ -140,12 +140,6 @@ const AuthCard = () => {
             <label className="text-sm font-semibold text-[#3c3c3c]">
               Password
             </label>
-            <button
-              type="button"
-              className="text-xs text-[#00704e] font-bold hover:underline"
-            >
-              Forgot Password?
-            </button>
           </div>
           <input
             type="password"

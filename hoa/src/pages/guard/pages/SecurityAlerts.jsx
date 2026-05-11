@@ -48,7 +48,7 @@ const SecurityAlerts = () => {
     // If it's already a full Cloudinary/External URL, return it
     if (url.startsWith("http")) return url;
     // If it's a legacy local path from your previous setup, point to the production server
-    return `https://hoa-camellabucandalav-production.up.railway.app${url}`;
+    return `https://hoa-camellabucandalav-production.up.railway.app/api`;
   };
 
   // Opens the modal instead of resolving immediately
