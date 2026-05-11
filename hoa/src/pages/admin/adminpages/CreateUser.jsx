@@ -72,18 +72,18 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
 
   useEffect(() => {
     if (editData) {
-      setFormData({
-        name: editData.full_name || editData.name || "",
-        email: editData.email || "",
-        address: editData.address || "",
-        contact: editData.contact || "",
-        withBalance:
-          editData.has_balance === 1 ||
-          editData.has_balance === true ||
-          editData.withBalance === true,
-      });
+      const newName = editData.full_name || editData.name || "";
+      if (formData.name !== newName || formData.email !== editData.email) {
+        setFormData({
+          name: newName,
+          email: editData.email || "",
+          address: editData.address || "",
+          contact: editData.contact || "",
+          withBalance: !!(editData.has_balance || editData.withBalance),
+        });
+      }
     }
-  }, [editData]);
+  }, [editData]); // editData is fine here, but the IF check above breaks the loop
 
   const handleSubmit = async (e) => {
     e.preventDefault();

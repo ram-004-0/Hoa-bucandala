@@ -60,42 +60,91 @@ export const getResidents = async (req, res) => {
   }
 };
 
-// --- controllers/residentController.js ---
+/**
+ * Updates a resident's profile and their linked account email.
+ * Uses a transaction to ensure data integrity across tables.
+ */
 export const updateResident = async (req, res) => {
-  const { id } = req.params; // This will be '3'
+  const { id } = req.params;
   const { full_name, email, address, contact, has_balance } = req.body;
 
+  // Basic validation
+  if (!email || !full_name) {
+    return res
+      .status(400)
+      .json({ error: "Name and Email are required fields." });
+  }
+
+  const connection = await db.getConnection(); // Get a connection for the transaction
+
   try {
-    // 1. Find the account_id first so we can update the email in the accounts table
-    const [residentRows] = await db.query(
+    await connection.beginTransaction();
+
+    // 1. Find the account_id linked to this resident
+    const [residentRows] = await connection.query(
       "SELECT account_id FROM residents WHERE resident_id = ?",
       [id],
     );
 
     if (residentRows.length === 0) {
+      await connection.rollback();
       return res.status(404).json({ error: "Resident not found in database" });
     }
 
     const accountId = residentRows[0].account_id;
 
-    // 2. Update Email in Accounts Table
-    await db.query("UPDATE accounts SET email = ? WHERE id = ?", [
+    // 2. Update Email in the Accounts Table
+    // We update this first because it usually has a UNIQUE constraint on email
+    await connection.query("UPDATE accounts SET email = ? WHERE id = ?", [
       email,
       accountId,
     ]);
 
-    await db.query(
+    // 3. Update the Resident's details
+    await connection.query(
       "UPDATE residents SET full_name = ?, address = ?, contact = ?, has_balance = ? WHERE resident_id = ?",
-      [full_name, address, contact, has_balance ? 1 : 0, id],
+      [
+        full_name,
+        address,
+        contact,
+        has_balance ? 1 : 0, // Ensure boolean maps to MySQL TINYINT
+        id,
+      ],
     );
 
-    res.json({ message: "Update successful", resident_id: id });
+    // 4. Commit the changes
+    await connection.commit();
+
+    // Return the updated data structure so the frontend can sync its state
+    res.json({
+      message: "Update successful",
+      id: parseInt(id), // consistent with frontend expectation
+      full_name,
+      email,
+      address,
+      contact,
+      has_balance: !!has_balance,
+    });
   } catch (err) {
-    console.error(err);
+    // If any error occurs, undo all changes in this transaction
+    await connection.rollback();
+
+    console.error("Update Transaction Error:", err);
+
     if (err.code === "ER_DUP_ENTRY") {
-      return res.status(400).json({ error: "Email already in use" });
+      return res
+        .status(400)
+        .json({ error: "This email is already registered to another user." });
     }
-    res.status(500).json({ error: "Database update failed" });
+
+    res
+      .status(500)
+      .json({
+        error: "Failed to update resident profile. Internal server error.",
+      });
+  } finally {
+    // Always release the connection back to the pool
+    connection.release();
   }
 };
 

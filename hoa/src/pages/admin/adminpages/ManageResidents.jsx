@@ -112,11 +112,12 @@ const ManageResidents = () => {
   const handleUpdateEntry = (updated) => {
     setUsers((prev) =>
       prev.map((u) =>
-        u.id === updated.id
+        u.id === updated.id || u.id === updated.resident_id
           ? {
               ...u,
               ...updated,
-              name: updated.full_name || updated.username || u.name,
+              name:
+                updated.full_name || updated.name || updated.username || u.name,
             }
           : u,
       ),
