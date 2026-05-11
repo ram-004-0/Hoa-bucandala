@@ -9,7 +9,7 @@ import {
   Key,
 } from "lucide-react";
 
-// --- SuccessModal Component (No changes needed here) ---
+// --- SuccessModal Component ---
 const SuccessModal = ({ data, onClose, isGuardRole }) => {
   const [copied, setCopied] = useState(false);
   const handleCopy = () => {
@@ -19,7 +19,7 @@ const SuccessModal = ({ data, onClose, isGuardRole }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
       <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center shadow-2xl animate-in zoom-in duration-300">
         <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
           <CheckCircle2 size={40} />
@@ -72,18 +72,19 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
 
   useEffect(() => {
     if (editData) {
+      // Prioritize full_name for residents, name for general/guards
       const newName = editData.full_name || editData.name || "";
-      if (formData.name !== newName || formData.email !== editData.email) {
-        setFormData({
-          name: newName,
-          email: editData.email || "",
-          address: editData.address || "",
-          contact: editData.contact || "",
-          withBalance: !!(editData.has_balance || editData.withBalance),
-        });
-      }
+
+      // Update form state with the latest data from props
+      setFormData({
+        name: newName,
+        email: editData.email || "",
+        address: editData.address || "",
+        contact: editData.contact || "",
+        withBalance: !!(editData.has_balance || editData.withBalance),
+      });
     }
-  }, [editData]); // editData is fine here, but the IF check above breaks the loop
+  }, [editData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -92,16 +93,19 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
     const BASE_URL =
       "https://hoa-camellabucandalav-production.up.railway.app/api";
 
-    // 1. Determine Method and URL early
     const isEditing = !!editData;
     const method = isEditing ? "PUT" : "POST";
 
     let url = "";
 
     if (isEditing) {
-      // Use resident_id specifically from your DB schema
+      // CRITICAL FIX: Ensure we use resident_id to match the backend's "UPDATE ... WHERE resident_id = ?"
       const id = editData.resident_id || editData.id;
-      url = `${BASE_URL}/residents/edit/${id}`;
+
+      // If it's a guard, you'd likely use a /guards/edit endpoint,
+      // but for residents we use your provided /residents/edit route
+      const typePath = isGuardRole ? "guards" : "residents";
+      url = `${BASE_URL}/${typePath}/edit/${id}`;
     } else {
       url = isGuardRole ? `${BASE_URL}/guards` : `${BASE_URL}/residents`;
     }
@@ -118,7 +122,7 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
           email: formData.email,
           address: formData.address,
           contact: formData.contact,
-          has_balance: formData.withBalance ? 1 : 0, // Ensure numeric for SQL
+          has_balance: formData.withBalance ? 1 : 0,
         }),
       });
 
@@ -126,23 +130,24 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
 
       if (res.ok) {
         if (isEditing) {
-          // If the update was successful in DB, notify parent and close
+          // Success: notify parent (ManageResidents) to update the list and close modal
           onCreate(data);
           onClose();
         } else {
-          // Show the temporary password for new accounts
+          // Success: Show SuccessModal for new registrations (Temporary Password)
           setSuccessData(data);
         }
       } else {
-        // This will now catch 404, 400, or 500 errors from your backend
+        // Log the exact error from the server to help debugging
+        console.error("Backend Error Response:", data);
         alert(
-          `Error: ${data.error || data.message || "Failed to update database"}`,
+          `Error: ${data.error || data.message || "Failed to process request"}`,
         );
       }
     } catch (err) {
       console.error("Submit Error:", err);
       alert(
-        "Connection to server failed. Check your internet or Railway status.",
+        "Connection to server failed. Please check your internet connection.",
       );
     } finally {
       setLoading(false);
@@ -175,7 +180,11 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
 
           <h2 className="text-2xl font-black mb-8 flex items-center gap-3 text-gray-800">
             <div
-              className={`p-2 rounded-lg ${isGuardRole ? "bg-blue-100 text-blue-600" : "bg-green-100 text-[#00704e]"}`}
+              className={`p-2 rounded-lg ${
+                isGuardRole
+                  ? "bg-blue-100 text-blue-600"
+                  : "bg-green-100 text-[#00704e]"
+              }`}
             >
               {isGuardRole ? <ShieldCheck /> : <User />}
             </div>
