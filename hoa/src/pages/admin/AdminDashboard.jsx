@@ -4,7 +4,7 @@ import {
   LogOutIcon,
   ShieldCheck,
   User2,
-  DollarSign,
+  BanknoteIcon,
   Calendar,
   TriangleAlert,
   RefreshCcw,
@@ -99,7 +99,7 @@ const AdminDashboard = () => {
       color: "#2563eb",
     },
     {
-      icon: DollarSign,
+      icon: BanknoteIcon,
       label: "Uncollected Dues",
       value: `₱${Number(statsData.unpaidDues).toLocaleString()}`,
       color: "#dc2626",

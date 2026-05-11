@@ -9,7 +9,7 @@ const ManageReports = () => {
 
   // Fetch reports from backend
   useEffect(() => {
-    fetch(`${API_URL}/reports`)
+    fetch(`${API_URL}/guard-requests`)
       .then((res) => res.json())
       .then(setReports)
       .catch(console.error);
