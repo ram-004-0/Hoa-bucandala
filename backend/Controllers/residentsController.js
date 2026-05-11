@@ -80,39 +80,66 @@ export const getResidents = async (req, res) => {
 
 // 🔄 Update Resident
 export const updateResident = async (req, res) => {
-  const { id } = req.params; // This is resident_id
+  // This 'id' now refers to the account_id (12) being sent from the frontend
+  const id = parseInt(req.params.id, 10);
   const { full_name, email, address, contact, has_balance } = req.body;
 
   const connection = await db.getConnection();
+
   try {
     await connection.beginTransaction();
 
-    const [residentRows] = await connection.query(
-      "SELECT account_id FROM residents WHERE resident_id = ?",
+    // 1. Check if the account exists
+    const [accountRows] = await connection.query(
+      "SELECT id FROM accounts WHERE id = ?",
       [id],
     );
 
-    if (residentRows.length === 0) {
+    if (accountRows.length === 0) {
       await connection.rollback();
-      return res.status(404).json({ error: "Resident not found" });
+      return res.status(404).json({ error: "Account not found" });
     }
 
-    const accountId = residentRows[0].account_id;
-
+    // 2. Update the Email in the Accounts table
     await connection.query("UPDATE accounts SET email = ? WHERE id = ?", [
       email,
-      accountId,
+      id,
     ]);
-    await connection.query(
-      "UPDATE residents SET full_name = ?, address = ?, contact = ?, has_balance = ? WHERE resident_id = ?",
-      [full_name, address, contact, has_balance ? 1 : 0, id],
+
+    // 3. Update the Residents table using account_id as the key
+    const [residentUpdate] = await connection.query(
+      "UPDATE residents SET full_name = ?, address = ?, contact = ?, has_balance = ? WHERE account_id = ?",
+      [
+        full_name,
+        address,
+        contact,
+        has_balance ? 1 : 0,
+        id, // Using account_id here matches your 12
+      ],
     );
 
+    if (residentUpdate.affectedRows === 0) {
+      await connection.rollback();
+      return res
+        .status(404)
+        .json({ error: "Resident profile not found for this account" });
+    }
+
     await connection.commit();
-    res.json({ message: "Update successful", resident_id: id });
+
+    res.json({
+      message: "Update successful",
+      account_id: id,
+      full_name,
+      email,
+    });
   } catch (err) {
     await connection.rollback();
-    res.status(500).json({ error: err.message });
+    console.error("Update Error:", err);
+    if (err.code === "ER_DUP_ENTRY") {
+      return res.status(400).json({ error: "This email is already taken" });
+    }
+    res.status(500).json({ error: "Internal server error" });
   } finally {
     connection.release();
   }
