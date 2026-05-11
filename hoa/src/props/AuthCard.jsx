@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // Added useEffect import
 import { useNavigate } from "react-router-dom";
-import { startAutoLogout } from "../../../backend/utils/auth.js"; // Adjust path if necessary
+import { startAutoLogout } from "../../../backend/utils/auth.js";
 
-// Using the absolute URL from your reference
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
 const AuthCard = () => {
@@ -14,19 +13,29 @@ const AuthCard = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  /**
+   * FIX: Moved useEffect to the top level of the component.
+   * This checks if the user is already logged in when the page loads.
+   */
+  useEffect(() => {
+    const role = localStorage.getItem("role");
+    if (role) {
+      if (role === "ADMIN") navigate("/admin");
+      else if (role === "GUARD") navigate("/guard");
+      else navigate("/home");
+    }
+  }, [navigate]);
+
   // Validation Logic
   const validateForm = () => {
-    // 1. Email Regex Check
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
-      setError("Please enter a valid email address (e.g., user@example.com)");
+      setError("Please enter a valid email address.");
       return false;
     }
 
-    // 2. Password Length/Format Check
-    // You can adjust this to your backend requirements
     if (password.length < 6) {
-      setError("Password must be at least 6 characters long");
+      setError("Password must be at least 6 characters long.");
       return false;
     }
 
@@ -34,16 +43,7 @@ const AuthCard = () => {
   };
 
   const handleLogin = async (e) => {
-    useEffect(() => {
-      const role = localStorage.getItem("role");
-      if (role) {
-        // If they are already logged in, send them to their dashboard automatically
-        if (role === "ADMIN") navigate("/admin");
-        else if (role === "GUARD") navigate("/guard");
-        else navigate("/home");
-      }
-    }, []);
-    e.preventDefault(); // Prevent page refresh
+    e.preventDefault();
     setError("");
 
     // 1. Basic & Format Validation
@@ -75,6 +75,7 @@ const AuthCard = () => {
       // 3. Handle Unauthorized/Errors
       if (!res.ok) {
         setError(data.message || "Invalid email or password");
+        setLoading(false);
         return;
       }
 
@@ -93,7 +94,7 @@ const AuthCard = () => {
       } else if (data.role === "GUARD") {
         navigate("/guard");
       } else {
-        navigate("/home"); // Default for RESIDENTS
+        navigate("/home");
       }
     } catch (err) {
       console.error("LOGIN ERROR:", err);
@@ -123,10 +124,10 @@ const AuthCard = () => {
             value={email}
             onChange={(e) => {
               setEmail(e.target.value);
-              if (error) setError(""); // Clear error when user types
+              if (error) setError("");
             }}
             className={`w-full p-3 border text-gray-800 rounded-lg focus:ring-2 focus:ring-[#00704e] outline-none transition-all ${
-              error && error.includes("email")
+              error && error.toLowerCase().includes("email")
                 ? "border-red-500 bg-red-50"
                 : "border-gray-300"
             }`}
@@ -152,10 +153,10 @@ const AuthCard = () => {
             value={password}
             onChange={(e) => {
               setPassword(e.target.value);
-              if (error) setError(""); // Clear error when user types
+              if (error) setError("");
             }}
             className={`w-full p-3 border text-gray-800 rounded-lg focus:ring-2 focus:ring-[#00704e] outline-none transition-all ${
-              error && error.includes("Password")
+              error && error.toLowerCase().includes("password")
                 ? "border-red-500 bg-red-50"
                 : "border-gray-300"
             }`}
@@ -183,7 +184,7 @@ const AuthCard = () => {
         <button
           type="submit"
           disabled={loading}
-          className="bg-[#00704e] w-full rounded-xl h-12 text-white font-bold hover:bg-[#016446] transition-all shadow-lg disabled:opacity-50 active:scale-95"
+          className="bg-[#00704e] w-full rounded-xl h-12 text-white font-bold hover:bg-[#016446] transition-all shadow-lg disabled:opacity-50 active:scale-95 flex items-center justify-center"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
