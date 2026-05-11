@@ -60,16 +60,19 @@ const SuccessModal = ({ data, onClose, isGuardRole }) => {
 };
 
 const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
+  // Initialize state directly from editData to prevent flicker
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    address: "",
-    contact: "",
-    withBalance: false,
+    name: editData?.full_name || editData?.name || "",
+    email: editData?.email || "",
+    address: editData?.address || "",
+    contact: editData?.contact || "",
+    withBalance: !!(editData?.has_balance || editData?.withBalance),
   });
+
   const [loading, setLoading] = useState(false);
   const [successData, setSuccessData] = useState(null);
 
+  // Sync state if editData changes while modal is open
   useEffect(() => {
     if (editData) {
       setFormData({
@@ -95,11 +98,8 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
     let url = "";
 
     if (isEditing) {
-      // CRITICAL FIX: Ensure we use resident_id to match the backend's "UPDATE ... WHERE resident_id = ?"
-      const id = editData.resident_id || editData.id;
-
-      // If it's a guard, you'd likely use a /guards/edit endpoint,
-      // but for residents we use your provided /residents/edit route
+      // Use account_id as the primary reference for the edit URL
+      const id = editData.account_id || editData.resident_id || editData.id;
       const typePath = isGuardRole ? "guards" : "residents";
       url = `${BASE_URL}/${typePath}/edit/${id}`;
     } else {
@@ -126,15 +126,13 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
 
       if (res.ok) {
         if (isEditing) {
-          // Success: notify parent (ManageResidents) to update the list and close modal
-          onCreate(data);
+          // Success: merge backend data with what we already have for immediate UI update
+          onCreate({ ...editData, ...formData, ...data });
           onClose();
         } else {
-          // Success: Show SuccessModal for new registrations (Temporary Password)
           setSuccessData(data);
         }
       } else {
-        // Log the exact error from the server to help debugging
         console.error("Backend Error Response:", data);
         alert(
           `Error: ${data.error || data.message || "Failed to process request"}`,

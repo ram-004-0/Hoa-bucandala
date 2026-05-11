@@ -32,18 +32,21 @@ const ManageResidents = () => {
     const token = localStorage.getItem("token");
     if (!token) return;
     try {
-      const res = await fetch(`${API_URL}/guards`, {
+      // Fetching from residents instead of guards to get the full list
+      const res = await fetch(`${API_URL}/residents`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
 
+      // Transform data to match UI state needs
       const transformed = data.map((u) => ({
         id: u.resident_id || u.id,
-        name: u.full_name || u.name,
+        account_id: u.account_id, // CRITICAL: Store this for the update reference
+        name: u.full_name || u.name || u.username,
         email: u.email,
         address: u.address,
         contact: u.contact,
-        role: u.role,
+        role: u.role || "RESIDENT",
         withBalance: !!u.has_balance,
       }));
 
@@ -56,7 +59,6 @@ const ManageResidents = () => {
   };
 
   const handleDelete = async (user) => {
-    // Confirm with the user's actual name for clarity
     if (
       !window.confirm(
         `Are you sure you want to delete ${user.name}? This cannot be undone.`,
@@ -66,8 +68,6 @@ const ManageResidents = () => {
     }
 
     const token = localStorage.getItem("token");
-
-    // Decide endpoint based on role: 'RESIDENT' goes to /residents, 'GUARD' goes to /guards
     const rolePath = user.role === "RESIDENT" ? "residents" : "guards";
     const endpoint = `${API_URL}/${rolePath}/${user.id}`;
 
@@ -78,7 +78,6 @@ const ManageResidents = () => {
       });
 
       if (res.ok) {
-        // Remove from local state
         setUsers((prev) => prev.filter((u) => u.id !== user.id));
       } else {
         const errData = await res.json();
@@ -91,12 +90,12 @@ const ManageResidents = () => {
   };
 
   const handleCreateEntry = (newEntry) => {
-    // Safety: don't add to UI if somehow an admin is created
     if (newEntry.role === "ADMIN") return;
 
     const formatted = {
-      id: newEntry.id,
-      name: newEntry.full_name || newEntry.username,
+      id: newEntry.resident_id || newEntry.id,
+      account_id: newEntry.account_id,
+      name: newEntry.full_name || newEntry.username || newEntry.name,
       email: newEntry.email,
       address: newEntry.address || "N/A",
       contact: newEntry.contact || "N/A",
@@ -104,20 +103,34 @@ const ManageResidents = () => {
       withBalance: !!newEntry.has_balance,
     };
     setUsers((prev) => [...prev, formatted]);
+    setShowCreateModal(false);
+    setShowGuardModal(false);
   };
 
   const handleUpdateEntry = (updated) => {
     setUsers((prev) =>
-      prev.map((u) =>
-        u.id === updated.id || u.id === updated.resident_id
-          ? {
-              ...u,
-              ...updated,
-              name:
-                updated.full_name || updated.name || updated.username || u.name,
-            }
-          : u,
-      ),
+      prev.map((u) => {
+        // Match by account_id since that's what we are using in the backend now
+        const isMatch =
+          u.account_id === updated.account_id ||
+          u.id === updated.resident_id ||
+          u.id === updated.id;
+
+        if (isMatch) {
+          return {
+            ...u,
+            name: updated.full_name || updated.name || u.name,
+            email: updated.email || u.email,
+            address: updated.address || u.address,
+            contact: updated.contact || u.contact,
+            withBalance:
+              updated.has_balance !== undefined
+                ? !!updated.has_balance
+                : u.withBalance,
+          };
+        }
+        return u;
+      }),
     );
     setSelectedUser(null);
   };
@@ -125,7 +138,7 @@ const ManageResidents = () => {
   const filteredDisplay = users.filter(
     (u) =>
       u.role === currentTab &&
-      u.name.toLowerCase().includes(searchTerm.toLowerCase()),
+      (u.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()),
   );
 
   return (
@@ -229,7 +242,7 @@ const ManageResidents = () => {
             <tbody className="divide-y divide-gray-50">
               {filteredDisplay.map((u) => (
                 <tr
-                  key={u.id}
+                  key={u.account_id || u.id}
                   className="hover:bg-gray-50/50 transition-colors"
                 >
                   <td className="px-6 py-4 font-bold text-gray-700">
@@ -244,11 +257,7 @@ const ManageResidents = () => {
                   <td className="px-6 py-4">
                     {u.role === "RESIDENT" ? (
                       <span
-                        className={`px-3 py-1 text-xs rounded-full font-bold ${
-                          u.withBalance
-                            ? "bg-red-100 text-red-700"
-                            : "bg-green-100 text-green-700"
-                        }`}
+                        className={`px-3 py-1 text-xs rounded-full font-bold ${u.withBalance ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}
                       >
                         {u.withBalance ? "Has Balance" : "Cleared"}
                       </span>
@@ -309,7 +318,7 @@ const ManageResidents = () => {
           editData={selectedUser}
           isGuardRole={selectedUser.role === "GUARD"}
           onClose={() => setSelectedUser(null)}
-          onCreate={handleUpdateEntry}
+          onCreate={handleUpdateEntry} // This handles the state update immediately
         />
       )}
     </div>
