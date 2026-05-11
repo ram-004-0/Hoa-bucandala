@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import db from "../config/db.js";
 
-// 🛡️ Get total resident count
+// 📊 Get total resident count
 export const getResidentCount = async (req, res) => {
   try {
     const [rows] = await db.query("SELECT COUNT(*) as count FROM residents");
@@ -11,48 +11,66 @@ export const getResidentCount = async (req, res) => {
   }
 };
 
-// ➕ Create Resident
+// ➕ Create Resident (Improved with Transactions)
 export const createResident = async (req, res) => {
   const { full_name, email, address, contact, has_balance } = req.body;
+  const connection = await db.getConnection();
+
   try {
-    const [existing] = await db.query(
+    await connection.beginTransaction();
+
+    // Check if email exists
+    const [existing] = await connection.query(
       "SELECT id FROM accounts WHERE email = ?",
       [email],
     );
-    if (existing.length > 0)
-      return res.status(400).json({ error: "Email exists" });
+    if (existing.length > 0) {
+      await connection.rollback();
+      return res.status(400).json({ error: "Email already exists" });
+    }
 
-    const [accountResult] = await db.query(
-      "INSERT INTO accounts (email, password, role) VALUES (?, 'PLACEHOLDER', 'RESIDENT')",
+    // 1. Create Account
+    const [accountResult] = await connection.query(
+      "INSERT INTO accounts (email, password, role) VALUES (?, 'TEMP_PASS', 'RESIDENT')",
       [email],
     );
     const accountId = accountResult.insertId;
 
-    const [residentResult] = await db.query(
+    // 2. Create Resident Profile
+    const [residentResult] = await connection.query(
       "INSERT INTO residents (account_id, full_name, address, contact, has_balance) VALUES (?, ?, ?, ?, ?)",
       [accountId, full_name, address, contact, has_balance ? 1 : 0],
     );
     const residentId = residentResult.insertId;
 
+    // 3. Update with real hashed password
     const passwordPlain = `resident${residentId}`;
     const hashedPassword = await bcrypt.hash(passwordPlain, 10);
-    await db.query("UPDATE accounts SET password = ? WHERE id = ?", [
+    await connection.query("UPDATE accounts SET password = ? WHERE id = ?", [
       hashedPassword,
       accountId,
     ]);
 
-    res.status(201).json({ residentId, email, password: passwordPlain });
+    await connection.commit();
+    res
+      .status(201)
+      .json({ resident_id: residentId, email, password: passwordPlain });
   } catch (err) {
+    await connection.rollback();
     res.status(500).json({ error: err.message });
+  } finally {
+    connection.release();
   }
 };
 
-// 📄 Get All Residents (JOIN for Email)
+// 📄 Get All Residents
 export const getResidents = async (req, res) => {
   try {
     const [rows] = await db.query(
-      `SELECT r.resident_id, a.email, r.full_name, r.address, r.contact, r.has_balance 
-       FROM residents r JOIN accounts a ON r.account_id = a.id ORDER BY r.resident_id ASC`,
+      `SELECT r.resident_id, a.id as account_id, a.email, r.full_name, r.address, r.contact, r.has_balance 
+       FROM residents r 
+       JOIN accounts a ON r.account_id = a.id 
+       ORDER BY r.resident_id ASC`,
     );
     res.json(rows);
   } catch (err) {
@@ -60,27 +78,15 @@ export const getResidents = async (req, res) => {
   }
 };
 
-/**
- * Updates a resident's profile and their linked account email.
- * Uses a transaction to ensure data integrity across tables.
- */
+// 🔄 Update Resident
 export const updateResident = async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.params; // This is resident_id
   const { full_name, email, address, contact, has_balance } = req.body;
 
-  // Basic validation
-  if (!email || !full_name) {
-    return res
-      .status(400)
-      .json({ error: "Name and Email are required fields." });
-  }
-
-  const connection = await db.getConnection(); // Get a connection for the transaction
-
+  const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
 
-    // 1. Find the account_id linked to this resident
     const [residentRows] = await connection.query(
       "SELECT account_id FROM residents WHERE resident_id = ?",
       [id],
@@ -88,82 +94,59 @@ export const updateResident = async (req, res) => {
 
     if (residentRows.length === 0) {
       await connection.rollback();
-      return res.status(404).json({ error: "Resident not found in database" });
+      return res.status(404).json({ error: "Resident not found" });
     }
 
     const accountId = residentRows[0].account_id;
 
-    // 2. Update Email in the Accounts Table
-    // We update this first because it usually has a UNIQUE constraint on email
     await connection.query("UPDATE accounts SET email = ? WHERE id = ?", [
       email,
       accountId,
     ]);
-
-    // 3. Update the Resident's details
     await connection.query(
       "UPDATE residents SET full_name = ?, address = ?, contact = ?, has_balance = ? WHERE resident_id = ?",
-      [
-        full_name,
-        address,
-        contact,
-        has_balance ? 1 : 0, // Ensure boolean maps to MySQL TINYINT
-        id,
-      ],
+      [full_name, address, contact, has_balance ? 1 : 0, id],
     );
 
-    // 4. Commit the changes
     await connection.commit();
-
-    // Return the updated data structure so the frontend can sync its state
-    res.json({
-      message: "Update successful",
-      id: parseInt(id), // consistent with frontend expectation
-      full_name,
-      email,
-      address,
-      contact,
-      has_balance: !!has_balance,
-    });
+    res.json({ message: "Update successful", resident_id: id });
   } catch (err) {
-    // If any error occurs, undo all changes in this transaction
     await connection.rollback();
-
-    console.error("Update Transaction Error:", err);
-
-    if (err.code === "ER_DUP_ENTRY") {
-      return res
-        .status(400)
-        .json({ error: "This email is already registered to another user." });
-    }
-
-    res
-      .status(500)
-      .json({
-        error: "Failed to update resident profile. Internal server error.",
-      });
+    res.status(500).json({ error: err.message });
   } finally {
-    // Always release the connection back to the pool
     connection.release();
   }
 };
 
-// 🗑️ Delete Resident
+// 🗑️ Delete Resident (Fixed to use resident_id)
 export const deleteResident = async (req, res) => {
-  const { id } = req.params; // This should be the account_id
+  const { id } = req.params; // We will treat this as resident_id
+  const connection = await db.getConnection();
   try {
-    // We delete from accounts so the ON DELETE CASCADE removes the profile
-    const [result] = await db.query("DELETE FROM accounts WHERE id = ?", [id]);
+    await connection.beginTransaction();
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Resident account not found" });
+    // Find the account first
+    const [rows] = await connection.query(
+      "SELECT account_id FROM residents WHERE resident_id = ?",
+      [id],
+    );
+
+    if (rows.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ message: "Resident not found" });
     }
 
-    res
-      .status(200)
-      .json({ message: "Resident and profile deleted successfully" });
+    const accountId = rows[0].account_id;
+
+    // Delete the account (Cascades to resident profile)
+    await connection.query("DELETE FROM accounts WHERE id = ?", [accountId]);
+
+    await connection.commit();
+    res.status(200).json({ message: "Deleted successfully" });
   } catch (error) {
-    console.error(error);
+    await connection.rollback();
     res.status(500).json({ message: "Database error" });
+  } finally {
+    connection.release();
   }
 };

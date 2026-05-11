@@ -37,18 +37,15 @@ const ManageResidents = () => {
       });
       const data = await res.json();
 
-      // Filter: Strictly exclude anyone with the ADMIN role
-      const transformed = data
-        .filter((u) => u.role !== "ADMIN")
-        .map((u) => ({
-          id: u.id,
-          name: u.name || "Unnamed",
-          email: u.email,
-          address: u.address || "N/A",
-          contact: u.contact || "N/A",
-          role: u.role,
-          withBalance: !!u.has_balance,
-        }));
+      const transformed = data.map((u) => ({
+        id: u.resident_id || u.id,
+        name: u.full_name || u.name,
+        email: u.email,
+        address: u.address,
+        contact: u.contact,
+        role: u.role,
+        withBalance: !!u.has_balance,
+      }));
 
       setUsers(transformed);
     } catch (err) {
