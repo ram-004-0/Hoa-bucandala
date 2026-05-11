@@ -6,6 +6,8 @@ import {
   ClockIcon,
   ArrowLeftIcon,
   InformationCircleIcon,
+  UserGroupIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -21,6 +23,7 @@ const TIME_SLOTS = [
 const SwimmingPool = () => {
   const navigate = useNavigate();
   const [date, setDate] = useState("");
+  const [pax, setPax] = useState(1); // Added pax state
   const [slots, setSlots] = useState(
     TIME_SLOTS.map((s) => ({ ...s, available: true })),
   );
@@ -70,6 +73,12 @@ const SwimmingPool = () => {
 
   const handleBooking = async () => {
     if (!date || !selectedSlot || !checkTokenExpiry()) return;
+
+    if (pax < 1 || pax > 20) {
+      alert("Please enter a valid number of persons (Max 20).");
+      return;
+    }
+
     setLoading(true);
     const token = localStorage.getItem("token");
 
@@ -84,6 +93,7 @@ const SwimmingPool = () => {
           amenity_id: AMENITY_ID,
           reservation_date: date,
           time_slot: selectedSlot.value,
+          guest_count: pax, // Included guest count
         }),
       });
 
@@ -94,10 +104,11 @@ const SwimmingPool = () => {
       navigate("/amenities/success", {
         state: {
           data: data,
-          status: data.status, // Explicitly passing the status from the backend
-          amenityName: "Swimming Pool", // or "Clubhouse"
+          status: data.status || "Pending",
+          amenityName: "Swimming Pool",
           displayDate: date,
           displaySlot: selectedSlot.label,
+          pax: pax, // Pass pax for the receipt
         },
       });
     } catch (err) {
@@ -122,33 +133,46 @@ const SwimmingPool = () => {
       </div>
 
       <div className="max-w-4xl mx-auto -mt-10 px-4 space-y-6">
-        <div className="bg-white shadow-xl rounded-[2rem] p-8 border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-4">
-            <h2 className="font-black text-xl text-gray-800 flex items-center gap-2">
-              <InformationCircleIcon className="h-6 w-6 text-[#00704e]" />
-              Pool Rules & Info
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-gray-50 p-4 rounded-2xl">
-                <p className="text-[10px] font-bold text-gray-400 uppercase">
-                  Rate
-                </p>
-                <p className="font-bold text-gray-700">₱500 / 2 Hours</p>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-2xl">
-                <p className="text-[10px] font-bold text-gray-400 uppercase">
-                  Capacity
-                </p>
-                <p className="font-bold text-gray-700">50 Persons Max</p>
+        <div className="bg-white shadow-xl rounded-[2rem] p-8 border border-gray-100 space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-4">
+              <h2 className="font-black text-xl text-gray-800 flex items-center gap-2">
+                <InformationCircleIcon className="h-6 w-6 text-[#00704e]" />
+                Pool Rules & Info
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-gray-50 p-4 rounded-2xl">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">
+                    Rate
+                  </p>
+                  <p className="font-bold text-gray-700">₱500 / Slot</p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-2xl">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">
+                    Max Capacity
+                  </p>
+                  <p className="font-bold text-gray-700">20 Persons</p>
+                </div>
               </div>
             </div>
+            <div className="bg-green-50 p-6 rounded-3xl border border-green-100 text-center">
+              <p className="text-xs font-bold text-[#00704e] uppercase mb-1">
+                Operating Hours
+              </p>
+              <p className="text-lg font-black text-[#00704e]">
+                8:00 AM – 12:00 AM
+              </p>
+            </div>
           </div>
-          <div className="bg-green-50 p-6 rounded-3xl border border-green-100 text-center">
-            <p className="text-xs font-bold text-[#00704e] uppercase mb-1">
-              Operating Hours
-            </p>
-            <p className="text-lg font-black text-[#00704e]">
-              8:00 AM – 12:00 AM
+
+          {/* Policy Tip - Same as Clubhouse */}
+          <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-2xl flex gap-3">
+            <ExclamationTriangleIcon className="h-6 w-6 text-amber-600 shrink-0" />
+            <p className="text-sm text-amber-800 font-medium">
+              <span className="font-black">Policy:</span> If guest count exceeds
+              the maximum capacity of 20 persons, an additional fee per person
+              will be applied upon arrival. Proper swimwear is strictly
+              required.
             </p>
           </div>
         </div>
@@ -157,6 +181,8 @@ const SwimmingPool = () => {
           <h2 className="font-black text-2xl text-gray-800">
             Make a Reservation
           </h2>
+
+          {/* Step 1: Date */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-gray-500 ml-1">
               <CalendarIcon className="h-5 w-5" />
@@ -173,12 +199,31 @@ const SwimmingPool = () => {
             />
           </div>
 
+          {/* Step 2: Pax */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-gray-500 ml-1">
+              <UserGroupIcon className="h-5 w-5" />
+              <span className="text-sm font-bold uppercase tracking-wider">
+                Step 2: Number of Persons (Max 20)
+              </span>
+            </div>
+            <input
+              type="number"
+              min="1"
+              max="20"
+              value={pax}
+              onChange={(e) => setPax(parseInt(e.target.value) || 1)}
+              className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-[#00704e] outline-none transition-all font-bold text-gray-700"
+              placeholder="How many guests?"
+            />
+          </div>
+
           {date && (
             <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
               <div className="flex items-center gap-2 text-gray-500 ml-1">
                 <ClockIcon className="h-5 w-5" />
                 <span className="text-sm font-bold uppercase tracking-wider">
-                  Step 2: Choose your Slot
+                  Step 3: Choose your Slot
                 </span>
               </div>
               <RadioGroup
@@ -219,19 +264,33 @@ const SwimmingPool = () => {
             </div>
           )}
 
-          <button
-            onClick={handleBooking}
-            disabled={loading || !selectedSlot}
-            className={`w-full py-5 rounded-2xl font-black text-white shadow-lg transition-all flex justify-center items-center gap-3
-              ${loading || !selectedSlot ? "bg-gray-300" : "bg-[#00704e] hover:bg-[#005a3e]"}
-            `}
-          >
-            {loading ? (
-              <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              "CONFIRM RESERVATION"
-            )}
-          </button>
+          <div className="space-y-4 pt-4">
+            <button
+              onClick={handleBooking}
+              disabled={loading || !selectedSlot}
+              className={`w-full py-5 rounded-2xl font-black text-white shadow-lg transition-all flex justify-center items-center gap-3
+                ${loading || !selectedSlot ? "bg-gray-300" : "bg-[#00704e] hover:bg-[#005a3e]"}
+              `}
+            >
+              {loading ? (
+                <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                "CONFIRM RESERVATION"
+              )}
+            </button>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Link
+                to="/amenities/history"
+                className="py-3 px-4 rounded-xl border border-red-200 text-red-600 font-bold text-xs hover:bg-red-50 transition-colors uppercase tracking-widest text-center"
+              >
+                View History
+              </Link>
+              <button className="py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold text-xs hover:bg-gray-50 transition-colors uppercase tracking-widest">
+                Refund Request
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

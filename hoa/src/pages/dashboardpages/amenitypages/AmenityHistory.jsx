@@ -1,7 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
-import { Calendar, Clock, MapPin, Info, Trash2, Loader2 } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  Info,
+  Trash2,
+  Loader2,
+  Users,
+} from "lucide-react";
 import axios from "axios";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
@@ -38,8 +46,10 @@ const AmenityHistory = () => {
           insertId: res.reservation_id,
           reservation_date: res.reservation_date,
           time_slot: res.time_slot,
+          guest_count: res.guest_count, // Passed from DB
         },
         amenityName: res.amenity_name,
+        pax: res.guest_count, // Maintaining consistency with your Clubhouse state
       },
     });
   };
@@ -57,8 +67,10 @@ const AmenityHistory = () => {
     setCancellingId(resId);
     try {
       const token = localStorage.getItem("token");
+      // Passing is_resident_action so the backend knows NOT to send a redundant notification
       await axios.delete(`${API_URL}/reservations/${resId}`, {
         headers: { Authorization: `Bearer ${token}` },
+        data: { is_resident_action: true },
       });
 
       // Filter out the cancelled reservation from UI
@@ -144,6 +156,9 @@ const AmenityHistory = () => {
                       <span className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />{" "}
                         {res.time_slot || "No time set"}
+                      </span>
+                      <span className="flex items-center gap-1 text-[#00704e] font-semibold">
+                        <Users className="w-4 h-4" /> {res.guest_count || 1} Pax
                       </span>
                     </div>
                   </div>

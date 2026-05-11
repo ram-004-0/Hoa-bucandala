@@ -12,6 +12,7 @@ export const getAllReservations = async (req, res) => {
         ar.reservation_id,
         ar.resident_id,     
         ar.status,          
+        ar.guest_count,
         r.full_name, 
         a.name AS amenity_name,
         ar.reservation_date,
@@ -35,7 +36,8 @@ export const getAllReservations = async (req, res) => {
  */
 export const createReservation = async (req, res) => {
   try {
-    const { amenity_id, reservation_date, time_slot } = req.body;
+    // Added guest_count to destructuring
+    const { amenity_id, reservation_date, time_slot, guest_count } = req.body;
     const accountId = req.user.id;
 
     const [[resident]] = await db.query(
@@ -47,26 +49,34 @@ export const createReservation = async (req, res) => {
       return res.status(403).json({ message: "Not a resident account" });
     }
 
+    // Updated INSERT to include guest_count
     const [result] = await db.query(
-      `INSERT INTO amenities_reservation (amenity_id, resident_id, reservation_date, time_slot) VALUES (?, ?, ?, ?)`,
-      [amenity_id, resident.resident_id, reservation_date, time_slot],
+      `INSERT INTO amenities_reservation (amenity_id, resident_id, reservation_date, time_slot, guest_count) VALUES (?, ?, ?, ?, ?)`,
+      [
+        amenity_id,
+        resident.resident_id,
+        reservation_date,
+        time_slot,
+        guest_count || 1,
+      ],
     );
 
     // Fetch the newly created reservation to get the actual database status
     const [[newReservation]] = await db.query(
-      "SELECT status FROM amenities_reservation WHERE reservation_id = ?",
+      "SELECT status, guest_count FROM amenities_reservation WHERE reservation_id = ?",
       [result.insertId],
     );
 
     res.status(201).json({
       message: "Reservation created",
       reservation_id: result.insertId,
-      // Use the actual status from the DB, fallback to 'Pending' if something goes wrong
       status: newReservation?.status || "Pending",
+      guest_count: newReservation?.guest_count || 1,
       reservation_date,
       time_slot,
     });
   } catch (err) {
+    console.error("Create reservation error:", err);
     if (err.code === "ER_DUP_ENTRY") {
       return res
         .status(409)
@@ -106,6 +116,7 @@ export const getAvailability = async (req, res) => {
     res.status(500).json({ message: "Error loading availability" });
   }
 };
+
 /**
  * ============================
  * RESIDENT: Get own reservations
@@ -128,6 +139,7 @@ export const getMyReservations = async (req, res) => {
       SELECT 
         ar.reservation_id,
         ar.status,         
+        ar.guest_count,
         a.name AS amenity_name,
         ar.reservation_date,
         ar.time_slot
@@ -145,7 +157,11 @@ export const getMyReservations = async (req, res) => {
   }
 };
 
-// PATCH /api/reservations/:id/status
+/**
+ * ============================
+ * ADMIN: Update Status
+ * ============================
+ */
 export const updateReservationStatus = async (req, res) => {
   const { id } = req.params;
   const { status, resident_id, amenity_name } = req.body;
@@ -174,14 +190,19 @@ export const updateReservationStatus = async (req, res) => {
   }
 };
 
-// DELETE /api/reservations/:id
+/**
+ * ============================
+ * RESIDENT/ADMIN: Delete/Cancel
+ * ============================
+ */
 export const deleteReservation = async (req, res) => {
   const { id } = req.params;
-  const { resident_id, amenity_name } = req.body; // Passed from frontend
+  const { resident_id, amenity_name, is_resident_action } = req.body;
 
   try {
-    // Notify BEFORE deleting so the foreign key doesn't break if related_id is used
-    if (resident_id) {
+    // Only send a notification if it's the ADMIN deleting it.
+    // If a resident cancels their own, they don't need a notification.
+    if (resident_id && !is_resident_action) {
       await db.query(
         "INSERT INTO notifications (resident_id, type, title, message) VALUES (?, 'Amenity', ?, ?)",
         [

@@ -57,7 +57,7 @@ router.get(
 router.delete(
   "/reservations/:id",
   authenticate,
-  authorizeRoles("ADMIN"),
+  authorizeRoles("ADMIN", "RESIDENT"),
   deleteReservation,
 );
 router.patch(

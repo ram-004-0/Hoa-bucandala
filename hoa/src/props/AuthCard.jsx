@@ -14,22 +14,49 @@ const AuthCard = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Validation Logic
+  const validateForm = () => {
+    // 1. Email Regex Check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError("Please enter a valid email address (e.g., user@example.com)");
+      return false;
+    }
+
+    // 2. Password Length/Format Check
+    // You can adjust this to your backend requirements
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long");
+      return false;
+    }
+
+    return true;
+  };
+
   const handleLogin = async (e) => {
+    useEffect(() => {
+      const role = localStorage.getItem("role");
+      if (role) {
+        // If they are already logged in, send them to their dashboard automatically
+        if (role === "ADMIN") navigate("/admin");
+        else if (role === "GUARD") navigate("/guard");
+        else navigate("/home");
+      }
+    }, []);
     e.preventDefault(); // Prevent page refresh
     setError("");
 
-    // 1. Basic Validation
+    // 1. Basic & Format Validation
     if (!email.trim() || !password.trim()) {
       setError("Email and password are required");
       return;
     }
 
+    if (!validateForm()) return;
+
     setLoading(true);
 
     try {
-      // 2. Prepare Payload
-      // Note: We don't send a hardcoded "role" here because the
-      // database will verify the email/password and tell us the role.
       const payload = {
         email: email.trim(),
         password: password.trim(),
@@ -47,23 +74,20 @@ const AuthCard = () => {
 
       // 3. Handle Unauthorized/Errors
       if (!res.ok) {
-        // This handles the 401 error and displays the server's message
         setError(data.message || "Invalid email or password");
         return;
       }
 
       // 4. Store Auth Data
-      // The backend returns { token, role, expiresIn }
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.role);
 
-      // 5. Start auto-logout timer (from your reference logic)
+      // 5. Start auto-logout timer
       if (data.expiresIn) {
         startAutoLogout(data.expiresIn);
       }
 
       // 6. Role-Based Redirection
-      // Matching your database ENUMs: 'ADMIN', 'GUARD', 'RESIDENT'
       if (data.role === "ADMIN") {
         navigate("/admin");
       } else if (data.role === "GUARD") {
@@ -97,28 +121,61 @@ const AuthCard = () => {
             type="email"
             placeholder="name@email.com"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-3 border text-gray-800 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00704e] outline-none transition-all"
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (error) setError(""); // Clear error when user types
+            }}
+            className={`w-full p-3 border text-gray-800 rounded-lg focus:ring-2 focus:ring-[#00704e] outline-none transition-all ${
+              error && error.includes("email")
+                ? "border-red-500 bg-red-50"
+                : "border-gray-300"
+            }`}
             required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-[#3c3c3c] mb-1">
-            Password
-          </label>
+          <div className="flex justify-between mb-1">
+            <label className="text-sm font-semibold text-[#3c3c3c]">
+              Password
+            </label>
+            <button
+              type="button"
+              className="text-xs text-[#00704e] font-bold hover:underline"
+            >
+              Forgot Password?
+            </button>
+          </div>
           <input
             type="password"
             placeholder="••••••••"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 border text-gray-800 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00704e] outline-none transition-all"
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (error) setError(""); // Clear error when user types
+            }}
+            className={`w-full p-3 border text-gray-800 rounded-lg focus:ring-2 focus:ring-[#00704e] outline-none transition-all ${
+              error && error.includes("Password")
+                ? "border-red-500 bg-red-50"
+                : "border-gray-300"
+            }`}
             required
           />
         </div>
 
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="remember"
+            className="accent-[#00704e] w-4 h-4"
+          />
+          <label htmlFor="remember" className="text-sm text-gray-600">
+            Remember me
+          </label>
+        </div>
+
         {error && (
-          <p className="text-red-500 text-sm text-center font-medium bg-red-50 p-2 rounded">
+          <p className="text-red-500 text-sm text-center font-medium bg-red-50 p-2 rounded border border-red-100">
             {error}
           </p>
         )}
@@ -128,7 +185,33 @@ const AuthCard = () => {
           disabled={loading}
           className="bg-[#00704e] w-full rounded-xl h-12 text-white font-bold hover:bg-[#016446] transition-all shadow-lg disabled:opacity-50 active:scale-95"
         >
-          {loading ? "Verifying..." : "Sign In"}
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg
+                className="animate-spin h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              Verifying...
+            </span>
+          ) : (
+            "Sign In"
+          )}
         </button>
       </form>
     </div>

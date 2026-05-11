@@ -92,16 +92,17 @@ const ClubHouse = () => {
           amenity_id: AMENITY_ID,
           reservation_date: date,
           time_slot: selectedSlot.value,
-          pax: pax, // Added pax to request
+          guest_count: pax, // Updated to match database column name 'guest_count'
         }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Reservation failed");
 
+      // Passing detailed state to the Success page
       navigate("/amenities/success", {
         state: {
-          data: data,
+          data: data, // Includes reservation_id from backend
           status: data.status || "Pending",
           amenityName: "Club House",
           displayDate: date,
@@ -207,7 +208,7 @@ const ClubHouse = () => {
               type="number"
               min="1"
               value={pax}
-              onChange={(e) => setPax(parseInt(e.target.value))}
+              onChange={(e) => setPax(parseInt(e.target.value) || 1)}
               className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-[#00704e] outline-none transition-all font-bold text-gray-700"
               placeholder="How many guests?"
             />
@@ -275,9 +276,12 @@ const ClubHouse = () => {
             </button>
 
             <div className="grid grid-cols-2 gap-4">
-              <button className="py-3 px-4 rounded-xl border border-red-200 text-red-600 font-bold text-xs hover:bg-red-50 transition-colors uppercase tracking-widest">
-                Cancel Booking
-              </button>
+              <Link
+                to="/amenities/history"
+                className="py-3 px-4 rounded-xl border border-red-200 text-red-600 font-bold text-xs hover:bg-red-50 transition-colors uppercase tracking-widest text-center"
+              >
+                View History
+              </Link>
               <button className="py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold text-xs hover:bg-gray-50 transition-colors uppercase tracking-widest">
                 Refund Request
               </button>

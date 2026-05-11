@@ -8,6 +8,7 @@ import {
   HomeIcon,
   InformationCircleIcon,
   EnvelopeIcon,
+  UsersIcon, // Added for Pax display
 } from "@heroicons/react/24/outline";
 
 const SuccessReservation = () => {
@@ -19,6 +20,7 @@ const SuccessReservation = () => {
   const amenityName = location.state?.amenityName || "Amenity";
   const displayDate = location.state?.displayDate;
   const displaySlot = location.state?.displaySlot;
+  const pax = location.state?.pax || stateData?.guest_count || 1; // Extracting pax
 
   // Redirect back if accessed directly without data
   if (!stateData) {
@@ -135,6 +137,19 @@ const SuccessReservation = () => {
               </div>
             </div>
 
+            {/* Guest Count (Pax) - Added Section */}
+            <div className="pb-4 border-b border-dashed border-gray-200">
+              <div className="flex items-center gap-2 text-gray-400">
+                <UsersIcon className="h-4 w-4" />
+                <span className="text-[10px] font-bold uppercase">
+                  Guest Count
+                </span>
+              </div>
+              <p className="font-black text-[#00704e] text-lg">
+                {pax} {pax > 1 ? "Persons" : "Person"}
+              </p>
+            </div>
+
             {/* Status Indicator */}
             <div
               className={`${statusInfo.containerClass} p-4 rounded-2xl flex items-center justify-between`}
@@ -198,6 +213,7 @@ const SuccessReservation = () => {
             onClick={() => window.print()}
             className="w-full bg-white text-gray-600 py-4 rounded-2xl font-black text-center border border-gray-200 flex items-center justify-center gap-2 hover:bg-gray-50 transition-all"
           >
+            <button className="h-5 w-5" />
             PRINT CONFIRMATION
           </button>
         </div>

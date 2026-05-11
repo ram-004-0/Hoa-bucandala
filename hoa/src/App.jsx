@@ -60,7 +60,12 @@ import ViewPickups from "./pages/admin/adminpages/ViewPickups.jsx";
 import ManagePayments from "./pages/admin/adminpages/ManagePayments.jsx";
 const App = () => {
   useEffect(() => {
-    startAutoLogout();
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+
+    if (token && role) {
+      startAutoLogout();
+    }
   }, []);
 
   const router = createBrowserRouter(
