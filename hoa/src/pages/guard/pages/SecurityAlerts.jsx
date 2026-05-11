@@ -42,6 +42,15 @@ const SecurityAlerts = () => {
     }
   };
 
+  // Helper function to resolve the image URL correctly
+  const getImageUrl = (url) => {
+    if (!url) return null;
+    // If it's already a full Cloudinary/External URL, return it
+    if (url.startsWith("http")) return url;
+    // If it's a legacy local path from your previous setup, point to the production server
+    return `https://hoa-camellabucandalav-production.up.railway.app${url}`;
+  };
+
   // Opens the modal instead of resolving immediately
   const openResolveModal = (id) => {
     setSelectedRequestId(id);
@@ -121,7 +130,7 @@ const SecurityAlerts = () => {
             </p>
           </div>
         ) : requests.length === 0 ? (
-          <div className="text-center py-24 bg-white rounded-[2rem] border-2 border-dashed border-gray-200 shadow-sm">
+          <div className="text-center py-24 bg-white rounded-4xl border-2 border-dashed border-gray-200 shadow-sm">
             <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="text-gray-300 w-10 h-10" />
             </div>
@@ -136,7 +145,7 @@ const SecurityAlerts = () => {
           requests.map((req) => (
             <div
               key={req.request_id}
-              className={`group bg-white rounded-[1.5rem] shadow-sm border-t-8 transition-all duration-300 hover:shadow-md ${
+              className={`group bg-white rounded-3xl shadow-sm border-t-8 transition-all duration-300 hover:shadow-md ${
                 req.status === "PENDING"
                   ? "border-red-500"
                   : "border-gray-300 grayscale-[0.5]"
@@ -229,16 +238,18 @@ const SecurityAlerts = () => {
                 {req.photo_url && (
                   <div className="relative group/img rounded-2xl overflow-hidden border border-gray-200 mb-6">
                     <img
-                      src={`https://hoa-camellabucandalav-production.up.railway.app${req.photo_url}`}
+                      src={getImageUrl(req.photo_url)}
                       alt="Evidence"
                       className="w-full h-56 object-cover transition-transform duration-500 group-hover/img:scale-110"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src =
+                          "https://via.placeholder.com/800x600?text=Image+Unavailable";
+                      }}
                     />
                     <button
                       onClick={() =>
-                        window.open(
-                          `https://hoa-camellabucandalav-production.up.railway.app${req.photo_url}`,
-                          "_blank",
-                        )
+                        window.open(getImageUrl(req.photo_url), "_blank")
                       }
                       className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white font-bold gap-2"
                     >
@@ -285,7 +296,7 @@ const SecurityAlerts = () => {
       {/* RESOLUTION MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-md rounded-[2rem] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-4xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
             <div className="bg-[#00704e] p-6 text-white flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <FileText className="w-6 h-6" />
@@ -324,7 +335,7 @@ const SecurityAlerts = () => {
                 <button
                   onClick={handleResolve}
                   disabled={isSubmitting || !guardReport.trim()}
-                  className="flex-[2] bg-[#00704e] text-white font-black py-3 rounded-xl shadow-lg hover:bg-[#005a3e] disabled:opacity-50 disabled:hover:translate-y-0 transition-all flex items-center justify-center gap-2"
+                  className="flex-2 bg-[#00704e] text-white font-black py-3 rounded-xl shadow-lg hover:bg-[#005a3e] disabled:opacity-50 disabled:hover:translate-y-0 transition-all flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? "Saving..." : "Submit & Resolve"}
                 </button>
