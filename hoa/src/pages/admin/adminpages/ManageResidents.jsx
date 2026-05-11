@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   ShieldCheck,
   ArrowLeftIcon,
@@ -9,12 +9,15 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // Added useNavigate
 import CreateUser from "./CreateUser";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
 const ManageResidents = () => {
+  const navigate = useNavigate();
+  const isMounted = useRef(true); // Track if component is still in the DOM
+
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -24,38 +27,63 @@ const ManageResidents = () => {
   const [showGuardModal, setShowGuardModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // Use useCallback to stabilize the fetch function
-  const fetchAllUsers = useCallback(async () => {
+  // Stabilized fetch with AbortController support
+  const fetchAllUsers = useCallback(async (signal) => {
     const token = localStorage.getItem("token");
     if (!token) return;
+
     try {
       const res = await fetch(`${API_URL}/residents`, {
         headers: { Authorization: `Bearer ${token}` },
+        signal, // Attach the abort signal here
       });
+
       const data = await res.json();
 
-      const transformed = data.map((u) => ({
-        id: u.resident_id || u.id,
-        account_id: u.account_id,
-        name: u.full_name || u.name || u.username,
-        email: u.email,
-        address: u.address,
-        contact: u.contact,
-        role: u.role || "RESIDENT",
-        withBalance: !!u.has_balance,
-      }));
-
-      setUsers(transformed);
+      // Only update state if the component hasn't been unmounted/logged out
+      if (isMounted.current) {
+        const transformed = data.map((u) => ({
+          id: u.resident_id || u.id,
+          account_id: u.account_id,
+          name: u.full_name || u.name || u.username,
+          email: u.email,
+          address: u.address,
+          contact: u.contact,
+          role: u.role || "RESIDENT",
+          withBalance: !!u.has_balance,
+        }));
+        setUsers(transformed);
+      }
     } catch (err) {
-      console.error("Fetch failed:", err);
+      if (err.name === "AbortError") {
+        console.log("Fetch aborted on logout/unmount");
+      } else {
+        console.error("Fetch failed:", err);
+      }
     } finally {
-      setLoading(false);
+      if (isMounted.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchAllUsers();
+    isMounted.current = true;
+    const controller = new AbortController();
+
+    fetchAllUsers(controller.signal);
+
+    return () => {
+      // KILL everything when the user leaves or logs out
+      isMounted.current = false;
+      controller.abort();
+    };
   }, [fetchAllUsers]);
+
+  // Updated Logout logic to prevent the "Node not found" error
+  const handleLogout = () => {
+    isMounted.current = false;
+    localStorage.removeItem("token");
+    navigate("/login", { replace: true });
+  };
 
   const handleDelete = async (user) => {
     if (!window.confirm(`Are you sure you want to delete ${user.name}?`))
@@ -70,7 +98,7 @@ const ManageResidents = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (res.ok) {
+      if (res.ok && isMounted.current) {
         setUsers((prev) => prev.filter((u) => u.id !== user.id));
       }
     } catch (err) {
@@ -97,10 +125,7 @@ const ManageResidents = () => {
   };
 
   const handleUpdateEntry = (updated) => {
-    // 1. Close the modal first to break any render cycles
     setSelectedUser(null);
-
-    // 2. Update the state
     setUsers((prev) =>
       prev.map((u) => {
         const isMatch =
@@ -136,7 +161,10 @@ const ManageResidents = () => {
         <Link to="/admin">
           <ArrowLeftIcon className="h-10 w-10 ml-5 hover:text-gray-200" />
         </Link>
-        <h1 className="font-bold text-4xl">Community Management</h1>
+        <div className="flex justify-between items-center w-full pr-10">
+          <h1 className="font-bold text-4xl">Community Management</h1>
+          {/* Added a Logout button here as well just in case, or you can use your sidebar/header */}
+        </div>
       </div>
 
       <div className="m-10">
@@ -157,6 +185,7 @@ const ManageResidents = () => {
           />
         </div>
 
+        {/* ... (rest of your UI: Tabs, Search, Table) ... */}
         <div className="flex border-b border-gray-200 mb-6">
           <button
             onClick={() => setCurrentTab("RESIDENT")}
@@ -245,13 +274,13 @@ const ManageResidents = () => {
                   <td className="px-6 py-4 flex gap-4">
                     <button
                       onClick={() => setSelectedUser(u)}
-                      className="text-blue-500"
+                      className="text-blue-500 hover:scale-110 transition-transform"
                     >
                       <Edit size={16} />
                     </button>
                     <button
                       onClick={() => handleDelete(u)}
-                      className="text-red-400"
+                      className="text-red-400 hover:scale-110 transition-transform"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -263,6 +292,7 @@ const ManageResidents = () => {
         </div>
       </div>
 
+      {/* Modals */}
       {showCreateModal && (
         <CreateUser
           onClose={() => setShowCreateModal(false)}
