@@ -201,7 +201,7 @@ const AdminDashboard = () => {
               <Card
                 name="HOA Dues Management"
                 desc="Track HOA payment status"
-                image={<DollarSign className="text-red-700 w-6 h-6" />}
+                image={<BanknoteIcon className="text-red-700 w-6 h-6" />}
               />
             </Link>
             {/* Waste Pickups Card Removed */}
