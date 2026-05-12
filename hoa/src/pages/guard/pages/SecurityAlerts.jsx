@@ -12,6 +12,7 @@ import {
   ShieldAlert,
   FileText,
   X,
+  ImageOff, // Added for a better fallback UI
 } from "lucide-react";
 import axios from "axios";
 
@@ -42,16 +43,18 @@ const SecurityAlerts = () => {
     }
   };
 
-  // Helper function to resolve the image URL correctly
+  // Improved Helper function to resolve the image URL
   const getImageUrl = (url) => {
     if (!url) return null;
-    // If it's already a full Cloudinary/External URL, return it
+
+    // 1. If it's a full Cloudinary/External URL, return it
     if (url.startsWith("http")) return url;
-    // If it's a legacy local path from your previous setup, point to the production server
-    return `https://hoa-camellabucandalav-production.up.railway.app/api`;
+
+    // 2. If it's a relative path (legacy), point it to the uploads folder on your server
+    // Note: Since you're moving to Cloudinary, this is a fallback for old data.
+    return `${API_URL.replace("/api", "")}/${url}`;
   };
 
-  // Opens the modal instead of resolving immediately
   const openResolveModal = (id) => {
     setSelectedRequestId(id);
     setIsModalOpen(true);
@@ -71,7 +74,7 @@ const SecurityAlerts = () => {
         `${API_URL}/guard-requests/${selectedRequestId}/status`,
         {
           status: "RESOLVED",
-          report: guardReport, // Sending the new report column data
+          report: guardReport,
         },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -95,7 +98,6 @@ const SecurityAlerts = () => {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] pb-20 font-sans antialiased">
-      {/* Top Navigation Bar */}
       <div className="sticky top-0 z-30 bg-[#00704e] px-6 py-5 text-white shadow-xl flex items-center justify-between">
         <div className="flex items-center gap-5">
           <button
@@ -152,7 +154,6 @@ const SecurityAlerts = () => {
               }`}
             >
               <div className="p-6">
-                {/* Header Row */}
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex gap-4">
                     <div
@@ -190,7 +191,6 @@ const SecurityAlerts = () => {
                   </div>
                 </div>
 
-                {/* Information Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
                     <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">
@@ -222,7 +222,6 @@ const SecurityAlerts = () => {
                   </div>
                 </div>
 
-                {/* Situation Details */}
                 <div className="mb-6">
                   <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">
                     Report Content
@@ -234,19 +233,25 @@ const SecurityAlerts = () => {
                   </div>
                 </div>
 
-                {/* Evidence Image */}
-                {req.photo_url && (
-                  <div className="relative group/img rounded-2xl overflow-hidden border border-gray-200 mb-6">
+                {/* Evidence Image with Error Handling */}
+                {req.photo_url ? (
+                  <div className="relative group/img rounded-2xl overflow-hidden border border-gray-200 mb-6 bg-gray-100">
                     <img
                       src={getImageUrl(req.photo_url)}
                       alt="Evidence"
-                      className="w-full h-56 object-cover transition-transform duration-500 group-hover/img:scale-110"
+                      className="w-full h-64 object-cover transition-transform duration-500 group-hover/img:scale-105"
                       onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src =
-                          "https://via.placeholder.com/800x600?text=Image+Unavailable";
+                        e.target.style.display = "none"; // Hide the broken image
+                        e.target.nextSibling.style.display = "flex"; // Show the placeholder
                       }}
                     />
+                    {/* Reliable Internal Placeholder (if Cloudinary fails) */}
+                    <div className="hidden h-64 w-full flex-col items-center justify-center text-gray-400 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl">
+                      <ImageOff className="w-10 h-10 mb-2" />
+                      <p className="text-xs font-bold uppercase">
+                        Image Unavailable
+                      </p>
+                    </div>
                     <button
                       onClick={() =>
                         window.open(getImageUrl(req.photo_url), "_blank")
@@ -256,9 +261,8 @@ const SecurityAlerts = () => {
                       <ExternalLink size={20} /> View Full Detail
                     </button>
                   </div>
-                )}
+                ) : null}
 
-                {/* Actions & Resolution History */}
                 {req.status === "PENDING" ? (
                   <button
                     onClick={() => openResolveModal(req.request_id)}

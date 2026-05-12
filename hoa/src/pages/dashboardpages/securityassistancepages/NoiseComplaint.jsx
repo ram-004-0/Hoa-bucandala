@@ -1,7 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
-import { Camera, Loader2, X, AlertCircle, Zap } from "lucide-react";
+import {
+  Camera,
+  Loader2,
+  X,
+  AlertCircle,
+  Zap,
+  CheckCircle2,
+} from "lucide-react";
 import axios from "axios";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
@@ -15,6 +22,7 @@ const NoiseComplaint = () => {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -32,6 +40,7 @@ const NoiseComplaint = () => {
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
+    // Max 10MB limit check
     if (selectedFile && selectedFile.size <= 10 * 1024 * 1024) {
       setFile(selectedFile);
       setPreview(URL.createObjectURL(selectedFile));
@@ -48,9 +57,12 @@ const NoiseComplaint = () => {
     const token = localStorage.getItem("token");
 
     const formData = new FormData();
+    // These keys match your backend: createGuardRequest
     formData.append("request_type_name", "Noise Complaint");
     formData.append("situation_details", details);
-    formData.append("location", location);
+    formData.append("location", location || "Not provided");
+
+    // Key must be "photo" to match your backend upload.single("photo")
     if (file) formData.append("photo", file);
 
     try {
@@ -60,19 +72,43 @@ const NoiseComplaint = () => {
           "Content-Type": "multipart/form-data",
         },
       });
-      alert("Noise complaint submitted.");
-      navigate("/securityassistance");
+
+      setSubmitted(true);
+      // Wait 2 seconds so they see the success state before navigating
+      setTimeout(() => {
+        navigate("/securityassistance");
+      }, 2000);
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to submit.");
+      console.error("Submission error:", err);
+      alert(
+        err.response?.data?.message ||
+          "Failed to submit complaint. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center">
+        <div className="bg-green-100 p-6 rounded-full mb-6 animate-bounce">
+          <CheckCircle2 className="w-16 h-16 text-[#00704e]" />
+        </div>
+        <h1 className="text-3xl font-black text-gray-900 mb-2">REPORT FILED</h1>
+        <p className="text-gray-500 max-w-xs">
+          Security has been notified and a guard is being dispatched to verify
+          the noise level.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-10 font-sans">
-      <div className="bg-[#00704e] min-h-[140px] md:h-40 gap-4 md:gap-10 grid grid-cols-[15%_85%] md:grid-cols-[10%_90%] p-6 md:p-10 text-white items-center relative overflow-hidden">
-        <div className="absolute right-[-20px] top-[-20px] opacity-10">
+    <div className="min-h-screen bg-gray-50 pb-10 font-sans antialiased">
+      {/* Header Section */}
+      <div className="bg-[#00704e] min-h-35 md:h-40 gap-4 md:gap-10 grid grid-cols-[15%_85%] md:grid-cols-[10%_90%] p-6 md:p-10 text-white items-center relative overflow-hidden shadow-lg">
+        <div className="absolute -right-5 -top-5 opacity-10">
           <Zap size={150} />
         </div>
         <Link to="/securityassistance">
@@ -82,17 +118,18 @@ const NoiseComplaint = () => {
           <h1 className="font-bold text-2xl md:text-4xl uppercase tracking-tight">
             Security Assistance
           </h1>
-          <p className="text-sm md:text-base opacity-80">
+          <p className="text-sm md:text-base opacity-80 font-medium">
             Noise Complaint Report
           </p>
         </div>
       </div>
 
       <div className="px-4 md:px-0 mt-6 md:mt-10 flex flex-col items-center gap-6">
-        <div className="shadow-xl rounded-2xl p-6 bg-white w-full max-w-[450px] flex flex-col gap-6">
+        <div className="shadow-2xl rounded-3xl p-6 bg-white w-full max-w-112.5 flex flex-col gap-6 border border-gray-100">
+          {/* Quick Select Buttons */}
           <div>
-            <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
-              Quick Select
+            <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">
+              Quick Templates
             </h2>
             <div className="flex flex-wrap gap-2">
               {quickTemplates.map((item) => (
@@ -100,7 +137,11 @@ const NoiseComplaint = () => {
                   key={item}
                   type="button"
                   onClick={() => setDetails(item)}
-                  className="text-xs border border-gray-200 rounded-full px-3 py-1.5 hover:bg-green-50 hover:border-green-500 hover:text-green-700 transition-all active:scale-90"
+                  className={`text-xs font-bold border rounded-full px-4 py-2 transition-all active:scale-90 ${
+                    details === item
+                      ? "bg-[#00704e] border-[#00704e] text-white shadow-md"
+                      : "border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-400"
+                  }`}
                 >
                   {item}
                 </button>
@@ -108,16 +149,17 @@ const NoiseComplaint = () => {
             </div>
           </div>
 
-          <div className="h-[1px] bg-gray-100 w-full"></div>
+          <div className="h-px bg-gray-100 w-full"></div>
 
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-6">
+            {/* Complaint Details */}
             <div>
               <div className="flex justify-between items-end mb-2">
-                <h1 className="font-bold text-gray-700">
-                  Complaint Details <span className="text-red-500">*</span>
+                <h1 className="font-black text-gray-800 text-sm uppercase tracking-wide">
+                  What is happening? <span className="text-red-500">*</span>
                 </h1>
                 <span
-                  className={`text-[10px] font-bold ${details.length > 250 ? "text-red-500" : "text-gray-400"}`}
+                  className={`text-[10px] font-black ${details.length > 280 ? "text-red-500" : "text-gray-400"}`}
                 >
                   {details.length} / 300
                 </span>
@@ -126,25 +168,30 @@ const NoiseComplaint = () => {
                 value={details}
                 maxLength={300}
                 onChange={(e) => setDetails(e.target.value)}
-                className="border-2 border-gray-100 rounded-xl w-full h-32 md:h-40 p-4 focus:outline-none focus:border-green-500 resize-none transition-all"
-                placeholder="Describe the noise (type, duration, etc.)"
+                className="border-2 border-gray-100 rounded-2xl w-full h-32 md:h-40 p-4 focus:outline-none focus:border-[#00704e] focus:ring-4 focus:ring-green-50 resize-none transition-all text-gray-700 font-medium"
+                placeholder="Ex: Loud music coming from the neighbor's backyard for the last 2 hours..."
               ></textarea>
             </div>
 
+            {/* Location Input */}
             <div>
-              <h1 className="font-bold text-gray-700 mb-2">
-                Location of Noise
+              <h1 className="font-black text-gray-800 text-sm uppercase tracking-wide mb-2">
+                Where is the noise?
               </h1>
               <textarea
                 value={location}
+                rows={2}
                 onChange={(e) => setLocation(e.target.value)}
-                className="border-2 border-gray-100 rounded-xl w-full p-4 focus:outline-none focus:border-green-500 resize-none transition-all"
-                placeholder="Address or unit where noise is coming from"
+                className="border-2 border-gray-100 rounded-2xl w-full p-4 focus:outline-none focus:border-[#00704e] focus:ring-4 focus:ring-green-50 resize-none transition-all text-gray-700 font-medium"
+                placeholder="House Number, Street Name, or Block/Lot"
               ></textarea>
             </div>
 
+            {/* File Upload Section */}
             <div>
-              <h1 className="font-bold text-gray-700 mb-2">Photo Evidence</h1>
+              <h1 className="font-black text-gray-800 text-sm uppercase tracking-wide mb-2">
+                Evidence (Optional)
+              </h1>
               <input
                 type="file"
                 ref={fileInputRef}
@@ -154,14 +201,18 @@ const NoiseComplaint = () => {
               />
               <div
                 onClick={handleBoxClick}
-                className={`group flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-2xl cursor-pointer transition-all ${preview ? "border-green-500 bg-green-50" : "border-gray-200 hover:border-green-400 hover:bg-gray-50"}`}
+                className={`group flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-3xl cursor-pointer transition-all ${
+                  preview
+                    ? "border-[#00704e] bg-green-50/30"
+                    : "border-gray-200 hover:border-[#00704e] hover:bg-gray-50"
+                }`}
               >
                 {preview ? (
                   <div className="relative w-full flex justify-center">
                     <img
                       src={preview}
                       alt="Preview"
-                      className="h-40 w-full object-cover rounded-lg shadow-md"
+                      className="h-48 w-full object-cover rounded-2xl shadow-lg border-2 border-white"
                     />
                     <button
                       onClick={(e) => {
@@ -169,42 +220,58 @@ const NoiseComplaint = () => {
                         setPreview(null);
                         setFile(null);
                       }}
-                      className="absolute top-2 right-2 bg-white text-red-500 rounded-full p-1.5 shadow-xl"
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-2 shadow-xl hover:bg-red-600 transition-colors"
                     >
-                      <X size={18} />
+                      <X size={16} />
                     </button>
                   </div>
                 ) : (
                   <>
-                    <div className="bg-gray-100 p-4 rounded-full group-hover:bg-green-100">
-                      <Camera className="text-gray-400 group-hover:text-green-600 w-8 h-8" />
+                    <div className="bg-gray-100 p-5 rounded-2xl group-hover:bg-green-100 transition-colors">
+                      <Camera className="text-gray-400 group-hover:text-[#00704e] w-8 h-8" />
                     </div>
-                    <p className="text-gray-400 font-medium text-sm mt-3 text-center">
-                      Tap to upload photo evidence
+                    <p className="text-gray-400 font-bold text-xs mt-4 text-center uppercase tracking-widest">
+                      Upload Incident Photo
                     </p>
                   </>
                 )}
               </div>
             </div>
 
+            {/* Submit Button */}
             <button
               onClick={handleSubmit}
-              disabled={loading}
-              className="px-6 py-4 bg-[#00704e] text-white rounded-xl shadow-lg hover:bg-green-800 w-full font-black text-lg flex justify-center items-center gap-3 transition-all active:scale-95 disabled:bg-gray-300"
+              disabled={loading || !details.trim()}
+              className="px-6 py-5 bg-[#00704e] text-white rounded-2xl shadow-xl hover:bg-green-800 w-full font-black text-lg flex justify-center items-center gap-3 transition-all active:scale-95 disabled:bg-gray-200 disabled:shadow-none"
             >
-              {loading ? <Loader2 className="animate-spin" /> : "REPORT NOISE"}
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin" />
+                  <span>TRANSMITTING...</span>
+                </>
+              ) : (
+                "REPORT NOISE"
+              )}
             </button>
           </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-amber-50 border border-amber-200 w-full max-w-[450px]">
-          <div className="flex gap-3">
-            <AlertCircle className="text-amber-700 shrink-0" size={20} />
-            <p className="text-xs text-amber-800 leading-relaxed">
-              <span className="font-bold block text-sm mb-1">Notice:</span>
-              Guards will verify the noise level and issue a verbal warning or
-              citation as per HOA rules.
-            </p>
+        {/* Warning/Notice Box */}
+        <div className="p-6 rounded-3xl bg-amber-50 border border-amber-100 w-full max-w-112.5 shadow-sm">
+          <div className="flex gap-4">
+            <div className="bg-amber-100 p-2 rounded-xl h-fit">
+              <AlertCircle className="text-amber-700 shrink-0" size={20} />
+            </div>
+            <div>
+              <p className="font-black text-amber-900 text-sm uppercase tracking-tight mb-1">
+                HOA Enforcement Notice
+              </p>
+              <p className="text-xs text-amber-800/80 leading-relaxed font-medium">
+                Our guards will conduct a noise decibel check upon arrival.
+                First-time offenders receive a verbal warning; repeat violations
+                may result in penalties according to Camella Bucandala V bylaws.
+              </p>
+            </div>
           </div>
         </div>
       </div>

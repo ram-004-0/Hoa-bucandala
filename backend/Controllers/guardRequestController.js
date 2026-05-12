@@ -4,9 +4,10 @@ import multer from "multer";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 
 // 1. Cloudinary Configuration
+// Ensure these variables in your Railway environment match image_ef8379.png
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, // dahm3q1zr
+  api_key: process.env.CLOUDINARY_API_KEY, // 792197588311632
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
@@ -16,6 +17,7 @@ const storage = new CloudinaryStorage({
   params: {
     folder: "hoa-security-reports",
     allowed_formats: ["jpg", "png", "jpeg"],
+    // Transformation ensures images are optimized before they even hit your DB
     transformation: [{ width: 800, height: 600, crop: "limit" }],
   },
 });
@@ -27,8 +29,11 @@ export const createGuardRequest = async (req, res) => {
   const { situation_details, location, request_type_name } = req.body;
   const accountId = req.user.id;
 
-  // Cloudinary returns the full URL in req.file.path
-  // This URL is permanent and won't disappear on refresh
+  /**
+   * FIX: Verify that req.file.path is being used.
+   * When using CloudinaryStorage, req.file.path contains the full URL
+   * starting with 'https://res.cloudinary.com/'.
+   */
   const photoUrl = req.file ? req.file.path : null;
 
   try {
@@ -36,16 +41,21 @@ export const createGuardRequest = async (req, res) => {
       "SELECT resident_id FROM residents WHERE account_id = ?",
       [accountId],
     );
-    if (resident.length === 0)
+
+    if (resident.length === 0) {
       return res.status(403).json({ message: "Resident profile not found." });
+    }
 
     const [typeRecord] = await pool.query(
       "SELECT type_id FROM request_types WHERE type_name = ?",
       [request_type_name],
     );
-    if (typeRecord.length === 0)
-      return res.status(400).json({ message: "Invalid request type." });
 
+    if (typeRecord.length === 0) {
+      return res.status(400).json({ message: "Invalid request type." });
+    }
+
+    // Insert the FULL URL into the database
     await pool.query(
       "INSERT INTO guard_requests (resident_id, type_id, situation_details, location, photo_url, status) VALUES (?, ?, ?, ?, ?, 'PENDING')",
       [
@@ -53,14 +63,16 @@ export const createGuardRequest = async (req, res) => {
         typeRecord[0].type_id,
         situation_details,
         location || "Not provided",
-        photoUrl,
+        photoUrl, // This will now look like https://res.cloudinary.com/...
       ],
     );
 
-    res
-      .status(201)
-      .json({ message: "Security report submitted successfully." });
+    res.status(201).json({
+      message: "Security report submitted successfully.",
+      url: photoUrl, // Return for debugging
+    });
   } catch (err) {
+    console.error("Upload Error:", err.message);
     res.status(500).json({ message: "Server Error", error: err.message });
   }
 };
