@@ -24,16 +24,10 @@ const storage = new CloudinaryStorage({
 
 export const upload = multer({ storage: storage });
 
-// RESIDENT: Create a new request
 export const createGuardRequest = async (req, res) => {
   const { situation_details, location, request_type_name } = req.body;
   const accountId = req.user.id;
 
-  /**
-   * FIX: Verify that req.file.path is being used.
-   * When using CloudinaryStorage, req.file.path contains the full URL
-   * starting with 'https://res.cloudinary.com/'.
-   */
   const photoUrl = req.file ? req.file.path : null;
 
   try {
@@ -55,7 +49,6 @@ export const createGuardRequest = async (req, res) => {
       return res.status(400).json({ message: "Invalid request type." });
     }
 
-    // Insert the FULL URL into the database
     await pool.query(
       "INSERT INTO guard_requests (resident_id, type_id, situation_details, location, photo_url, status) VALUES (?, ?, ?, ?, ?, 'PENDING')",
       [
@@ -63,7 +56,7 @@ export const createGuardRequest = async (req, res) => {
         typeRecord[0].type_id,
         situation_details,
         location || "Not provided",
-        photoUrl, // This will now look like https://res.cloudinary.com/...
+        photoUrl,
       ],
     );
 

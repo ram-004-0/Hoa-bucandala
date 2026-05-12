@@ -66,7 +66,7 @@ const NoiseComplaint = () => {
     if (file) formData.append("photo", file);
 
     try {
-      await axios.post(`${API_URL}/guard-requests`, formData, {
+      await axios.post(`${API_URL}/guard-requests/create`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
