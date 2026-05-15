@@ -26,7 +26,7 @@ const TIME_SLOTS = [
 const BasketballCourt = () => {
   const navigate = useNavigate();
   const [date, setDate] = useState("");
-  const [reservedDates, setReservedDates] = useState([]); // Track fully booked dates
+  const [reservedDates, setReservedDates] = useState([]); // Expecting array of fully booked YYYY-MM-DD strings
   const [slots, setSlots] = useState(
     TIME_SLOTS.map((s) => ({ ...s, available: true })),
   );
@@ -53,7 +53,7 @@ const BasketballCourt = () => {
     }
   };
 
-  // Fetch all approved reservations to mark the calendar
+  // Fetch fully booked dates where all slots are exhausted
   useEffect(() => {
     const fetchReservedDates = async () => {
       try {
@@ -65,6 +65,7 @@ const BasketballCourt = () => {
           },
         );
         const data = await res.json();
+        // Ensure data is mapped accurately to string arrays
         setReservedDates(data || []);
       } catch (err) {
         console.error("Failed to fetch reserved dates");
@@ -73,6 +74,7 @@ const BasketballCourt = () => {
     fetchReservedDates();
   }, []);
 
+  // Fetch slot availability when a valid, unbooked date is picked
   useEffect(() => {
     if (!date) return;
     if (!checkTokenExpiry()) return;
@@ -100,7 +102,7 @@ const BasketballCourt = () => {
     if (!date || !selectedSlot) return;
     if (!checkTokenExpiry()) return;
 
-    loading(true);
+    setLoading(true);
     try {
       const res = await fetch(`${API_URL}/reservations`, {
         method: "POST",
@@ -134,33 +136,41 @@ const BasketballCourt = () => {
     }
   };
 
-  // FIX: Formats calendar tile strings using explicit local system definitions to counter structural shift bugs
+  // Helper utility to reliably parse local date objects to 'YYYY-MM-DD' without timezone offsets
+  const getLocalDateString = (viewDate) => {
+    const yyyy = viewDate.getFullYear();
+    const mm = String(viewDate.getMonth() + 1).padStart(2, "0");
+    const dd = String(viewDate.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  // Style fully booked calendar dates
   const tileClassName = ({ date: viewDate, view }) => {
     if (view === "month") {
-      const yyyy = viewDate.getFullYear();
-      const mm = String(viewDate.getMonth() + 1).padStart(2, "0");
-      const dd = String(viewDate.getDate()).padStart(2, "0");
-      const dateStr = `${yyyy}-${mm}-${dd}`;
-
+      const dateStr = getLocalDateString(viewDate);
       if (reservedDates.includes(dateStr)) {
-        return "reserved-date";
+        return "fully-booked-date";
       }
     }
     return null;
   };
 
-  // FIX: Maps local selection variables directly to ensure structural accuracy during updates
+  // Disables clicking interaction completely for fully booked dates
+  const tileDisabled = ({ date: viewDate, view }) => {
+    if (view === "month") {
+      const dateStr = getLocalDateString(viewDate);
+      return reservedDates.includes(dateStr);
+    }
+    return false;
+  };
+
   const handleDateChange = (val) => {
     if (!val) return;
-    const yyyy = val.getFullYear();
-    const mm = String(val.getMonth() + 1).padStart(2, "0");
-    const dd = String(val.getDate()).padStart(2, "0");
-    setDate(`${yyyy}-${mm}-${dd}`);
+    setDate(getLocalDateString(val));
   };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* CSS FIX FOR CALENDAR INTERACTION ISSUE */}
       <style>{`
         .react-calendar__tile {
           display: flex !important;
@@ -252,6 +262,7 @@ const BasketballCourt = () => {
                 value={date ? new Date(date + "T00:00:00") : new Date()}
                 minDate={new Date()}
                 tileClassName={tileClassName}
+                tileDisabled={tileDisabled}
                 className="rounded-2xl border-none shadow-none font-bold text-gray-700 w-full"
               />
             </div>

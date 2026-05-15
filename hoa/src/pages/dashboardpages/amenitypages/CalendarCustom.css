@@ -19,7 +19,7 @@
   transition: all 0.2s;
 }
 
-/* Hover effect */
+/* Hover effect for active/valid elements only */
 .react-calendar__tile:enabled:hover,
 .react-calendar__tile:enabled:focus {
   background-color: #f0fdf4 !important;
@@ -35,16 +35,25 @@
   box-shadow: 0 4px 12px rgba(0, 112, 78, 0.3);
 }
 
-/* Highlight for approved/reserved dates (Red dot or background) */
-.reserved-date {
-  background-color: #fef2f2 !important;
-  color: #ef4444 !important;
-  font-weight: bold;
-  border-radius: 1rem;
-  position: relative;
+/* Fully Booked Date Style (Disabled) */
+.fully-booked-date {
+  background-color: #fee2e2 !important; /* Soft light red background */
+  color: #ef4444 !important; /* Crisp red text color */
+  font-weight: bold !important;
+  border-radius: 1rem !important;
+  position: relative !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important; /* Prevents clicking events completely */
 }
 
-.reserved-date::after {
+/* Ensure no hover backgrounds leak over disabled components */
+.fully-booked-date:hover,
+.fully-booked-date:focus {
+  background-color: #fee2e2 !important;
+  color: #ef4444 !important;
+}
+
+.fully-booked-date::after {
   content: "";
   position: absolute;
   bottom: 5px;

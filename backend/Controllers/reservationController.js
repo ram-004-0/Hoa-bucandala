@@ -16,7 +16,7 @@ export const getAllReservations = async (req, res) => {
         ar.cancel_reason,
         r.full_name, 
         a.name AS amenity_name,
-        ar.reservation_date,
+        DATE_FORMAT(ar.reservation_date, '%Y-%m-%d') AS reservation_date,
         ar.time_slot
       FROM amenities_reservation ar
       JOIN residents r ON ar.resident_id = r.resident_id
@@ -51,11 +51,9 @@ export const createReservation = async (req, res) => {
     }
 
     /**
-     * 1. CAPACITY CHECK (Amenity ID 3 - e.g., Swimming Pool)
-     * We only sum guest counts for 'Approved' or 'Pending' bookings.
-     * Status 'Cancelled' or 'Rejected' are ignored to free up capacity.
+     * 1. CAPACITY CHECK (Amenity ID 3 - Swimming Pool)
      */
-    if (amenity_id === 3 || amenity_id === "3") {
+    if (parseInt(amenity_id) === 3) {
       const [[capacityCheck]] = await db.query(
         `SELECT SUM(guest_count) as total FROM amenities_reservation 
          WHERE amenity_id = ? AND reservation_date = ? AND time_slot = ? 
@@ -71,8 +69,7 @@ export const createReservation = async (req, res) => {
       }
     } else {
       /**
-       * 2. DUPLICATE CHECK (For other amenities)
-       * We allow booking if previous reservations for this slot were 'Cancelled' or 'Rejected'.
+       * 2. DUPLICATE CHECK (For single-booking amenities like Basketball Court)
        */
       const [[existingBooking]] = await db.query(
         `SELECT reservation_id FROM amenities_reservation 
@@ -133,8 +130,9 @@ export const getAvailability = async (req, res) => {
   try {
     const { id } = req.params;
     const { date } = req.query;
+    const MAX_POOL_CAPACITY = 20;
 
-    // 1. Get capacity details (only for Approved/Pending bookings to show remaining spots)
+    // 1. Get capacity totals grouping by slots
     const [slotDetails] = await db.query(
       `SELECT time_slot, SUM(guest_count) as total_guests 
        FROM amenities_reservation 
@@ -143,16 +141,6 @@ export const getAvailability = async (req, res) => {
       [id, date],
     );
 
-    // 2. FETCH BOOKED SLOTS
-    // FIXED: We exclude 'Cancelled' and 'Rejected' so the UI shows these slots as AVAILABLE again.
-    const [rows] = await db.query(
-      `SELECT time_slot FROM amenities_reservation 
-       WHERE amenity_id = ? AND reservation_date = ? 
-       AND status NOT IN ('Cancelled', 'Rejected')`,
-      [id, date],
-    );
-
-    const bookedSlots = rows.map((r) => r.time_slot);
     const allSlots = [
       "08:00-12:00",
       "12:00-16:00",
@@ -160,8 +148,24 @@ export const getAvailability = async (req, res) => {
       "20:00-24:00",
     ];
 
+    let availableSlots = [];
+
+    if (parseInt(id) === 3) {
+      // Dynamic availability rule for shared pool space
+      availableSlots = allSlots.filter((slot) => {
+        const matchingDetail = slotDetails.find((d) => d.time_slot === slot);
+        const filledGuests = matchingDetail
+          ? parseInt(matchingDetail.total_guests)
+          : 0;
+        return filledGuests < MAX_POOL_CAPACITY;
+      });
+    } else {
+      const bookedSlots = slotDetails.map((s) => s.time_slot);
+      availableSlots = allSlots.filter((slot) => !bookedSlots.includes(slot));
+    }
+
     res.json({
-      availableSlots: allSlots.filter((slot) => !bookedSlots.includes(slot)),
+      availableSlots: availableSlots,
       slotDetails: slotDetails,
     });
   } catch (err) {
@@ -195,7 +199,7 @@ export const getMyReservations = async (req, res) => {
         ar.guest_count,
         ar.cancel_reason,
         a.name AS amenity_name,
-        ar.reservation_date,
+        DATE_FORMAT(ar.reservation_date, '%Y-%m-%d') AS reservation_date,
         ar.time_slot
       FROM amenities_reservation ar
       JOIN amenities a ON ar.amenity_id = a.amenity_id
@@ -254,7 +258,6 @@ export const deleteReservation = async (req, res) => {
     req.body;
 
   try {
-    // --- 1. ADMIN CANCELS RESIDENT'S BOOKING ---
     if (resident_id && !is_resident_action) {
       const adminMessage = cancel_reason
         ? `Your reservation for ${amenity_name} was cancelled by administration. Reason: ${cancel_reason}`
@@ -266,7 +269,6 @@ export const deleteReservation = async (req, res) => {
       );
     }
 
-    // --- 2. RESIDENT CANCELS (Notify Admin) ---
     if (is_resident_action) {
       const [[resData]] = await db.query(
         "SELECT full_name FROM residents WHERE resident_id = (SELECT resident_id FROM amenities_reservation WHERE reservation_id = ?)",
@@ -285,8 +287,6 @@ export const deleteReservation = async (req, res) => {
       );
     }
 
-    // --- 3. SOFT DELETE (Update to Cancelled) ---
-    // This status change allows the getAvailability/createReservation checks to see this slot as free.
     await db.query(
       "UPDATE amenities_reservation SET status = 'Cancelled', cancel_reason = ? WHERE reservation_id = ?",
       [cancel_reason || "No reason provided", id],
@@ -300,6 +300,7 @@ export const deleteReservation = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 /**
  * ============================================
  * FULLY RESERVED DATES (For Calendar Highlights)
@@ -307,20 +308,35 @@ export const deleteReservation = async (req, res) => {
  */
 export const getFullyReservedDates = async (req, res) => {
   try {
-    const { id } = req.params; // amenity_id
+    const { id } = req.params;
+    const MAX_POOL_CAPACITY = 20;
 
-    const [rows] = await db.query(
-      `SELECT DATE_FORMAT(reservation_date, '%Y-%m-%d') AS full_date
-       FROM amenities_reservation
-       WHERE amenity_id = ? AND status NOT IN ('Cancelled', 'Rejected')
-       GROUP BY reservation_date
-       HAVING COUNT(DISTINCT time_slot) >= 4`,
-      [id],
-    );
-
-    // Map rows array down to a flat array of strings: ["2026-05-20", "2026-05-25"]
-    const datesArray = rows.map((r) => r.full_date);
-    res.json(datesArray);
+    if (parseInt(id) === 3) {
+      const [rows] = await db.query(
+        `SELECT DATE_FORMAT(reservation_date, '%Y-%m-%d') AS full_date
+         FROM (
+           SELECT reservation_date, time_slot, SUM(guest_count) AS total_guests
+           FROM amenities_reservation
+           WHERE amenity_id = ? AND status NOT IN ('Cancelled', 'Rejected')
+           GROUP BY reservation_date, time_slot
+           HAVING total_guests >= ?
+         ) AS full_slots
+         GROUP BY reservation_date
+         HAVING COUNT(time_slot) >= 4`,
+        [id, MAX_POOL_CAPACITY],
+      );
+      return res.json(rows.map((r) => r.full_date));
+    } else {
+      const [rows] = await db.query(
+        `SELECT DATE_FORMAT(reservation_date, '%Y-%m-%d') AS full_date
+         FROM amenities_reservation
+         WHERE amenity_id = ? AND status NOT IN ('Cancelled', 'Rejected')
+         GROUP BY reservation_date
+         HAVING COUNT(DISTINCT time_slot) >= 4`,
+        [id],
+      );
+      return res.json(rows.map((r) => r.full_date));
+    }
   } catch (err) {
     console.error("Error fetching fully reserved dates:", err);
     res.status(500).json({ message: "Failed to fetch fully reserved dates" });
