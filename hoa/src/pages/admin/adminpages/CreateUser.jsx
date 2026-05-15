@@ -19,7 +19,7 @@ const SuccessModal = ({ data, onClose, isGuardRole }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+    <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
       <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center shadow-2xl animate-in zoom-in duration-300">
         <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
           <CheckCircle2 size={40} />
@@ -60,10 +60,8 @@ const SuccessModal = ({ data, onClose, isGuardRole }) => {
 };
 
 const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
-  // Use a ref to track if the component is mounted to prevent state updates on unmounted component
   const isMounted = useRef(true);
 
-  // INITIAL STATE: This prevents the flicker by setting data immediately on the first render
   const [formData, setFormData] = useState({
     name: editData?.full_name || editData?.name || "",
     email: editData?.email || "",
@@ -77,7 +75,6 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
 
   useEffect(() => {
     isMounted.current = true;
-    // Only update if editData exists and is actually different from current form (prevents loop)
     if (editData) {
       setFormData({
         name: editData.full_name || editData.name || "",
@@ -92,9 +89,38 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
     };
   }, [editData]);
 
+  // Handle Input Changes with real-time numeric validation for contact
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    if (name === "contact") {
+      const onlyNums = value.replace(/[^0-9]/g, "");
+      if (onlyNums.length <= 11) {
+        setFormData({ ...formData, [name]: onlyNums });
+      }
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
+    // --- Email Validation ---
+    const validateEmail = (email) => {
+      return String(email)
+        .toLowerCase()
+        .match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+    };
+    if (!validateEmail(formData.email)) {
+      alert("Please enter a valid email address (e.g., name@example.com).");
+      return;
+    }
+    // --- Philippine Contact Number Validation ---
+    const phPhoneRegex = /^09\d{9}$/;
+    if (!phPhoneRegex.test(formData.contact)) {
+      alert("Invalid contact number. Use 09XXXXXXXXX format (11 digits).");
+      return;
+    }
 
     setLoading(true);
     const token = localStorage.getItem("token");
@@ -104,7 +130,6 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
     const isEditing = !!editData;
     const method = isEditing ? "PUT" : "POST";
 
-    // We target the account_id specifically to avoid the "Resident not found" error
     const targetId =
       editData?.account_id || editData?.resident_id || editData?.id;
     const typePath = isGuardRole ? "guards" : "residents";
@@ -132,7 +157,6 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
 
       if (res.ok) {
         if (isEditing) {
-          // Send back the merged data so the parent table updates instantly without a refresh
           onCreate({ ...editData, ...formData, ...data });
           onClose();
         } else {
@@ -193,11 +217,10 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
                   Full Name
                 </label>
                 <input
+                  name="name"
                   className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-[#00704e]"
                   value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
+                  onChange={handleInputChange}
                   required
                 />
               </div>
@@ -206,12 +229,11 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
                   Email Address
                 </label>
                 <input
+                  name="email"
                   className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-[#00704e]"
                   type="email"
                   value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
+                  onChange={handleInputChange}
                   required
                 />
               </div>
@@ -222,12 +244,11 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
                 Physical Address
               </label>
               <textarea
+                name="address"
                 className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-[#00704e]"
                 rows="2"
                 value={formData.address}
-                onChange={(e) =>
-                  setFormData({ ...formData, address: e.target.value })
-                }
+                onChange={handleInputChange}
                 required
               />
             </div>
@@ -237,13 +258,16 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
                 Contact Number
               </label>
               <input
+                name="contact"
+                placeholder="09XXXXXXXXX"
                 className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-[#00704e]"
                 value={formData.contact}
-                onChange={(e) =>
-                  setFormData({ ...formData, contact: e.target.value })
-                }
+                onChange={handleInputChange}
                 required
               />
+              <p className="text-[9px] text-gray-400 ml-1 font-bold">
+                11 DIGITS STARTING WITH 09
+              </p>
             </div>
 
             {!isGuardRole && (

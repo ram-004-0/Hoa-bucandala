@@ -183,15 +183,6 @@ const AdminDashboard = () => {
         </div>
 
         <div className="flex items-center gap-4 self-end md:self-auto">
-          <button
-            onClick={fetchStats}
-            disabled={loading}
-            className="p-2 hover:bg-white/10 rounded-full transition-all disabled:opacity-50"
-          >
-            <RefreshCcw
-              className={`w-6 h-6 ${loading ? "animate-spin" : ""}`}
-            />
-          </button>
           <button onClick={handleLogout}>
             <LogOutIcon className="w-6 h-6 cursor-pointer hover:text-red-300 transition-colors" />
           </button>

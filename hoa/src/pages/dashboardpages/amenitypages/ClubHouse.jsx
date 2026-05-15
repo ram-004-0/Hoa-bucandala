@@ -10,6 +10,9 @@ import {
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { Link, useNavigate } from "react-router-dom";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
+import "./CalendarCustom.css";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 const AMENITY_ID = 1;
@@ -23,6 +26,7 @@ const TIME_SLOTS = [
 const ClubHouse = () => {
   const navigate = useNavigate();
   const [date, setDate] = useState("");
+  const [reservedDates, setReservedDates] = useState([]);
   const [pax, setPax] = useState(1);
   const [slots, setSlots] = useState(
     TIME_SLOTS.map((s) => ({ ...s, available: true })),
@@ -49,6 +53,26 @@ const ClubHouse = () => {
       return false;
     }
   };
+
+  // Fetch reserved dates for the clubhouse to mark the calendar
+  useEffect(() => {
+    const fetchReservedDates = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(
+          `${API_URL}/amenities/${AMENITY_ID}/reserved-dates`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+        const data = await res.json();
+        setReservedDates(data || []);
+      } catch (err) {
+        console.error("Failed to fetch reserved dates");
+      }
+    };
+    fetchReservedDates();
+  }, []);
 
   useEffect(() => {
     if (!date || !checkTokenExpiry()) return;
@@ -92,17 +116,16 @@ const ClubHouse = () => {
           amenity_id: AMENITY_ID,
           reservation_date: date,
           time_slot: selectedSlot.value,
-          guest_count: pax, // Updated to match database column name 'guest_count'
+          guest_count: pax,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Reservation failed");
 
-      // Passing detailed state to the Success page
       navigate("/amenities/success", {
         state: {
-          data: data, // Includes reservation_id from backend
+          data: data,
           status: data.status || "Pending",
           amenityName: "Club House",
           displayDate: date,
@@ -115,6 +138,16 @@ const ClubHouse = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const tileClassName = ({ date: viewDate, view }) => {
+    if (view === "month") {
+      const dateStr = viewDate.toISOString().split("T")[0];
+      if (reservedDates.includes(dateStr)) {
+        return "reserved-date";
+      }
+    }
+    return null;
   };
 
   return (
@@ -137,7 +170,7 @@ const ClubHouse = () => {
 
       <div className="max-w-4xl mx-auto -mt-10 px-4 space-y-6">
         {/* Venue Info & Policy */}
-        <div className="bg-white shadow-xl rounded-[2rem] p-8 border border-gray-100 space-y-6">
+        <div className="bg-white shadow-xl rounded-4xl p-8 border border-gray-100 space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-4">
               <h2 className="font-black text-xl text-gray-800 flex items-center gap-2">
@@ -167,7 +200,6 @@ const ClubHouse = () => {
             </div>
           </div>
 
-          {/* Important Note */}
           <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-2xl flex gap-3">
             <ExclamationTriangleIcon className="h-6 w-6 text-amber-600 shrink-0" />
             <p className="text-sm text-amber-800 font-medium">
@@ -178,26 +210,37 @@ const ClubHouse = () => {
           </div>
         </div>
 
-        <div className="bg-white shadow-xl rounded-[2rem] p-8 border border-gray-100 space-y-8">
+        <div className="bg-white shadow-xl rounded-4xl p-8 border border-gray-100 space-y-8">
           <h2 className="font-black text-2xl text-gray-800">
             Make a Reservation
           </h2>
 
-          {/* Step 1: Date */}
-          <div className="space-y-3">
+          {/* Step 1: Visual Calendar */}
+          <div className="space-y-4">
             <div className="flex items-center gap-2 text-gray-500 ml-1">
               <CalendarIcon className="h-5 w-5" />
               <span className="text-sm font-bold uppercase tracking-wider">
                 Step 1: Select Date
               </span>
             </div>
-            <input
-              type="date"
-              min={new Date().toISOString().split("T")[0]}
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-[#00704e] outline-none transition-all font-bold text-gray-700"
-            />
+
+            <div className="p-4 bg-gray-50 rounded-4xl border-2 border-gray-100 flex justify-center">
+              <Calendar
+                onChange={(val) => setDate(val.toISOString().split("T")[0])}
+                value={date ? new Date(date) : new Date()}
+                minDate={new Date()}
+                tileClassName={tileClassName}
+                className="rounded-2xl border-none shadow-none font-bold text-gray-700"
+              />
+            </div>
+            {date && (
+              <p className="text-center font-black text-[#00704e]">
+                Selected:{" "}
+                {new Date(date).toLocaleDateString("en-US", {
+                  dateStyle: "full",
+                })}
+              </p>
+            )}
           </div>
 
           {/* Step 2: Pax */}
@@ -286,9 +329,6 @@ const ClubHouse = () => {
               >
                 View History
               </Link>
-              <button className="py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold text-xs hover:bg-gray-50 transition-colors uppercase tracking-widest">
-                Refund Request
-              </button>
             </div>
           </div>
         </div>

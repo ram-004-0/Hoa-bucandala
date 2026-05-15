@@ -27,7 +27,6 @@ const ProfileSettings = () => {
         const res = await fetch(
           "https://hoa-camellabucandalav-production.up.railway.app/api/me",
           {
-            // Assuming you have a /me or profile route
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
@@ -48,12 +47,34 @@ const ProfileSettings = () => {
   }, []);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    // Real-time validation: If updating contactNumber, prevent non-numeric input
+    if (name === "contactNumber") {
+      const onlyNums = value.replace(/[^0-9]/g, "");
+      // Limit to 11 characters to prevent overflow
+      if (onlyNums.length <= 11) {
+        setFormData({ ...formData, [name]: onlyNums });
+      }
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+
     if (message.text) setMessage({ type: "", text: "" });
   };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
+
+    // --- NEW: Contact Number Validation (Philippine Format: 09XXXXXXXXX) ---
+    const phPhoneRegex = /^09\d{9}$/;
+    if (formData.contactNumber && !phPhoneRegex.test(formData.contactNumber)) {
+      setMessage({
+        type: "error",
+        text: "Invalid format. Use 09XXXXXXXXX (11 digits).",
+      });
+      return;
+    }
 
     // Password Match Validation
     if (
@@ -118,7 +139,7 @@ const ProfileSettings = () => {
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
       {/* Header */}
-      <div className="bg-[#00704e] text-white px-6 py-12 shadow-lg rounded-b-[2rem]">
+      <div className="bg-[#00704e] text-white px-6 py-12 shadow-lg rounded-b-4xl">
         <div className="max-w-3xl mx-auto flex items-center gap-6">
           <button
             onClick={() => navigate(-1)}
@@ -160,7 +181,7 @@ const ProfileSettings = () => {
 
         <form onSubmit={handleUpdate} className="space-y-6">
           {/* Section: Personal Info */}
-          <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100">
+          <div className="bg-white rounded-4xl p-8 shadow-sm border border-gray-100">
             <div className="flex items-center gap-3 mb-8">
               <div className="bg-green-100 p-2 rounded-xl">
                 <UserIcon className="w-5 h-5 text-[#00704e]" />
@@ -178,15 +199,18 @@ const ProfileSettings = () => {
                 type="text"
                 name="contactNumber"
                 value={formData.contactNumber}
-                placeholder="e.g. 0917 123 4567"
+                placeholder="e.g. 09171234567"
                 className="w-full p-4 bg-gray-50 border border-transparent rounded-2xl outline-none focus:bg-white focus:border-green-500 focus:ring-4 focus:ring-green-500/10 font-bold transition-all text-gray-700"
                 onChange={handleChange}
               />
+              <p className="text-[9px] text-gray-400 ml-1 font-bold">
+                FORMAT: 09XXXXXXXXX
+              </p>
             </div>
           </div>
 
           {/* Section: Security */}
-          <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100">
+          <div className="bg-white rounded-4xl p-8 shadow-sm border border-gray-100">
             <div className="flex items-center gap-3 mb-8">
               <div className="bg-green-100 p-2 rounded-xl">
                 <LockClosedIcon className="w-5 h-5 text-[#00704e]" />
@@ -212,7 +236,7 @@ const ProfileSettings = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-50">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 text-green-700">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
                     New Password
                   </label>
                   <input
@@ -224,7 +248,7 @@ const ProfileSettings = () => {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 text-green-700">
+                  <label className="text-[10px] font-black uppercase tracking-widest ml-1 text-green-700">
                     Verify Password
                   </label>
                   <input
@@ -242,7 +266,7 @@ const ProfileSettings = () => {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full font-black py-5 rounded-[1.5rem] shadow-xl transition-all uppercase text-sm tracking-widest active:scale-[0.98] ${
+            className={`w-full font-black py-5 rounded-3xl shadow-xl transition-all uppercase text-sm tracking-widest active:scale-[0.98] ${
               loading
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                 : "bg-[#00704e] text-white hover:bg-green-800 hover:shadow-green-900/20"

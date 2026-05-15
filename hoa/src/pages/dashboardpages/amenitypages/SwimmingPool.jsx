@@ -10,6 +10,9 @@ import {
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { Link, useNavigate } from "react-router-dom";
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
+import "./CalendarCustom.css";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 const AMENITY_ID = 3;
@@ -24,6 +27,7 @@ const TIME_SLOTS = [
 const SwimmingPool = () => {
   const navigate = useNavigate();
   const [date, setDate] = useState("");
+  const [reservedDates, setReservedDates] = useState([]); // Added for calendar highlighting
   const [pax, setPax] = useState(1);
   const [slots, setSlots] = useState(
     TIME_SLOTS.map((s) => ({ ...s, available: true, currentPax: 0 })),
@@ -51,6 +55,26 @@ const SwimmingPool = () => {
     }
   }, [navigate]);
 
+  // Fetch reserved dates to highlight on the calendar
+  useEffect(() => {
+    const fetchReservedDates = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(
+          `${API_URL}/amenities/${AMENITY_ID}/reserved-dates`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+        const data = await res.json();
+        setReservedDates(data || []);
+      } catch (err) {
+        console.error("Failed to fetch reserved dates");
+      }
+    };
+    fetchReservedDates();
+  }, []);
+
   const fetchAvailability = useCallback(async () => {
     if (!date) return;
     const token = localStorage.getItem("token");
@@ -65,7 +89,6 @@ const SwimmingPool = () => {
       const data = await res.json();
 
       const updatedSlots = TIME_SLOTS.map((slot) => {
-        // Find the summed guest count for this slot from the new backend response
         const slotData = data.slotDetails?.find(
           (d) => d.time_slot === slot.value,
         ) || { total_guests: 0 };
@@ -81,7 +104,6 @@ const SwimmingPool = () => {
 
       setSlots(updatedSlots);
 
-      // If the currently selected slot becomes full due to an update, clear selection
       if (selectedSlot) {
         const current = updatedSlots.find(
           (s) => s.value === selectedSlot.value,
@@ -152,6 +174,17 @@ const SwimmingPool = () => {
     }
   };
 
+  // Calendar styling logic
+  const tileClassName = ({ date: viewDate, view }) => {
+    if (view === "month") {
+      const dateStr = viewDate.toISOString().split("T")[0];
+      if (reservedDates.includes(dateStr)) {
+        return "reserved-date";
+      }
+    }
+    return null;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <div className="bg-[#00704e] h-48 flex items-center px-6 md:px-12 text-white">
@@ -167,7 +200,7 @@ const SwimmingPool = () => {
       </div>
 
       <div className="max-w-4xl mx-auto -mt-10 px-4 space-y-6 pt-10">
-        <div className="bg-white shadow-xl rounded-[2rem] p-8 border border-gray-100 space-y-6">
+        <div className="bg-white shadow-xl rounded-4xl p-8 border border-gray-100 space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-4">
               <h2 className="font-black text-xl text-gray-800 flex items-center gap-2">
@@ -210,25 +243,37 @@ const SwimmingPool = () => {
           </div>
         </div>
 
-        <div className="bg-white shadow-xl rounded-[2rem] p-8 border border-gray-100 space-y-8">
+        <div className="bg-white shadow-xl rounded-4xl p-8 border border-gray-100 space-y-8">
           <h2 className="font-black text-2xl text-gray-800">
             Make a Reservation
           </h2>
 
-          <div className="space-y-3">
+          {/* Step 1: Visual Calendar */}
+          <div className="space-y-4">
             <div className="flex items-center gap-2 text-gray-500 ml-1">
               <CalendarIcon className="h-5 w-5" />
               <span className="text-sm font-bold uppercase tracking-wider">
                 Step 1: Select Date
               </span>
             </div>
-            <input
-              type="date"
-              min={new Date().toISOString().split("T")[0]}
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:border-[#00704e] outline-none transition-all font-bold text-gray-700"
-            />
+
+            <div className="p-4 bg-gray-50 rounded-4xl border-2 border-gray-100 flex justify-center">
+              <Calendar
+                onChange={(val) => setDate(val.toISOString().split("T")[0])}
+                value={date ? new Date(date) : new Date()}
+                minDate={new Date()}
+                tileClassName={tileClassName}
+                className="rounded-2xl border-none shadow-none font-bold text-gray-700"
+              />
+            </div>
+            {date && (
+              <p className="text-center font-black text-[#00704e]">
+                Selected:{" "}
+                {new Date(date).toLocaleDateString("en-US", {
+                  dateStyle: "full",
+                })}
+              </p>
+            )}
           </div>
 
           <div className="space-y-3">
@@ -325,9 +370,6 @@ const SwimmingPool = () => {
               >
                 View History
               </Link>
-              <button className="py-3 px-4 rounded-xl border border-gray-200 text-gray-600 font-bold text-xs hover:bg-gray-50 transition-colors uppercase tracking-widest">
-                Refund Request
-              </button>
             </div>
           </div>
         </div>

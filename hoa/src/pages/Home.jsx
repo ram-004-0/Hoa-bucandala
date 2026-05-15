@@ -95,7 +95,6 @@ const Home = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Notification Bell Badge */}
             <Link
               to="/notifications"
               className="relative p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all border border-white/10 backdrop-blur-md"
@@ -126,21 +125,16 @@ const Home = () => {
           </div>
         </div>
       </div>
-      <br />
-      <br />
-      <br />
-      <br />
-      <br />
 
       <div className="max-w-7xl mx-auto px-4 md:px-10 -mt-10 relative z-20">
         {/* Latest Announcement */}
         <div className="mb-10">
           {latestAnnouncement ? (
-            <div className="group flex flex-col md:flex-row gap-5 items-center bg-white border border-gray-100 p-6 rounded-[2rem] shadow-xl">
+            <div className="group flex flex-col md:flex-row gap-5 items-center bg-white border border-gray-100 p-6 rounded-4xl shadow-xl">
               <div className="bg-amber-50 p-4 rounded-2xl shrink-0 group-hover:rotate-12 transition-transform">
                 <Speaker className="text-amber-600 w-7 h-7" />
               </div>
-              <div className="flex-grow text-center md:text-left">
+              <div className="grow text-center md:text-left">
                 <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
                   <span className="bg-amber-100 text-amber-700 text-[10px] font-black px-2 py-0.5 rounded-md uppercase">
                     Latest Update
@@ -161,7 +155,7 @@ const Home = () => {
               </Link>
             </div>
           ) : (
-            <div className="bg-white/50 backdrop-blur-sm border border-dashed border-gray-200 p-6 rounded-[2rem] text-center italic text-gray-400 text-sm">
+            <div className="bg-white/50 backdrop-blur-sm border border-dashed border-gray-200 p-6 rounded-4xl text-center italic text-gray-400 text-sm">
               All quiet in the community.
             </div>
           )}
@@ -172,14 +166,10 @@ const Home = () => {
           <h3 className="font-black text-gray-900 text-sm uppercase tracking-[0.2em] px-2">
             Community Services
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            <ServiceLink
-              to="/notifications"
-              color="indigo"
-              icon={Inbox}
-              title="Inbox"
-              desc="Unified System Alerts"
-            />
+          {/* FIXED GRID: Added 'items-stretch' to ensure all children take full height 
+              and ensured grid-cols are defined clearly for all breakpoints.
+          */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
             <ServiceLink
               to="/amenities"
               color="blue"
@@ -233,15 +223,18 @@ const ServiceLink = ({ to, color, icon: Icon, title, desc }) => {
   };
 
   return (
-    <Link to={to} className="group block">
-      <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 relative overflow-hidden h-full">
+    <Link to={to} className="group block h-full">
+      {/* FIXED CARD: Added 'flex flex-col h-full' to ensure the card container 
+          expands to the height of the tallest card in the row. 
+      */}
+      <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 relative overflow-hidden h-full flex flex-col">
         <Icon
-          className={`w-14 h-14 p-3.5 rounded-2xl mb-6 border transition-all group-hover:rotate-6 ${colors[color]}`}
+          className={`w-14 h-14 p-3.5 rounded-2xl mb-6 border transition-all group-hover:rotate-6 shrink-0 ${colors[color]}`}
         />
         <h4 className="font-black text-gray-900 text-xl mb-1 uppercase tracking-tighter">
           {title}
         </h4>
-        <p className="text-gray-500 text-sm font-medium leading-relaxed">
+        <p className="text-gray-500 text-sm font-medium leading-relaxed grow">
           {desc}
         </p>
         <div className="mt-6 flex items-center text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-[#00704e] transition-colors">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"; // Added useEffect import
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { startAutoLogout } from "../../../backend/utils/auth.js";
 
@@ -40,6 +40,12 @@ const AuthCard = () => {
     }
 
     return true;
+  };
+
+  // Helper for real-time check without setting global error state immediately
+  const isEmailFormatValid = (emailStr) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(emailStr.trim());
   };
 
   const handleLogin = async (e) => {
@@ -113,7 +119,8 @@ const AuthCard = () => {
         </p>
       </div>
 
-      <form onSubmit={handleLogin} className="space-y-5">
+      {/* Added noValidate to prevent the browser's default pop-up validation */}
+      <form onSubmit={handleLogin} noValidate className="space-y-5">
         <div>
           <label className="block text-sm font-semibold text-[#3c3c3c] mb-1">
             Email Address
@@ -123,8 +130,15 @@ const AuthCard = () => {
             placeholder="name@email.com"
             value={email}
             onChange={(e) => {
-              setEmail(e.target.value);
-              if (error) setError("invalid email address");
+              const val = e.target.value;
+              setEmail(val);
+
+              // Real-time validation: Clear or set error based on format while typing
+              if (val.length > 0 && !isEmailFormatValid(val)) {
+                setError("invalid email address");
+              } else {
+                setError("");
+              }
             }}
             className={`w-full p-3 border text-gray-800 rounded-lg focus:ring-2 focus:ring-[#00704e] outline-none transition-all ${
               error && error.toLowerCase().includes("email")
@@ -133,6 +147,12 @@ const AuthCard = () => {
             }`}
             required
           />
+          {/* Inline Real-time error message */}
+          {email.length > 0 && !isEmailFormatValid(email) && (
+            <p className="text-red-500 text-[11px] font-bold mt-1 ml-1 uppercase tracking-wider">
+              invalid email address
+            </p>
+          )}
         </div>
 
         <div>
@@ -147,7 +167,7 @@ const AuthCard = () => {
             value={password}
             onChange={(e) => {
               setPassword(e.target.value);
-              if (error) setError("");
+              if (error && !error.toLowerCase().includes("email")) setError("");
             }}
             className={`w-full p-3 border text-gray-800 rounded-lg focus:ring-2 focus:ring-[#00704e] outline-none transition-all ${
               error && error.toLowerCase().includes("password")
@@ -169,7 +189,8 @@ const AuthCard = () => {
           </label>
         </div>
 
-        {error && (
+        {/* Global Error Container (for Server Errors or Form Validation) */}
+        {error && !error.toLowerCase().includes("email") && (
           <p className="text-red-500 text-sm text-center font-medium bg-red-50 p-2 rounded border border-red-100">
             {error}
           </p>

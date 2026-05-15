@@ -1,0 +1,57 @@
+/* Container styling */
+.react-calendar {
+  width: 100% !important;
+  border: none !important;
+  background: transparent !important;
+  font-family: inherit !important;
+}
+
+/* Header (Month/Year) */
+.react-calendar__navigation button {
+  color: #00704e !important;
+  font-weight: 900 !important;
+  text-transform: uppercase;
+}
+
+/* Individual tiles */
+.react-calendar__tile {
+  padding: 1.25em 0.5em !important;
+  transition: all 0.2s;
+}
+
+/* Hover effect */
+.react-calendar__tile:enabled:hover,
+.react-calendar__tile:enabled:focus {
+  background-color: #f0fdf4 !important;
+  border-radius: 1rem;
+  color: #00704e !important;
+}
+
+/* Selected Date */
+.react-calendar__tile--active {
+  background: #00704e !important;
+  color: white !important;
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 112, 78, 0.3);
+}
+
+/* Highlight for approved/reserved dates (Red dot or background) */
+.reserved-date {
+  background-color: #fef2f2 !important;
+  color: #ef4444 !important;
+  font-weight: bold;
+  border-radius: 1rem;
+  position: relative;
+}
+
+.reserved-date::after {
+  content: "";
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  background: #ef4444;
+  border-radius: 50%;
+}
