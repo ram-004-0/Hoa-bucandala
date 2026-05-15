@@ -8,7 +8,7 @@ import {
   CalendarDaysIcon,
   ExclamationCircleIcon,
   InboxIcon,
-  CheckCheckIcon,
+  CheckIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
 
@@ -109,7 +109,7 @@ const Notifications = () => {
               onClick={handleMarkAllRead}
               className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
             >
-              <CheckCheckIcon className="h-4 w-4" /> Mark Read
+              <CheckIcon className="h-4 w-4" /> Mark Read
             </button>
             <button
               onClick={handleClearAll}
