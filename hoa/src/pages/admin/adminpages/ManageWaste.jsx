@@ -88,6 +88,9 @@ const ManageWaste = () => {
           Waste Reports Management
         </h1>
       </div>
+      <br />
+      <br />
+      <br />
 
       <div className="mx-10 -mt-8 bg-white rounded-xl shadow-xl overflow-hidden border border-gray-100 mb-10">
         <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-white">
@@ -100,13 +103,6 @@ const ManageWaste = () => {
               reports.
             </p>
           </div>
-          <button
-            onClick={fetchReports}
-            className="p-3 hover:bg-gray-100 rounded-full transition-all text-[#00704e]"
-            title="Refresh List"
-          >
-            <RefreshCcw size={20} className={loading ? "animate-spin" : ""} />
-          </button>
         </div>
 
         {error && (
