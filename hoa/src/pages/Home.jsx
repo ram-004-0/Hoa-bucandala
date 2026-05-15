@@ -130,7 +130,7 @@ const Home = () => {
               </button>
               {/* UserMenuPopUp with high z-index to stay on top */}
               {showMenu && (
-                <div className="absolute right-0 mt-2 z-100">
+                <div className="absolute right-0 mt-2 z-[100]">
                   <UserMenuPopUp logout={handleLogout} />
                 </div>
               )}
@@ -138,7 +138,8 @@ const Home = () => {
           </div>
         </div>
       </div>
-
+      <br />
+      <br />
       {/* CONTENT SECTION - Spacing handled via pt-12 and -mt-12 rather than <br/> */}
       <div className="max-w-7xl mx-auto px-4 md:px-10 -mt-12 relative z-20 pt-4">
         {/* Latest Announcement */}
