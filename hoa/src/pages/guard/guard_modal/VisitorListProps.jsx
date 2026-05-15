@@ -53,7 +53,7 @@ const VisitorListProps = ({
         state === "DEPARTED" ? "opacity-60" : "hover:shadow-md"
       }`}
     >
-      <div className="p-6 flex flex-col gap-5 flex-grow">
+      <div className="p-6 flex flex-col gap-5 grow">
         <div className="flex justify-between items-start">
           <h3 className="font-black text-gray-800 text-lg leading-tight uppercase tracking-tight">
             {name}
@@ -73,7 +73,27 @@ const VisitorListProps = ({
             label="Purpose"
             value={purpose}
           />
-          <InfoItem icon={ClockIcon} label="Expected Time" value={time} />
+          <InfoItem icon={ClockIcon} label="Scheduled" value={time} />
+
+          {/* NEW: Show actual arrival time if they are already inside */}
+          {state === "ARRIVED" && (
+            <div className="flex gap-3 items-start animate-pulse">
+              <div className="bg-green-100 p-2 rounded-lg shrink-0">
+                <CheckCircleIcon className="w-4 h-4 text-green-600" />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-black text-green-600 tracking-tighter mb-0.5">
+                  Checked In At
+                </p>
+                <p className="text-sm text-green-700 font-bold leading-tight">
+                  {new Date().toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

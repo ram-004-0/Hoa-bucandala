@@ -126,9 +126,11 @@ const VerificationActionModal = ({ onClose }) => {
   };
 
   const markArrived = async () => {
+    // Ensure we check both common ID field names
     const id = visitor?.visitor_id || visitor?.id;
+
     if (!id) {
-      alert("Error: No Visitor ID found to authorize.");
+      alert("Error: Missing Visitor ID.");
       return;
     }
 
@@ -144,21 +146,22 @@ const VerificationActionModal = ({ onClose }) => {
       });
 
       if (res.ok) {
-        alert(`Access Granted: ${visitor.visitor_name} has arrived.`);
+        // The backend now handles 'arrival_time = CURRENT_TIMESTAMP' automatically
+        alert(`Access Authorized for ${visitor.visitor_name}`);
         onClose();
       } else {
-        const errorData = await res.json().catch(() => ({}));
-        alert(`Failed: ${errorData.message || "Check permissions."}`);
+        const errorData = await res.json();
+        alert(`Error: ${errorData.message}`);
       }
     } catch (err) {
-      alert("Connection error while updating status.");
+      alert("Network error.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-100 flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
         <div className="p-6 border-b flex justify-between items-center">
           <h2 className="font-black text-2xl text-gray-800">Security Check</h2>
@@ -239,7 +242,7 @@ const VerificationActionModal = ({ onClose }) => {
 
           {/* Result Card */}
           {visitor && (
-            <div className="border-2 border-green-100 rounded-[2rem] p-6 bg-green-50/40 space-y-4 animate-in slide-in-from-bottom-4">
+            <div className="border-2 border-green-100 rounded-4xl p-6 bg-green-50/40 space-y-4 animate-in slide-in-from-bottom-4">
               <div className="flex items-center gap-4">
                 <div className="bg-[#00704e] p-3 rounded-xl text-white shadow-lg">
                   <User size={28} />

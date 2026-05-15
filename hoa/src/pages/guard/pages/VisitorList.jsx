@@ -97,12 +97,6 @@ const VisitorList = () => {
             <div
               className={`w-2 h-2 rounded-full bg-green-400 ${backgroundLoading ? "animate-ping" : ""}`}
             ></div>
-            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-              Live Monitoring{" "}
-              {backgroundLoading && (
-                <RefreshCw size={10} className="animate-spin" />
-              )}
-            </span>
           </div>
         </div>
       </div>
