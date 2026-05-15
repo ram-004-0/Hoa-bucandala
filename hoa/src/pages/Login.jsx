@@ -3,23 +3,16 @@ import BgImage from "../assets/loginpagelogo.png";
 
 const Login = () => {
   return (
-    /* FIX 1: Use h-screen (fixed height) instead of min-h-screen. 
-       FIX 2: Remove pb-10 and any padding on this root div to kill the extra space.
-    */
-    <div className="flex h-screen w-full overflow-hidden bg-white">
+    <div className="flex h-[100vh] w-full overflow-hidden bg-white">
       {/* LEFT SIDE: Visual Branding */}
       <div className="hidden lg:flex lg:w-7/12 relative bg-[#00704e] items-center justify-center overflow-hidden">
-        {/* FIX 3: Because your image is wide (1588x656), we use bg-contain.
-            We use a child div with w-4/5 to give it "breathing room" so it doesn't 
-            touch the edges of the green section.
-        */}
         <div
           className="w-4/5 h-full bg-contain bg-no-repeat bg-center relative z-20"
           style={{ backgroundImage: `url(${BgImage})` }}
         ></div>
 
         {/* Decorative Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-transparent to-black/20 z-10"></div>
+        <div className="absolute inset-0 bg-linear-to-br from-black/20 via-transparent to-black/20 z-10"></div>
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-yellow-400/10 rounded-full blur-3xl z-0"></div>
       </div>
 
@@ -49,15 +42,6 @@ const Login = () => {
 
         {/* Portal Container */}
         <div className="w-full max-w-md relative z-10">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-black text-gray-900 tracking-tight">
-              HOA Portal
-            </h2>
-            <p className="text-gray-500 mt-2 font-medium">
-              Enter your credentials to access your account
-            </p>
-          </div>
-
           <div className="bg-white p-2 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-gray-100">
             <div className="animate-in fade-in zoom-in-95 duration-700">
               <AuthCard />

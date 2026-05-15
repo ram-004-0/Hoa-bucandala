@@ -6,6 +6,7 @@ import {
   BellIcon,
 } from "@heroicons/react/24/solid";
 import { Trash2, AlertCircle, History, CheckCircle2 } from "lucide-react";
+import WasteImage from "../../assets/wastebg.png";
 
 const WasteCollection = () => {
   const [notification, setNotification] = useState({
@@ -35,7 +36,10 @@ const WasteCollection = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
       {/* Header */}
-      <div className="bg-[#00704e] h-40 gap-10 grid grid-cols-[10%_90%] p-10 text-white justify-center items-center">
+      <div
+        className="text-white px-6 pt-12 pb-24 md:px-16 shadow-2xl relative overflow-hidden bg-cover bg-center"
+        style={{ backgroundImage: `url(${WasteImage})` }}
+      >
         <Link to="/home">
           <ArrowLeftIcon className="h-10 w-10 ml-5 md:ml-10 cursor-pointer text-white hover:opacity-80" />
         </Link>

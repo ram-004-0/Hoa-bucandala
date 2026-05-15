@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, XMarkIcon } from "@heroicons/react/24/outline"; // Added XMarkIcon
 import {
   Calendar,
   Clock,
@@ -17,7 +17,13 @@ const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 const AmenityHistory = () => {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [cancellingId, setCancellingId] = useState(null); // To track loading for specific cancel buttons
+  const [cancellingId, setCancellingId] = useState(null);
+
+  // Modal States
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [selectedResId, setSelectedResId] = useState(null);
+  const [cancelReason, setCancelReason] = useState("");
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -34,11 +40,9 @@ const AmenityHistory = () => {
         setLoading(false);
       }
     };
-
     fetchHistory();
   }, []);
 
-  // Function to handle the click and pass data to Success page
   const handleRowClick = (res) => {
     navigate("/amenities/success", {
       state: {
@@ -46,37 +50,44 @@ const AmenityHistory = () => {
           insertId: res.reservation_id,
           reservation_date: res.reservation_date,
           time_slot: res.time_slot,
-          guest_count: res.guest_count, // Passed from DB
+          guest_count: res.guest_count,
         },
         amenityName: res.amenity_name,
-        pax: res.guest_count, // Maintaining consistency with your Clubhouse state
+        pax: res.guest_count,
       },
     });
   };
 
-  /**
-   * HANDLE CANCEL RESERVATION
-   * Sends a DELETE request and updates the local state.
-   */
-  const handleCancel = async (e, resId) => {
-    e.stopPropagation(); // CRITICAL: Prevents the row click from firing
+  // Open Modal instead of immediate cancel
+  const triggerCancelModal = (e, resId) => {
+    e.stopPropagation();
+    setSelectedResId(resId);
+    setShowCancelModal(true);
+  };
 
-    if (!window.confirm("Are you sure you want to cancel this reservation?"))
+  const submitCancellation = async () => {
+    if (!cancelReason.trim()) {
+      alert("Please provide a reason for cancellation.");
       return;
+    }
 
-    setCancellingId(resId);
+    setCancellingId(selectedResId);
     try {
       const token = localStorage.getItem("token");
-      // Passing is_resident_action so the backend knows NOT to send a redundant notification
-      await axios.delete(`${API_URL}/reservations/${resId}`, {
+      await axios.delete(`${API_URL}/reservations/${selectedResId}`, {
         headers: { Authorization: `Bearer ${token}` },
-        data: { is_resident_action: true },
+        // Passing the reason in the data body
+        data: {
+          is_resident_action: true,
+          cancel_reason: cancelReason,
+        },
       });
 
-      // Filter out the cancelled reservation from UI
       setReservations((prev) =>
-        prev.filter((item) => item.reservation_id !== resId),
+        prev.filter((item) => item.reservation_id !== selectedResId),
       );
+      setShowCancelModal(false);
+      setCancelReason("");
       alert("Reservation cancelled successfully.");
     } catch (error) {
       console.error("Cancellation Error:", error);
@@ -148,7 +159,7 @@ const AmenityHistory = () => {
                     </h3>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 mt-1">
                       <span className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />{" "}
+                        <Calendar className="w-4 h-4" />
                         {res.reservation_date
                           ? new Date(res.reservation_date).toLocaleDateString()
                           : "N/A"}
@@ -167,9 +178,7 @@ const AmenityHistory = () => {
                 <div className="flex flex-col md:items-end gap-3 border-t md:border-none pt-3 md:pt-0">
                   <div className="flex items-center justify-between md:justify-end gap-4 w-full">
                     <span
-                      className={`px-4 py-1 rounded-full text-xs font-bold border ${getStatusColor(
-                        res.status,
-                      )}`}
+                      className={`px-4 py-1 rounded-full text-xs font-bold border ${getStatusColor(res.status)}`}
                     >
                       {(res.status || "pending").toUpperCase()}
                     </span>
@@ -183,27 +192,93 @@ const AmenityHistory = () => {
                     </div>
                   </div>
 
-                  {/* CANCEL BUTTON */}
                   {res.status?.toLowerCase() === "pending" && (
                     <button
-                      onClick={(e) => handleCancel(e, res.reservation_id)}
-                      disabled={cancellingId === res.reservation_id}
+                      onClick={(e) => triggerCancelModal(e, res.reservation_id)}
                       className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-100 transition-colors border border-red-100"
                     >
-                      {cancellingId === res.reservation_id ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-3.5 h-3.5" />
-                      )}
+                      <Trash2 className="w-3.5 h-3.5" />
                       Cancel Reservation
                     </button>
                   )}
                 </div>
+
+                {/* Display Reason if Cancelled */}
+                {res.status?.toLowerCase() === "cancelled" && (
+                  <div className="mt-4 p-3 bg-red-50 border-l-4 border-red-500 rounded-r-xl">
+                    <p className="text-[11px] font-bold text-red-600 uppercase tracking-wider">
+                      Cancellation Reason
+                    </p>
+                    <p className="text-sm text-red-800 italic mt-0.5">
+                      "{res.cancel_reason || "No reason provided"}"
+                    </p>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* CANCELLATION MODAL */}
+      {showCancelModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          {/* Overlay */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowCancelModal(false)}
+          ></div>
+
+          {/* Modal Content */}
+          <div className="relative bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+            <button
+              onClick={() => setShowCancelModal(false)}
+              className="absolute top-6 right-6 p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <XMarkIcon className="w-6 h-6 text-gray-400" />
+            </button>
+
+            <div className="text-center mb-6">
+              <div className="bg-red-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-8 h-8 text-red-500" />
+              </div>
+              <h2 className="text-2xl font-black text-gray-900">
+                Cancel Booking?
+              </h2>
+              <p className="text-gray-500 text-sm mt-1">
+                Please let us know why you are cancelling this reservation.
+              </p>
+            </div>
+
+            <textarea
+              className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all resize-none h-32"
+              placeholder="e.g. Change of plans, emergency, etc."
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+            ></textarea>
+
+            <div className="grid grid-cols-2 gap-4 mt-6">
+              <button
+                onClick={() => setShowCancelModal(false)}
+                className="px-6 py-4 bg-gray-100 text-gray-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-200 transition-all"
+              >
+                No, Keep it
+              </button>
+              <button
+                onClick={submitCancellation}
+                disabled={cancellingId !== null}
+                className="px-6 py-4 bg-red-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-600 shadow-lg shadow-red-200 transition-all flex items-center justify-center gap-2"
+              >
+                {cancellingId !== null ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "Confirm Cancel"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

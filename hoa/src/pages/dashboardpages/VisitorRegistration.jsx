@@ -8,6 +8,7 @@ import {
 } from "@heroicons/react/24/outline";
 import VisitorRegistered from "./visitorregistration_modal/VisitorRegistered";
 import VisitorPass from "./visitorregistration_modal/VisitorPass";
+import VisitorImage from "../../assets/visitorbg.png";
 
 const VisitorRegistration = () => {
   const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
@@ -136,7 +137,10 @@ const VisitorRegistration = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
-      <div className="bg-[#00704e] h-52 p-10 text-white flex flex-col justify-center">
+      <div
+        className="text-white px-6 pt-12 pb-24 md:px-16 shadow-2xl relative overflow-hidden bg-cover bg-center"
+        style={{ backgroundImage: `url(${VisitorImage})` }}
+      >
         <div className="max-w-5xl mx-auto w-full flex justify-between items-center">
           <div>
             <h1 className="font-bold text-4xl">Visitor Management</h1>
