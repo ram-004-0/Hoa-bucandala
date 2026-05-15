@@ -1,13 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeftIcon, Calendar, Search, LogOut } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  Calendar,
+  Search,
+  LogOut,
+  Clock,
+  LogIn,
+} from "lucide-react";
 import CheckOutModal from "../guard_modal/CheckOutModal";
 
 const VisitorLog = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedVisitor, setSelectedVisitor] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false); // Added missing state
+  const [isProcessing, setIsProcessing] = useState(false);
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0],
   );
@@ -65,6 +72,16 @@ const VisitorLog = () => {
     fetchLogs();
   }, []);
 
+  // Format Helper for Timestamps
+  const formatTime = (timestamp) => {
+    if (!timestamp) return "--:--";
+    return new Date(timestamp).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
   // Filter Logic
   const filteredLogs = logs.filter((log) => {
     const matchesDate = log.expected_date.startsWith(selectedDate);
@@ -93,7 +110,7 @@ const VisitorLog = () => {
               Visitor Log History
             </h1>
             <p className="text-sm md:text-base opacity-90 text-green-50">
-              Entry and Exit records
+              Entry and Exit records for Camella Bucandala V
             </p>
           </div>
         </div>
@@ -149,14 +166,16 @@ const VisitorLog = () => {
         {/* Table */}
         <div className="bg-white shadow-sm border border-gray-100 rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-[900px] w-full text-sm text-left">
+            <table className="min-w-[1000px] w-full text-sm text-left">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
                   {[
                     "Visitor Name",
                     "Homeowner",
                     "Purpose",
-                    "Time",
+                    "Expected",
+                    "Arrival",
+                    "Exit",
                     "Status",
                     "Action",
                   ].map((head) => (
@@ -172,7 +191,7 @@ const VisitorLog = () => {
               <tbody className="divide-y divide-gray-100">
                 {loading ? (
                   <tr>
-                    <td colSpan="6" className="text-center py-10 text-gray-400">
+                    <td colSpan="8" className="text-center py-10 text-gray-400">
                       Loading records...
                     </td>
                   </tr>
@@ -191,8 +210,22 @@ const VisitorLog = () => {
                       <td className="px-6 py-4 text-gray-600">
                         {log.purpose_of_visit}
                       </td>
-                      <td className="px-6 py-4 font-mono text-gray-500 text-xs">
+                      <td className="px-6 py-4 font-mono text-gray-400 text-[10px]">
                         {log.expected_time}
+                      </td>
+                      {/* NEW: Arrival Timestamp */}
+                      <td className="px-6 py-4 font-bold text-blue-600">
+                        <div className="flex items-center gap-1">
+                          <LogIn size={12} className="opacity-50" />
+                          {formatTime(log.arrival_time)}
+                        </div>
+                      </td>
+                      {/* NEW: Exit Timestamp */}
+                      <td className="px-6 py-4 font-bold text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <LogOut size={12} className="opacity-50" />
+                          {formatTime(log.departure_time)}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <StatusBadge status={log.status} />
@@ -212,7 +245,7 @@ const VisitorLog = () => {
                 ) : (
                   <tr>
                     <td
-                      colSpan="6"
+                      colSpan="8"
                       className="text-center py-20 text-gray-400 font-medium"
                     >
                       No records found for this date.
@@ -225,7 +258,6 @@ const VisitorLog = () => {
         </div>
       </div>
 
-      {/* Render the CheckOut Modal if a visitor is selected */}
       {selectedVisitor && (
         <CheckOutModal
           visitor={selectedVisitor}
@@ -238,7 +270,6 @@ const VisitorLog = () => {
   );
 };
 
-// Sub-components
 const StatBox = ({ label, value, color = "text-gray-800" }) => (
   <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
     <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">

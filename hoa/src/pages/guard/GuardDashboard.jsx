@@ -98,15 +98,6 @@ const GuardDashboard = () => {
             <span>SCAN QR CODE</span>
           </button>
 
-          <button
-            onClick={fetchStats}
-            disabled={loading}
-            className="p-2 hover:bg-white/10 rounded-full transition-all disabled:opacity-50"
-          >
-            <RefreshCcw
-              className={`w-6 h-6 ${loading ? "animate-spin" : ""}`}
-            />
-          </button>
           <button onClick={handleLogout} className="group">
             <LogOutIcon className="w-6 h-6 cursor-pointer group-hover:text-red-300 transition-colors" />
           </button>

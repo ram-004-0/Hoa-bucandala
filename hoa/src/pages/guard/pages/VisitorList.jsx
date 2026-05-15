@@ -95,9 +95,6 @@ const VisitorList = () => {
                 backgroundLoading ? "animate-ping" : ""
               }`}
             ></div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-white">
-              {backgroundLoading ? "Syncing..." : "Live"}
-            </span>
           </div>
         </div>
       </div>
