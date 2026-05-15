@@ -62,7 +62,7 @@ const SwimmingPool = () => {
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(
-          `${API_URL}/amenities/${AMENITY_ID}/fully-reserved-dates`,
+          `${API_URL}/amenities/${AMENITY_ID}/reserved-dates`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },
