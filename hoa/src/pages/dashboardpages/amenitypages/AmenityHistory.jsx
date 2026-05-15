@@ -71,6 +71,11 @@ const AmenityHistory = () => {
       return;
     }
 
+    // FIND the reservation in the current state to get the amenity_name
+    const reservationToCancel = reservations.find(
+      (r) => r.reservation_id === selectedResId,
+    );
+
     setCancellingId(selectedResId);
     try {
       const token = localStorage.getItem("token");
@@ -223,7 +228,7 @@ const AmenityHistory = () => {
 
       {/* CANCELLATION MODAL */}
       {showCancelModal && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           {/* Overlay */}
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
