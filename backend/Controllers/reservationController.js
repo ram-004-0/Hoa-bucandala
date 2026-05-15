@@ -245,7 +245,7 @@ export const deleteReservation = async (req, res) => {
     req.body;
 
   try {
-    // 1. If ADMIN cancels a resident's booking
+    // --- 1. ADMIN CANCELS RESIDENT'S BOOKING ---
     if (resident_id && !is_resident_action) {
       const adminMessage = cancel_reason
         ? `Your reservation for ${amenity_name} was cancelled by administration. Reason: ${cancel_reason}`
@@ -257,33 +257,39 @@ export const deleteReservation = async (req, res) => {
       );
     }
 
-    // 2. If RESIDENT cancels (Notify Admin)
+    // --- 2. RESIDENT CANCELS (Notify Admin) ---
     if (is_resident_action) {
+      // Fetch resident name for the message
       const [[resData]] = await db.query(
-        "SELECT r.full_name FROM residents r JOIN amenities_reservation ar ON r.resident_id = ar.resident_id WHERE ar.reservation_id = ?",
+        "SELECT full_name FROM residents WHERE resident_id = (SELECT resident_id FROM amenities_reservation WHERE reservation_id = ?)",
         [id],
       );
 
       const residentName = resData?.full_name || "A resident";
-      const adminTitle = "New Cancellation ⚠️";
-      const adminMessage = `${residentName} cancelled ${amenity_name || "a reservation"}. Reason: ${cancel_reason || "No reason provided"}`;
 
-      // FIX: Changed 'Admin_Alert' to 'Admin' to avoid "Data Truncated" 500 error
+      // We set resident_id to NULL because this is for the ADMIN dashboard,
+      // and Admins aren't in the residents table.
       await db.query(
-        "INSERT INTO notifications (resident_id, type, title, message, related_id) VALUES (?, 'Admin', ?, ?, ?)",
-        [1, adminTitle, adminMessage, id],
+        "INSERT INTO notifications (resident_id, type, title, message, related_id) VALUES (NULL, 'Admin', ?, ?, ?)",
+        [
+          "New Cancellation ⚠️",
+          `${residentName} cancelled ${amenity_name || "their booking"}. Reason: ${cancel_reason || "No reason provided"}`,
+          id,
+        ],
       );
     }
 
-    // 3. SOFT DELETE: Update status so history is kept
-    // This record remains in the DB, but because status is 'Cancelled',
-    // your availability logic should ignore it.
+    // --- 3. SOFT DELETE (Free the slot but keep history) ---
+    // We update status to 'Cancelled'. Because your createReservation logic
+    // checks for 'Approved' or 'Pending', this slot is now OPEN for others.
     await db.query(
       "UPDATE amenities_reservation SET status = 'Cancelled', cancel_reason = ? WHERE reservation_id = ?",
       [cancel_reason || "No reason provided", id],
     );
 
-    res.status(200).json({ message: "Reservation marked as cancelled" });
+    res
+      .status(200)
+      .json({ message: "Reservation marked as cancelled and slot freed." });
   } catch (error) {
     console.error("Cancellation Error:", error);
     res.status(500).json({ error: error.message });
