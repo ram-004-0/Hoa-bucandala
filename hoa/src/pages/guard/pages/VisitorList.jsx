@@ -7,17 +7,23 @@ import {
   UserPlus,
   Clock,
   CheckCircle,
-  LogOut,
 } from "lucide-react";
 import VisitorListProps from "../guard_modal/VisitorListProps";
 
 const VisitorList = () => {
   const [visitors, setVisitors] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [backgroundLoading, setBackgroundLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const fetchVisitors = async () => {
-    setLoading(true);
+  const fetchVisitors = async (isAutoRefresh = false) => {
+    // Show main loader only on initial mount or manual sync
+    if (!isAutoRefresh) {
+      setLoading(true);
+    } else {
+      setBackgroundLoading(true);
+    }
+
     try {
       const res = await fetch(
         "https://hoa-camellabucandalav-production.up.railway.app/api/visitors/all",
@@ -35,19 +41,34 @@ const VisitorList = () => {
       console.error("Failed to fetch visitors:", err);
     } finally {
       setLoading(false);
+      setBackgroundLoading(false);
     }
   };
 
+  // Real-time fetching logic
   useEffect(() => {
+    // Initial fetch
     fetchVisitors();
+
+    // Set up interval for real-time updates (every 5 seconds)
+    const interval = setInterval(() => {
+      fetchVisitors(true);
+    }, 5000);
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(interval);
   }, []);
 
   // Filter Logic: Show only PENDING or ARRIVED for the main "Active" list
   // and filter by search term
   const activeVisitors = visitors.filter((v) => {
+    const visitorName = v.visitor_name?.toLowerCase() || "";
+    const hostResident = v.host_resident?.toLowerCase() || "";
+    const search = searchTerm.toLowerCase();
+
     const matchesSearch =
-      v.visitor_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.host_resident.toLowerCase().includes(searchTerm.toLowerCase());
+      visitorName.includes(search) || hostResident.includes(search);
+
     return matchesSearch && v.status !== "DEPARTED";
   });
 
@@ -73,6 +94,13 @@ const VisitorList = () => {
               Validate entries and manage current guests
             </p>
           </div>
+          {/* Subtle indicator for background syncing */}
+          {backgroundLoading && (
+            <div className="md:ml-auto flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">
+              <RefreshCw size={10} className="animate-spin" />
+              Syncing Live
+            </div>
+          )}
         </div>
       </div>
 
@@ -94,8 +122,9 @@ const VisitorList = () => {
           </div>
 
           <button
-            onClick={fetchVisitors}
-            className="flex items-center gap-2 text-sm text-[#00704e] font-bold hover:bg-green-50 px-4 py-2 rounded-lg transition-colors"
+            onClick={() => fetchVisitors(false)}
+            disabled={loading}
+            className="flex items-center gap-2 text-sm text-[#00704e] font-bold hover:bg-green-50 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
           >
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
             Sync Database
@@ -142,8 +171,8 @@ const VisitorList = () => {
                 homeowner={v.host_resident}
                 address={v.address_to_visit}
                 purpose={v.purpose_of_visit}
-                time={`${v.expected_date.split("T")[0]} @ ${v.expected_time}`}
-                onUpdate={fetchVisitors}
+                time={`${v.expected_date ? v.expected_date.split("T")[0] : "N/A"} @ ${v.expected_time}`}
+                onUpdate={() => fetchVisitors(true)}
               />
             ))}
           </div>

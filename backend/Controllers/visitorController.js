@@ -110,10 +110,20 @@ export const updateVisitorStatus = async (req, res) => {
     // If scanned via QR, extract the ID from the pipe-delimited string
     const numericId = id.includes("|") ? id.split("|")[0] : id;
 
-    const [result] = await db.query(
-      "UPDATE visitors SET status = ? WHERE visitor_id = ?",
-      [status, numericId],
-    );
+    // Logic for setting timestamps based on status
+    let updateQuery = "UPDATE visitors SET status = ?";
+    let queryParams = [status];
+
+    if (status === "ARRIVED") {
+      updateQuery += ", arrival_time = CURRENT_TIMESTAMP";
+    } else if (status === "DEPARTED") {
+      updateQuery += ", departure_time = CURRENT_TIMESTAMP";
+    }
+
+    updateQuery += " WHERE visitor_id = ?";
+    queryParams.push(numericId);
+
+    const [result] = await db.query(updateQuery, queryParams);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Visitor record not found" });

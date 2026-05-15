@@ -82,20 +82,6 @@ const SecurityAssistance = () => {
           </div>
         </Link>
 
-        {/* Local Security Hotline Card */}
-        <div className="p-6 shadow-md rounded-lg bg-white flex flex-col">
-          <h1 className="font-bold text-lg mb-4 flex items-center gap-2">
-            <Phone className="w-5 h-5 text-[#00704e]" />
-            Internal Hotline
-          </h1>
-          <div className="grid grid-cols-2">
-            <h1 className="text-gray-600">Security Hotline:</h1>
-            <p className="font-semibold text-end">+1 234 567 890</p>
-            <h1 className="text-gray-600">Local Authorities:</h1>
-            <p className="font-semibold text-end">911</p>
-          </div>
-        </div>
-
         {/* IMUS CITY EMERGENCY SERVICES SECTION */}
         <div className="p-6 shadow-md rounded-lg bg-white border-t-4 border-blue-600">
           <div className="flex items-center gap-2 mb-2">
