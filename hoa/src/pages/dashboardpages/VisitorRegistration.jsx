@@ -7,7 +7,7 @@ import {
   QrCodeIcon,
 } from "@heroicons/react/24/outline";
 import VisitorRegistered from "./visitorregistration_modal/VisitorRegistered";
-import VisitorPass from "./visitorpass_modal/VisitorPass";
+import VisitorPass from "../dashboardpages/visitorregistration_modal/VisitorPass";
 import VisitorImage from "../../assets/visitorbg.png";
 
 const VisitorRegistration = () => {
