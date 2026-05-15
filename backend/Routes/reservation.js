@@ -6,6 +6,7 @@ import {
   getAvailability,
   getMyReservations,
   updateReservationStatus,
+  getFullyReservedDates, // <-- Added Import
 } from "../Controllers/reservationController.js";
 import { authenticate } from "../middlewares/authMiddleware.js";
 import { authorizeRoles } from "../middlewares/roles.js";
@@ -23,6 +24,14 @@ router.get(
   getAvailability,
 );
 
+// New Endpoint used by the visual calendar to block out fully booked days
+router.get(
+  "/amenities/:id/reserved-dates",
+  authenticate,
+  authorizeRoles("RESIDENT", "ADMIN"),
+  getFullyReservedDates,
+);
+
 /**
  * RESIDENT
  * - Create reservation
@@ -33,12 +42,14 @@ router.post(
   authorizeRoles("RESIDENT"),
   createReservation,
 );
+
 router.get(
   "/my-history",
   authenticate,
   authorizeRoles("RESIDENT"),
   getMyReservations,
 );
+
 /**
  * ADMIN
  * - Get all reservations
@@ -51,7 +62,7 @@ router.get(
 );
 
 /**
- * ADMIN
+ * ADMIN / RESIDENT
  * - Delete reservation
  */
 router.delete(
@@ -60,6 +71,7 @@ router.delete(
   authorizeRoles("ADMIN", "RESIDENT"),
   deleteReservation,
 );
+
 router.patch(
   "/reservations/:id/status",
   authenticate,

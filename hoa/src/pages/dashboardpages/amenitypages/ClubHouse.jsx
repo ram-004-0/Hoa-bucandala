@@ -103,7 +103,7 @@ const ClubHouse = () => {
       return;
     }
 
-    setLoading(true);
+    loading(true);
     const token = localStorage.getItem("token");
 
     try {
@@ -143,12 +143,26 @@ const ClubHouse = () => {
 
   const tileClassName = ({ date: viewDate, view }) => {
     if (view === "month") {
-      const dateStr = viewDate.toISOString().split("T")[0];
+      // FIX: Use local format parameters to build string so timezone mapping doesn't slide the date back 1 day
+      const yyyy = viewDate.getFullYear();
+      const mm = String(viewDate.getMonth() + 1).padStart(2, "0");
+      const dd = String(viewDate.getDate()).padStart(2, "0");
+      const dateStr = `${yyyy}-${mm}-${dd}`;
+
       if (reservedDates.includes(dateStr)) {
         return "reserved-date";
       }
     }
     return null;
+  };
+
+  // FIX: Formatter calculation logic mapping local timezone parameters explicitly
+  const handleDateChange = (val) => {
+    if (!val) return;
+    const yyyy = val.getFullYear();
+    const mm = String(val.getMonth() + 1).padStart(2, "0");
+    const dd = String(val.getDate()).padStart(2, "0");
+    setDate(`${yyyy}-${mm}-${dd}`);
   };
 
   return (
@@ -257,8 +271,8 @@ const ClubHouse = () => {
 
             <div className="p-4 bg-gray-50 rounded-4xl border-2 border-gray-100 flex justify-center overflow-hidden">
               <Calendar
-                onChange={(val) => setDate(val.toISOString().split("T")[0])}
-                value={date ? new Date(date) : new Date()}
+                onChange={handleDateChange}
+                value={date ? new Date(date + "T00:00:00") : new Date()}
                 minDate={new Date()}
                 tileClassName={tileClassName}
                 className="rounded-2xl border-none shadow-none font-bold text-gray-700 w-full"
@@ -267,7 +281,7 @@ const ClubHouse = () => {
             {date && (
               <p className="text-center font-black text-[#00704e]">
                 Selected:{" "}
-                {new Date(date).toLocaleDateString("en-US", {
+                {new Date(date + "T00:00:00").toLocaleDateString("en-US", {
                   dateStyle: "full",
                 })}
               </p>

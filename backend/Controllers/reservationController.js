@@ -300,3 +300,29 @@ export const deleteReservation = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+/**
+ * ============================================
+ * FULLY RESERVED DATES (For Calendar Highlights)
+ * ============================================
+ */
+export const getFullyReservedDates = async (req, res) => {
+  try {
+    const { id } = req.params; // amenity_id
+
+    const [rows] = await db.query(
+      `SELECT DATE_FORMAT(reservation_date, '%Y-%m-%d') AS full_date
+       FROM amenities_reservation
+       WHERE amenity_id = ? AND status NOT IN ('Cancelled', 'Rejected')
+       GROUP BY reservation_date
+       HAVING COUNT(DISTINCT time_slot) >= 4`,
+      [id],
+    );
+
+    // Map rows array down to a flat array of strings: ["2026-05-20", "2026-05-25"]
+    const datesArray = rows.map((r) => r.full_date);
+    res.json(datesArray);
+  } catch (err) {
+    console.error("Error fetching fully reserved dates:", err);
+    res.status(500).json({ message: "Failed to fetch fully reserved dates" });
+  }
+};
