@@ -3,27 +3,28 @@ import BgImage from "../assets/loginpagelogo.png";
 
 const Login = () => {
   return (
-    // h-screen and overflow-hidden prevent the extra space below
+    /* FIX 1: Use h-screen (fixed height) instead of min-h-screen. 
+       FIX 2: Remove pb-10 and any padding on this root div to kill the extra space.
+    */
     <div className="flex h-screen w-full overflow-hidden bg-white">
       {/* LEFT SIDE: Visual Branding */}
-      <div className="hidden lg:flex lg:w-7/12 relative bg-[#00704e] overflow-hidden">
-        {/* Changed bg-cover to bg-contain if you want to see the WHOLE logo 
-            without cropping. Added bg-no-repeat and bg-center.
+      <div className="hidden lg:flex lg:w-7/12 relative bg-[#00704e] items-center justify-center overflow-hidden">
+        {/* FIX 3: Because your image is wide (1588x656), we use bg-contain.
+            We use a child div with w-4/5 to give it "breathing room" so it doesn't 
+            touch the edges of the green section.
         */}
         <div
-          className="absolute inset-0 bg-contain bg-no-repeat bg-center m-12"
+          className="w-4/5 h-full bg-contain bg-no-repeat bg-center relative z-20"
           style={{ backgroundImage: `url(${BgImage})` }}
         ></div>
 
-        {/* Subtle Gradient Overlay */}
-        <div className="absolute inset-0 bg-linear-to-br from-[#00704e]/20 via-transparent to-black/10 z-10"></div>
-
-        {/* Modern Glow Shape */}
-        <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-yellow-400/10 rounded-full blur-3xl z-20"></div>
+        {/* Decorative Overlays */}
+        <div className="absolute inset-0 bg-gradient-to-br from-black/20 via-transparent to-black/20 z-10"></div>
+        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-yellow-400/10 rounded-full blur-3xl z-0"></div>
       </div>
 
       {/* RIGHT SIDE: Authentication Portal */}
-      <div className="w-full lg:w-5/12 flex flex-col items-center justify-center relative p-6 md:p-12 bg-gray-50 overflow-y-auto">
+      <div className="w-full lg:w-5/12 flex flex-col items-center justify-center relative p-6 md:p-12 bg-[#fbfbfb]">
         {/* Subtle Background Grid */}
         <div className="absolute top-0 right-0 w-full h-full opacity-[0.03] pointer-events-none z-0">
           <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
@@ -47,14 +48,23 @@ const Login = () => {
         </div>
 
         {/* Portal Container */}
-        <div className="w-full max-w-md relative z-10 py-8">
-          <div className="bg-white p-2 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,112,78,0.05)] border border-gray-100">
+        <div className="w-full max-w-md relative z-10">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-black text-gray-900 tracking-tight">
+              HOA Portal
+            </h2>
+            <p className="text-gray-500 mt-2 font-medium">
+              Enter your credentials to access your account
+            </p>
+          </div>
+
+          <div className="bg-white p-2 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-gray-100">
             <div className="animate-in fade-in zoom-in-95 duration-700">
               <AuthCard />
             </div>
           </div>
 
-          <p className="text-center mt-8 text-xs text-gray-400 font-bold uppercase tracking-widest">
+          <p className="text-center mt-12 text-[10px] text-gray-400 font-bold uppercase tracking-[0.3em]">
             Camella Bucandala V &copy; 2026
           </p>
         </div>
