@@ -61,7 +61,6 @@ const SwimmingPool = () => {
     const fetchFullyReservedDates = async () => {
       try {
         const token = localStorage.getItem("token");
-        // FIXED: Route name matched to fully-reserved-dates to resolve Railway 404
         const res = await fetch(
           `${API_URL}/amenities/${AMENITY_ID}/reserved-dates`,
           {
@@ -106,7 +105,6 @@ const SwimmingPool = () => {
 
       setSlots(updatedSlots);
 
-      // FIXED: Safely verify remaining spaces without infinite layout unchecking hooks
       if (selectedSlot) {
         const current = updatedSlots.find(
           (s) => s.value === selectedSlot.value,
@@ -118,7 +116,6 @@ const SwimmingPool = () => {
     } catch (err) {
       setError("Failed to load availability.");
     }
-    // FIXED: Only tracking the primitive string value of the selected slot to prevent object ref resetting
   }, [date, selectedSlot?.value]);
 
   useEffect(() => {
@@ -141,7 +138,7 @@ const SwimmingPool = () => {
       return;
     }
 
-    loading(true);
+    setLoading(true); // FIXED: Correctly calling setLoading function instead of state variable
     const token = localStorage.getItem("token");
 
     try {
@@ -179,7 +176,6 @@ const SwimmingPool = () => {
     }
   };
 
-  // FIX: Formats calendar tiles based on explicit local system metrics rather than UTC conversion paths
   const tileClassName = ({ date: viewDate, view }) => {
     if (view === "month") {
       const yyyy = viewDate.getFullYear();
@@ -194,7 +190,6 @@ const SwimmingPool = () => {
     return null;
   };
 
-  // FIX: Maps local selection variables explicitly to prevent timezone mapping offsets
   const handleDateChange = (val) => {
     if (!val) return;
     const yyyy = val.getFullYear();
