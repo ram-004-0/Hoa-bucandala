@@ -19,13 +19,22 @@ const ManageWaste = () => {
   const [error, setError] = useState("");
   const token = localStorage.getItem("token");
 
+  // Fetch reports on mount and set up real-time polling
   useEffect(() => {
-    fetchReports();
+    // Initial fetch
+    fetchReports(true);
+
+    // Set up interval for real-time updates (every 5 seconds)
+    const interval = setInterval(() => {
+      fetchReports(false); // Pass false so the spinner doesn't flash every 5s
+    }, 5000);
+
+    // Clean up interval on component unmount
+    return () => clearInterval(interval);
   }, []);
 
-  const fetchReports = async () => {
-    setLoading(true);
-    setError("");
+  const fetchReports = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const res = await fetch(`${API_URL}/reports/all`, {
         headers: {
@@ -37,11 +46,12 @@ const ManageWaste = () => {
 
       const data = await res.json();
       setReports(data);
+      setError(""); // Clear error if fetch is successful
     } catch (err) {
       console.error(err);
       setError(err.message);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -58,8 +68,8 @@ const ManageWaste = () => {
 
       if (!res.ok) throw new Error("Failed to update status");
 
-      // Refresh list to show updated status
-      fetchReports();
+      // Immediate fetch after update for better UX
+      fetchReports(false);
     } catch (err) {
       alert(err.message);
     }
@@ -88,6 +98,7 @@ const ManageWaste = () => {
           Waste Reports Management
         </h1>
       </div>
+
       <br />
       <br />
       <br />
@@ -95,9 +106,19 @@ const ManageWaste = () => {
       <div className="mx-10 -mt-8 bg-white rounded-xl shadow-xl overflow-hidden border border-gray-100 mb-10">
         <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-white">
           <div>
-            <h2 className="text-2xl font-black text-gray-800">
-              Resident Garbage Reports
-            </h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-black text-gray-800">
+                Resident Garbage Reports
+              </h2>
+              {/* Subtle Live Indicator */}
+              <span className="flex h-2 w-2 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+              <span className="text-[10px] font-black text-green-600 uppercase tracking-widest">
+                Live
+              </span>
+            </div>
             <p className="text-gray-500 text-sm">
               Monitor and resolve uncollected garbage or overflowing bin
               reports.
@@ -217,7 +238,6 @@ const ManageWaste = () => {
           </div>
         )}
 
-        {/* Loading Spinner */}
         {loading && (
           <div className="py-20 flex flex-col items-center gap-4">
             <RefreshCcw className="animate-spin text-[#00704e]" size={32} />

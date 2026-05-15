@@ -9,6 +9,8 @@ import {
   MapPin,
   Send,
   Loader2,
+  CalendarDays,
+  Clock,
 } from "lucide-react";
 import WasteImage from "../../assets/wastebg.png";
 
@@ -17,27 +19,32 @@ const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 const WasteCollection = () => {
   const [notification, setNotification] = useState({
     isCollectionDay: false,
-    phase5Completed: false,
+    currentDayName: "",
   });
 
-  // Reporting Form States
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [formData, setFormData] = useState({
-    description: "",
-    location: "",
-  });
+  const [formData, setFormData] = useState({ description: "", location: "" });
 
   useEffect(() => {
     const checkSchedule = () => {
+      const days = [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+      ];
       const now = new Date();
-      const day = now.getDay();
+      const dayIndex = now.getDay();
       const collectionDays = [1, 5]; // Mon and Fri
 
       setNotification({
-        isCollectionDay: collectionDays.includes(day),
-        phase5Completed: false, // In a real app, fetch this from /api/reports/status
+        isCollectionDay: collectionDays.includes(dayIndex),
+        currentDayName: days[dayIndex],
       });
     };
     checkSchedule();
@@ -62,10 +69,9 @@ const WasteCollection = () => {
         }),
       });
 
-      // Handle HTML 404 responses safely
       const contentType = res.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
-        throw new Error("Server returned an invalid response (Check API URL)");
+        throw new Error("Server error: Invalid JSON response");
       }
 
       const data = await res.json();
@@ -91,100 +97,143 @@ const WasteCollection = () => {
         className="text-white px-6 pt-12 pb-24 md:px-16 shadow-2xl relative overflow-hidden bg-cover bg-center"
         style={{ backgroundImage: `url(${WasteImage})` }}
       >
-        <div className="absolute inset-0 bg-black/40"></div>
+        <div className="absolute inset-0 bg-black/50"></div>
         <div className="relative z-10">
           <Link to="/home">
             <ArrowLeftIcon className="h-10 w-10 mb-4 cursor-pointer text-white hover:scale-110 transition-transform" />
           </Link>
-          <h1 className="font-black text-4xl tracking-tight">
+          <h1 className="font-black text-4xl tracking-tight uppercase">
             Waste Management
           </h1>
-          <p className="opacity-90 font-medium">
-            Automated monitoring and reporting
+          <p className="opacity-90 font-medium tracking-wide">
+            Camella Bucandala Phase 5 Monitoring
           </p>
         </div>
       </div>
+      <br />
+      <br />
+      <br />
 
-      <div className="m-10 flex flex-col gap-6 max-w-4xl mx-auto -mt-12 relative z-20">
-        {/* --- SCHEDULE STATUS --- */}
-        <section className="bg-white p-6 rounded-[2rem] shadow-xl shadow-gray-200/50 border border-gray-100">
-          <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 ml-1">
-            Today's Status
-          </h2>
+      <div className="m-10 flex flex-col gap-8 max-w-4xl mx-auto -mt-16 relative z-20">
+        {/* --- SCHEDULE OVERVIEW (MONDAY & FRIDAY) --- */}
+        <section className="bg-white rounded-[2.5rem] p-8 shadow-xl shadow-gray-200 border border-gray-100">
+          <div className="flex items-center gap-2 mb-6">
+            <CalendarDays className="text-[#00704e]" size={24} />
+            <h2 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">
+              Weekly Collection Schedule
+            </h2>
+          </div>
 
-          {notification.isCollectionDay ? (
-            <div className="flex items-center gap-4 bg-amber-50 border border-amber-100 p-5 rounded-2xl">
-              <div className="bg-amber-500 p-3 rounded-2xl shadow-lg shadow-amber-200">
-                <Trash2 className="h-6 w-6 text-white" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Monday Card */}
+            <div
+              className={`p-6 rounded-3xl border-2 transition-all ${notification.currentDayName === "Monday" ? "border-[#00704e] bg-green-50/50" : "border-gray-50 bg-gray-50/30"}`}
+            >
+              <div className="flex justify-between items-start mb-2">
+                <span className="font-black text-2xl text-gray-800">
+                  Monday
+                </span>
+                {notification.currentDayName === "Monday" && (
+                  <span className="bg-[#00704e] text-white text-[10px] px-3 py-1 rounded-full font-black uppercase">
+                    Today
+                  </span>
+                )}
               </div>
-              <div>
-                <h3 className="font-black text-amber-900">
-                  Collection in Progress
-                </h3>
-                <p className="text-sm text-amber-700">
-                  The truck is currently operating in Camella Bucandala.
-                </p>
+              <div className="flex items-center gap-2 text-sm font-bold text-gray-500">
+                <Clock size={16} /> 7:00 AM - 12:00 PM
               </div>
+              <p className="mt-4 text-xs font-medium text-gray-400 leading-relaxed">
+                Regular household waste collection for all blocks in Phase 5.
+              </p>
             </div>
-          ) : (
-            <div className="flex items-center gap-4 bg-gray-50 border border-gray-100 p-5 rounded-2xl italic text-gray-500">
-              <Clock className="h-5 w-5" /> No active collections scheduled for
-              today.
+
+            {/* Friday Card */}
+            <div
+              className={`p-6 rounded-3xl border-2 transition-all ${notification.currentDayName === "Friday" ? "border-[#00704e] bg-green-50/50" : "border-gray-50 bg-gray-50/30"}`}
+            >
+              <div className="flex justify-between items-start mb-2">
+                <span className="font-black text-2xl text-gray-800">
+                  Friday
+                </span>
+                {notification.currentDayName === "Friday" && (
+                  <span className="bg-[#00704e] text-white text-[10px] px-3 py-1 rounded-full font-black uppercase">
+                    Today
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 text-sm font-bold text-gray-500">
+                <Clock size={16} /> 7:00 AM - 12:00 PM
+              </div>
+              <p className="mt-4 text-xs font-medium text-gray-400 leading-relaxed">
+                Regular household waste collection for all blocks in Phase 5.
+              </p>
+            </div>
+          </div>
+
+          {/* Current Status Banner */}
+          {notification.isCollectionDay && (
+            <div className="mt-6 flex items-center gap-4 bg-amber-50 border border-amber-100 p-5 rounded-2xl animate-pulse">
+              <Trash2 className="h-6 w-6 text-amber-600" />
+              <p className="text-sm font-black text-amber-900 tracking-tight">
+                Active: The collection truck is currently in the neighborhood.
+              </p>
             </div>
           )}
         </section>
 
-        {/* --- ACTION CARD --- */}
-        <section className="space-y-4">
+        {/* --- REPORTING ACTION --- */}
+        <section>
           {!showForm ? (
             <button
               onClick={() => setShowForm(true)}
-              className="w-full shadow-lg rounded-[2rem] p-8 grid grid-cols-[15%_70%_15%] bg-white hover:bg-red-50 transition-all border-2 border-transparent hover:border-red-100 items-center text-left"
+              className="w-full shadow-xl rounded-[2.5rem] p-10 grid grid-cols-[15%_70%_15%] bg-white hover:bg-red-50 transition-all border-2 border-transparent hover:border-red-100 items-center text-left group"
             >
-              <div className="bg-red-100 rounded-2xl p-4 w-16 h-16 flex items-center justify-center">
-                <AlertCircle className="text-red-600 w-8 h-8" />
+              <div className="bg-red-100 rounded-3xl p-5 w-20 h-20 flex items-center justify-center transition-transform group-hover:scale-110">
+                <AlertCircle className="text-red-600 w-10 h-10" />
               </div>
-              <div className="pl-6">
-                <h1 className="font-black text-gray-800 text-xl tracking-tight">
-                  Report Uncollected Garbage
+              <div className="pl-8">
+                <h1 className="font-black text-gray-800 text-2xl tracking-tighter uppercase">
+                  Report Uncollected
                 </h1>
-                <p className="text-sm text-gray-500 font-medium">
-                  Notify the HOA Admin immediately
+                <p className="text-sm text-gray-400 font-bold uppercase tracking-widest mt-1">
+                  Direct alert to HOA Admin
                 </p>
               </div>
-              <ArrowRightIcon className="h-8 w-8 ml-auto text-gray-200 group-hover:text-red-600" />
+              <ArrowRightIcon className="h-10 w-10 ml-auto text-gray-200 group-hover:text-red-600 transition-colors" />
             </button>
           ) : (
-            <div className="bg-white rounded-[2.5rem] shadow-2xl p-8 border border-gray-100 animate-in slide-in-from-top duration-300">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="font-black text-2xl text-gray-800 tracking-tight">
-                  File a Report
+            <div className="bg-white rounded-[3rem] shadow-2xl p-10 border border-gray-100 animate-in slide-in-from-top duration-300">
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="font-black text-3xl text-gray-800 tracking-tighter italic uppercase">
+                  File Report
                 </h2>
                 <button
                   onClick={() => setShowForm(false)}
-                  className="text-gray-400 font-bold hover:text-gray-600"
+                  className="text-gray-400 font-black hover:text-red-500 uppercase text-xs tracking-widest transition-colors"
                 >
-                  Cancel
+                  Close
                 </button>
               </div>
 
               {success ? (
-                <div className="bg-green-50 text-green-700 p-6 rounded-2xl flex flex-col items-center text-center gap-2">
-                  <CheckCircle2 className="w-12 h-12" />
-                  <p className="font-black">Report Sent Successfully!</p>
+                <div className="bg-green-50 text-green-700 p-10 rounded-[2rem] flex flex-col items-center text-center gap-4">
+                  <CheckCircle2 className="w-16 h-16" />
+                  <p className="font-black text-xl uppercase">
+                    Report Filed Successfully!
+                  </p>
                 </div>
               ) : (
-                <form onSubmit={handleReport} className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
-                      Precise Location
+                <form onSubmit={handleReport} className="space-y-6">
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2">
+                      Exact Location
                     </label>
                     <div className="relative">
-                      <MapPin className="absolute left-4 top-4 h-5 w-5 text-gray-400" />
+                      <MapPin className="absolute left-5 top-5 h-6 w-6 text-gray-400" />
                       <input
                         required
-                        placeholder="e.g. Block 12, Lot 4, Phase 5"
-                        className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-red-500 transition-all font-bold"
+                        placeholder="e.g. Blk 5 Lot 2"
+                        className="w-full bg-gray-50 border-2 border-gray-50 rounded-[1.5rem] py-5 pl-14 pr-6 outline-none focus:border-[#00704e] focus:bg-white transition-all font-bold text-gray-700"
                         value={formData.location}
                         onChange={(e) =>
                           setFormData({ ...formData, location: e.target.value })
@@ -193,14 +242,14 @@ const WasteCollection = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
-                      Details
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-2">
+                      Description
                     </label>
                     <textarea
                       required
-                      placeholder="Describe the situation..."
-                      className="w-full bg-gray-50 border border-gray-100 rounded-2xl p-4 outline-none focus:ring-2 focus:ring-red-500 transition-all font-bold h-32"
+                      placeholder="Provide details about the uncollected trash..."
+                      className="w-full bg-gray-50 border-2 border-gray-50 rounded-[1.5rem] p-6 outline-none focus:border-[#00704e] focus:bg-white transition-all font-bold text-gray-700 h-40 resize-none"
                       value={formData.description}
                       onChange={(e) =>
                         setFormData({
@@ -214,14 +263,16 @@ const WasteCollection = () => {
                   <button
                     disabled={loading}
                     type="submit"
-                    className="w-full bg-[#00704e] text-white font-black py-5 rounded-2xl hover:bg-[#005a3e] shadow-xl shadow-green-900/20 transition-all flex justify-center items-center gap-2 disabled:opacity-50"
+                    className="w-full bg-[#00704e] text-white font-black py-6 rounded-[1.5rem] hover:bg-[#005a3e] shadow-2xl shadow-green-900/30 transition-all flex justify-center items-center gap-3 disabled:opacity-50"
                   >
                     {loading ? (
                       <Loader2 className="animate-spin" />
                     ) : (
-                      <Send size={18} />
+                      <Send size={20} />
                     )}
-                    {loading ? "SENDING..." : "SUBMIT REPORT"}
+                    <span className="uppercase tracking-widest">
+                      {loading ? "Processing..." : "Submit to HOA"}
+                    </span>
                   </button>
                 </form>
               )}
@@ -229,43 +280,26 @@ const WasteCollection = () => {
           )}
         </section>
 
-        {/* --- DASHBOARD LINK --- */}
+        {/* --- HISTORY DASHBOARD --- */}
         <Link to="/wastecollection/my-history" className="group">
-          <div className="shadow-lg rounded-[2rem] p-8 grid grid-cols-[15%_70%_15%] bg-[#00704e] text-white hover:scale-[1.02] transition-all items-center">
-            <div className="bg-white/20 rounded-2xl p-4 w-16 h-16 flex items-center justify-center">
+          <div className="shadow-xl rounded-[2.5rem] p-8 grid grid-cols-[15%_70%_15%] bg-[#00704e] text-white hover:bg-[#005a3e] hover:translate-y-[-4px] transition-all items-center">
+            <div className="bg-white/10 rounded-2xl p-5 w-16 h-16 flex items-center justify-center">
               <History className="w-8 h-8" />
             </div>
             <div className="pl-6">
-              <h1 className="font-black text-xl tracking-tight">
-                Report Dashboard
+              <h1 className="font-black text-xl tracking-tight uppercase">
+                My Report History
               </h1>
-              <p className="text-sm opacity-80 font-medium">
-                Track your report statuses
+              <p className="text-xs opacity-70 font-bold uppercase tracking-widest mt-1">
+                Track pending and resolved reports
               </p>
             </div>
-            <ArrowRightIcon className="h-8 w-8 ml-auto text-white/50 group-hover:text-white" />
+            <ArrowRightIcon className="h-8 w-8 ml-auto opacity-40 group-hover:opacity-100 transition-opacity" />
           </div>
         </Link>
       </div>
     </div>
   );
 };
-
-// Simple Clock Icon for the placeholder
-const Clock = ({ className }) => (
-  <svg
-    className={className}
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-    />
-  </svg>
-);
 
 export default WasteCollection;
