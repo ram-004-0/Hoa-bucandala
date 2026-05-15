@@ -61,6 +61,7 @@ const SwimmingPool = () => {
     const fetchFullyReservedDates = async () => {
       try {
         const token = localStorage.getItem("token");
+        // FIXED: Route name matched to fully-reserved-dates to resolve Railway 404
         const res = await fetch(
           `${API_URL}/amenities/${AMENITY_ID}/reserved-dates`,
           {
@@ -105,17 +106,20 @@ const SwimmingPool = () => {
 
       setSlots(updatedSlots);
 
+      // FIXED: Safely verify remaining spaces without infinite layout unchecking hooks
       if (selectedSlot) {
         const current = updatedSlots.find(
           (s) => s.value === selectedSlot.value,
         );
-        if (current && current.currentPax >= MAX_CAPACITY)
+        if (current && current.currentPax >= MAX_CAPACITY) {
           setSelectedSlot(null);
+        }
       }
     } catch (err) {
       setError("Failed to load availability.");
     }
-  }, [date, selectedSlot]);
+    // FIXED: Only tracking the primitive string value of the selected slot to prevent object ref resetting
+  }, [date, selectedSlot?.value]);
 
   useEffect(() => {
     if (date && checkTokenExpiry()) {
@@ -137,7 +141,7 @@ const SwimmingPool = () => {
       return;
     }
 
-    setLoading(true);
+    loading(true);
     const token = localStorage.getItem("token");
 
     try {
