@@ -3,19 +3,17 @@ import BgImage from "../assets/CamellaBg.jpg";
 
 const Login = () => {
   return (
-    <div className="flex h-[100vh] w-full overflow-hidden bg-white">
-      {/* LEFT SIDE: Visual Branding */}
+    <div className="flex h-screen w-full overflow-hidden bg-white">
+      {/* LEFT SIDE: Visual Branding - Simplified to just BgImage */}
       <div
-        className="w-4/5 h-full bg-contain bg-no-repeat bg-center relative z-20"
+        className="hidden lg:block lg:w-3/5 h-full bg-cover bg-no-repeat bg-center relative"
         style={{ backgroundImage: `url(${BgImage})` }}
       >
-        {/* Decorative Overlays */}
-        <div className="absolute inset-0 bg-linear-to-br from-black/20 via-transparent to-black/20 z-10"></div>
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-yellow-400/10 rounded-full blur-3xl z-0"></div>
+        {/* Clean image container, all overlays removed */}
       </div>
 
       {/* RIGHT SIDE: Authentication Portal */}
-      <div className="w-full lg:w-5/12 flex flex-col items-center justify-center relative p-6 md:p-12 bg-[#fbfbfb]">
+      <div className="w-full lg:w-2/5 flex flex-col items-center justify-center relative p-6 md:p-12 bg-[#fbfbfb]">
         {/* Subtle Background Grid */}
         <div className="absolute top-0 right-0 w-full h-full opacity-[0.03] pointer-events-none z-0">
           <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
