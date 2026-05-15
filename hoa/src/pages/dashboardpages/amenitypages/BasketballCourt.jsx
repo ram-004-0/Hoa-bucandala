@@ -158,6 +158,9 @@ const BasketballCourt = () => {
           <p className="opacity-80 mt-1">Schedule your practice or game</p>
         </div>
       </div>
+      <br />
+      <br />
+      <br />
 
       <div className="max-w-4xl mx-auto -mt-10 px-4 space-y-6">
         {/* Regulation Card */}
