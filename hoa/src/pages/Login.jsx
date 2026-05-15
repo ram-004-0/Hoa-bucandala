@@ -1,5 +1,5 @@
 import AuthCard from "../props/AuthCard";
-import BgImage from "../assets/loginpagelogo.png";
+import BgImage from "../assets/CamellaBg.png";
 
 const Login = () => {
   return (

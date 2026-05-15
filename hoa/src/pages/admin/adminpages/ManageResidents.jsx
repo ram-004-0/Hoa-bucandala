@@ -181,11 +181,6 @@ const ManageResidents = () => {
             value={users.filter((u) => u.role === "GUARD").length}
             blue
           />
-          <StatCard
-            title="Outstanding Balance"
-            value={users.filter((u) => u.withBalance).length}
-            red
-          />
         </div>
 
         <div className="flex border-b border-gray-200 mb-6">

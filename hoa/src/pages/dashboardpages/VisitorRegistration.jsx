@@ -152,14 +152,16 @@ const VisitorRegistration = () => {
             <ArrowLeftIcon className="h-10 w-10 cursor-pointer hover:scale-110 transition-transform" />
           </Link>
         </div>
-
+        <br />
+        <br />
+        <br />
         <div className="max-w-5xl mx-auto w-full flex gap-4 mt-8">
           <button
             onClick={() => setActiveTab("register")}
             className={`px-6 py-2 rounded-full flex items-center gap-2 font-semibold transition-all ${
               activeTab === "register"
                 ? "bg-white text-[#00704e]"
-                : "bg-white/10 hover:bg-white/20"
+                : "bg-white/40 hover:bg-white/50"
             }`}
           >
             <PlusIcon className="w-5 h-5" /> New Entry
