@@ -142,7 +142,9 @@ const ManageReservation = () => {
           </div>
         </div>
       </div>
-
+      <br />
+      <br />
+      <br />
       <div className="max-w-6xl mx-auto -mt-10 px-6">
         {loading ? (
           <div className="bg-white rounded-3xl p-20 shadow-xl flex flex-col items-center border border-gray-100">
@@ -295,7 +297,6 @@ const ManageReservation = () => {
           </div>
         )}
       </div>
-
       {/* REJECTION MODAL */}
       {showReasonModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">

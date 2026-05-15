@@ -89,6 +89,7 @@ const SwimmingPool = () => {
       );
       const data = await res.json();
 
+      // Logic updated to ensure slots stay visible/available based on guest count
       const updatedSlots = TIME_SLOTS.map((slot) => {
         const slotData = data.slotDetails?.find(
           (d) => d.time_slot === slot.value,
@@ -99,6 +100,7 @@ const SwimmingPool = () => {
         return {
           ...slot,
           currentPax: currentTotal,
+          // Slot is available as long as it hasn't reached the max capacity
           available: currentTotal < MAX_CAPACITY,
         };
       });
@@ -109,6 +111,7 @@ const SwimmingPool = () => {
         const current = updatedSlots.find(
           (s) => s.value === selectedSlot.value,
         );
+        // Deselect if the background update shows the slot just became full
         if (current && current.currentPax >= MAX_CAPACITY)
           setSelectedSlot(null);
       }

@@ -53,7 +53,7 @@ export const createReservation = async (req, res) => {
     /**
      * 1. CAPACITY CHECK (Amenity ID 3 - e.g., Swimming Pool)
      * We only sum guest counts for 'Approved' or 'Pending' bookings.
-     * 'Cancelled' or 'Rejected' bookings are ignored, freeing up the spots.
+     * Status 'Cancelled' or 'Rejected' are ignored to free up capacity.
      */
     if (amenity_id === 3 || amenity_id === "3") {
       const [[capacityCheck]] = await db.query(
@@ -71,8 +71,8 @@ export const createReservation = async (req, res) => {
       }
     } else {
       /**
-       * 2. DUPLICATE CHECK (For other amenities like Basketball Court/Clubhouse)
-       * We check if a booking exists that is NOT cancelled or rejected.
+       * 2. DUPLICATE CHECK (For other amenities)
+       * We allow booking if previous reservations for this slot were 'Cancelled' or 'Rejected'.
        */
       const [[existingBooking]] = await db.query(
         `SELECT reservation_id FROM amenities_reservation 
@@ -115,7 +115,6 @@ export const createReservation = async (req, res) => {
     });
   } catch (err) {
     console.error("Create reservation error:", err);
-    // Standard error handling
     if (err.code === "ER_DUP_ENTRY") {
       return res
         .status(409)
@@ -135,16 +134,21 @@ export const getAvailability = async (req, res) => {
     const { id } = req.params;
     const { date } = req.query;
 
+    // 1. Get capacity details (only for Approved/Pending bookings to show remaining spots)
     const [slotDetails] = await db.query(
       `SELECT time_slot, SUM(guest_count) as total_guests 
        FROM amenities_reservation 
-       WHERE amenity_id = ? AND reservation_date = ? AND status = 'Approved'
+       WHERE amenity_id = ? AND reservation_date = ? AND status NOT IN ('Cancelled', 'Rejected')
        GROUP BY time_slot`,
       [id, date],
     );
 
+    // 2. FETCH BOOKED SLOTS
+    // FIXED: We exclude 'Cancelled' and 'Rejected' so the UI shows these slots as AVAILABLE again.
     const [rows] = await db.query(
-      "SELECT time_slot FROM amenities_reservation WHERE amenity_id = ? AND reservation_date = ? AND status != 'Rejected'",
+      `SELECT time_slot FROM amenities_reservation 
+       WHERE amenity_id = ? AND reservation_date = ? 
+       AND status NOT IN ('Cancelled', 'Rejected')`,
       [id, date],
     );
 
@@ -187,7 +191,7 @@ export const getMyReservations = async (req, res) => {
       `
       SELECT 
         ar.reservation_id,
-        ar.status,          
+        ar.status,           
         ar.guest_count,
         ar.cancel_reason,
         a.name AS amenity_name,
@@ -239,6 +243,11 @@ export const updateReservationStatus = async (req, res) => {
   }
 };
 
+/**
+ * ============================
+ * CANCEL RESERVATION (Admin/Res)
+ * ============================
+ */
 export const deleteReservation = async (req, res) => {
   const { id } = req.params;
   const { resident_id, amenity_name, is_resident_action, cancel_reason } =
@@ -259,7 +268,6 @@ export const deleteReservation = async (req, res) => {
 
     // --- 2. RESIDENT CANCELS (Notify Admin) ---
     if (is_resident_action) {
-      // Fetch resident name for the message
       const [[resData]] = await db.query(
         "SELECT full_name FROM residents WHERE resident_id = (SELECT resident_id FROM amenities_reservation WHERE reservation_id = ?)",
         [id],
@@ -267,8 +275,6 @@ export const deleteReservation = async (req, res) => {
 
       const residentName = resData?.full_name || "A resident";
 
-      // We set resident_id to NULL because this is for the ADMIN dashboard,
-      // and Admins aren't in the residents table.
       await db.query(
         "INSERT INTO notifications (resident_id, type, title, message, related_id) VALUES (NULL, 'Admin', ?, ?, ?)",
         [
@@ -279,9 +285,8 @@ export const deleteReservation = async (req, res) => {
       );
     }
 
-    // --- 3. SOFT DELETE (Free the slot but keep history) ---
-    // We update status to 'Cancelled'. Because your createReservation logic
-    // checks for 'Approved' or 'Pending', this slot is now OPEN for others.
+    // --- 3. SOFT DELETE (Update to Cancelled) ---
+    // This status change allows the getAvailability/createReservation checks to see this slot as free.
     await db.query(
       "UPDATE amenities_reservation SET status = 'Cancelled', cancel_reason = ? WHERE reservation_id = ?",
       [cancel_reason || "No reason provided", id],
