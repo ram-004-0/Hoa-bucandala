@@ -80,6 +80,7 @@ const AmenityHistory = () => {
         data: {
           is_resident_action: true,
           cancel_reason: cancelReason,
+          amenity_name: reservationToCancel?.amenity_name,
         },
       });
 
