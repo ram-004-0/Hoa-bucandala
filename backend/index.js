@@ -20,8 +20,6 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// --- 1. FIXED CORS CONFIGURATION ---
-// Define allowedOrigins BEFORE calling app.use(cors)
 const allowedOrigins = [
   "https://hoa-camella-bucandala.vercel.app",
   "http://localhost:5173",
