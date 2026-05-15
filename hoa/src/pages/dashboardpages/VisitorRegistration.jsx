@@ -7,7 +7,7 @@ import {
   QrCodeIcon,
 } from "@heroicons/react/24/outline";
 import VisitorRegistered from "./visitorregistration_modal/VisitorRegistered";
-import VisitorPass from "./visitorregistration_modal/VisitorPass";
+import VisitorPass from "./visitorpass_modal/VisitorPass";
 import VisitorImage from "../../assets/visitorbg.png";
 
 const VisitorRegistration = () => {
@@ -67,6 +67,15 @@ const VisitorRegistration = () => {
   const handleChange = (e) => {
     const { id, value } = e.target;
 
+    // --- START PHONE VALIDATION ---
+    // Prevent non-numeric characters from being typed in the contactNumber field
+    if (id === "contactNumber") {
+      const numericValue = value.replace(/\D/g, ""); // Remove anything that isn't a digit
+      setFormData((prev) => ({ ...prev, [id]: numericValue }));
+      return;
+    }
+    // --- END PHONE VALIDATION ---
+
     // If the user changes the date to today, check if their selected time is now in the past
     if (id === "date" && value === minDate) {
       if (formData.time && formData.time < currentTime) {
@@ -79,15 +88,13 @@ const VisitorRegistration = () => {
   };
 
   const handleSubmit = async (e) => {
+    e.preventDefault();
+
     const phPhoneRegex = /^09\d{9}$/;
     if (formData.contactNumber && !phPhoneRegex.test(formData.contactNumber)) {
-      setMessage({
-        type: "error",
-        text: "Invalid format. Use 09XXXXXXXXX (11 digits).",
-      });
+      alert("Invalid format. Use 09XXXXXXXXX (11 digits).");
       return;
     }
-    e.preventDefault();
 
     // Final Validation Check
     const selectedDateTime = new Date(`${formData.date}T${formData.time}`);
@@ -150,20 +157,20 @@ const VisitorRegistration = () => {
         style={{ backgroundImage: `url(${VisitorImage})` }}
       >
         <div className="max-w-5xl mx-auto w-full flex justify-between items-center">
-          <div>
+          <div className="relative z-10">
             <h1 className="font-bold text-4xl">Visitor Management</h1>
             <p className="opacity-80 mt-1">
               Register visitors or view past passes
             </p>
           </div>
-          <Link to="/home">
+          <Link to="/home" className="relative z-10">
             <ArrowLeftIcon className="h-10 w-10 cursor-pointer hover:scale-110 transition-transform" />
           </Link>
         </div>
         <br />
         <br />
         <br />
-        <div className="max-w-5xl mx-auto w-full flex gap-4 mt-8">
+        <div className="max-w-5xl mx-auto w-full flex gap-4 mt-8 relative z-10">
           <button
             onClick={() => setActiveTab("register")}
             className={`px-6 py-2 rounded-full flex items-center gap-2 font-semibold transition-all ${
@@ -185,6 +192,7 @@ const VisitorRegistration = () => {
             <ClockIcon className="w-5 h-5" /> My History
           </button>
         </div>
+        <div className="absolute inset-0 bg-black/40"></div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 mt-10">
@@ -220,9 +228,11 @@ const VisitorRegistration = () => {
                   <input
                     required
                     type="text"
+                    inputMode="numeric" // Triggers numeric keypad on mobile
                     id="contactNumber"
                     value={formData.contactNumber}
                     onChange={handleChange}
+                    maxLength={11} // Optional: limits length to standard 11 digits
                     className="border rounded-lg p-2.5 mt-2 outline-none focus:ring-2 focus:ring-green-400"
                     placeholder="09..."
                   />
@@ -237,7 +247,7 @@ const VisitorRegistration = () => {
                       required
                       type="date"
                       id="date"
-                      min={minDate} // RESTRICTS PAST DATES
+                      min={minDate}
                       value={formData.date}
                       onChange={handleChange}
                       className="border rounded-lg p-2.5 mt-2 outline-none focus:ring-2 focus:ring-green-400"
@@ -251,7 +261,6 @@ const VisitorRegistration = () => {
                       required
                       type="time"
                       id="time"
-                      // Only restrict time if the date is today
                       min={formData.date === minDate ? currentTime : "00:00"}
                       value={formData.time}
                       onChange={handleChange}
@@ -319,7 +328,6 @@ const VisitorRegistration = () => {
             </div>
           </form>
         ) : (
-          /* HISTORY LIST remains the same... */
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {loading ? (
               <div className="col-span-2 text-center py-10 text-gray-500">
@@ -341,7 +349,11 @@ const VisitorRegistration = () => {
                     </p>
                     <div className="mt-2 flex items-center gap-2">
                       <span
-                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${v.status === "PENDING" ? "bg-yellow-100 text-yellow-700" : "bg-green-100 text-green-700"}`}
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                          v.status === "PENDING"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : "bg-green-100 text-green-700"
+                        }`}
                       >
                         {v.status}
                       </span>

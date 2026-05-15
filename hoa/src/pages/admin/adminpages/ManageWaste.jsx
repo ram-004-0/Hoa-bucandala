@@ -110,14 +110,6 @@ const ManageWaste = () => {
               <h2 className="text-2xl font-black text-gray-800">
                 Resident Garbage Reports
               </h2>
-              {/* Subtle Live Indicator */}
-              <span className="flex h-2 w-2 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-              </span>
-              <span className="text-[10px] font-black text-green-600 uppercase tracking-widest">
-                Live
-              </span>
             </div>
             <p className="text-gray-500 text-sm">
               Monitor and resolve uncollected garbage or overflowing bin

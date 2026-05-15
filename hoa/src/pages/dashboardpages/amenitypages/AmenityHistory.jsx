@@ -48,12 +48,15 @@ const AmenityHistory = () => {
       state: {
         data: {
           insertId: res.reservation_id,
+          reservation_id: res.reservation_id, // Added for consistency
           reservation_date: res.reservation_date,
           time_slot: res.time_slot,
           guest_count: res.guest_count,
+          status: res.status, // CRITICAL: Pass the status from the history row
         },
         amenityName: res.amenity_name,
         pax: res.guest_count,
+        status: res.status, // Also passing at top level for the explicitStatus check
       },
     });
   };

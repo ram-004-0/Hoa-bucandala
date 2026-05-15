@@ -8,7 +8,9 @@ import {
   HomeIcon,
   InformationCircleIcon,
   EnvelopeIcon,
-  UsersIcon, // Added for Pax display
+  UsersIcon,
+  PrinterIcon,
+  XCircleIcon, // Added for Cancelled status
 } from "@heroicons/react/24/outline";
 
 const SuccessReservation = () => {
@@ -16,11 +18,12 @@ const SuccessReservation = () => {
 
   // 1. Extract values directly from location.state
   const stateData = location.state?.data;
-  const explicitStatus = location.state?.status; // The new key you added to state
-  const amenityName = location.state?.amenityName || "Amenity";
+  const explicitStatus = location.state?.status;
+  const amenityName =
+    location.state?.amenityName || stateData?.amenity_name || "Amenity";
   const displayDate = location.state?.displayDate;
   const displaySlot = location.state?.displaySlot;
-  const pax = location.state?.pax || stateData?.guest_count || 1; // Extracting pax
+  const pax = location.state?.pax || stateData?.guest_count || 1;
 
   // Redirect back if accessed directly without data
   if (!stateData) {
@@ -35,38 +38,47 @@ const SuccessReservation = () => {
     const rawStatus = explicitStatus || stateData?.status || "Pending";
     const status = rawStatus.toLowerCase();
 
-    // UI for Confirmed/Approved
     if (status === "confirmed" || status === "approved") {
       return {
         label: "Confirmed",
         containerClass: "bg-green-50",
         labelClass: "text-green-700",
         badgeClass: "bg-green-200 text-green-800",
+        icon: <CheckCircleIcon className="h-12 w-12 text-[#00704e]" />,
       };
     }
 
-    // UI for anything containing "pending" (catches "Pending" and "Pending Approval")
+    if (status === "cancelled" || status === "rejected") {
+      return {
+        label: status.charAt(0).toUpperCase() + status.slice(1),
+        containerClass: "bg-red-50",
+        labelClass: "text-red-700",
+        badgeClass: "bg-red-200 text-red-800",
+        icon: <XCircleIcon className="h-12 w-12 text-red-600" />,
+      };
+    }
+
     if (status.includes("pending")) {
       return {
         label: "Pending Approval",
         containerClass: "bg-blue-50",
         labelClass: "text-blue-700",
         badgeClass: "bg-blue-200 text-blue-800",
+        icon: <CheckCircleIcon className="h-12 w-12 text-[#00704e]" />,
       };
     }
 
-    // Fallback for "Cancelled" or other custom states
     return {
       label: rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1),
       containerClass: "bg-gray-50",
       labelClass: "text-gray-700",
       badgeClass: "bg-gray-200 text-gray-800",
+      icon: <CheckCircleIcon className="h-12 w-12 text-gray-400" />,
     };
   };
 
   const statusInfo = getStatusInfo();
 
-  // Format the date for human readability
   const dateToFormat = stateData.reservation_date || displayDate;
   const formattedDate = dateToFormat
     ? new Date(dateToFormat).toLocaleDateString("en-US", {
@@ -81,14 +93,18 @@ const SuccessReservation = () => {
       <div className="w-full max-w-md animate-in fade-in zoom-in duration-300">
         {/* Success Header */}
         <div className="text-center mb-8 no-print">
-          <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircleIcon className="h-12 w-12 text-[#00704e]" />
+          <div className="bg-white w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+            {statusInfo.icon}
           </div>
           <h1 className="text-3xl font-black text-gray-800">
-            Booking Received!
+            {statusInfo.label === "Cancelled"
+              ? "Booking Cancelled"
+              : "Booking Details"}
           </h1>
           <p className="text-gray-500 mt-2">
-            Your reservation has been recorded successfully.
+            {statusInfo.label === "Cancelled"
+              ? "This reservation is no longer active."
+              : "Your reservation details are shown below."}
           </p>
         </div>
 
@@ -137,7 +153,7 @@ const SuccessReservation = () => {
               </div>
             </div>
 
-            {/* Guest Count (Pax) - Added Section */}
+            {/* Guest Count (Pax) */}
             <div className="pb-4 border-b border-dashed border-gray-200">
               <div className="flex items-center gap-2 text-gray-400">
                 <UsersIcon className="h-4 w-4" />
@@ -167,7 +183,6 @@ const SuccessReservation = () => {
             </div>
           </div>
 
-          {/* Footer Instruction */}
           <div className="bg-gray-50 p-6 text-center">
             <p className="text-xs text-gray-400 leading-relaxed px-4">
               Please present this confirmation to the security guard upon
@@ -176,28 +191,29 @@ const SuccessReservation = () => {
           </div>
         </div>
 
-        {/* NEW: Admin Verification Tip Section */}
-        <div className="mt-6 bg-blue-50 border-l-4 border-blue-500 p-5 rounded-r-2xl no-print shadow-sm">
-          <div className="flex items-start gap-3">
-            <InformationCircleIcon className="h-6 w-6 text-blue-600 mt-0.5 shrink-0" />
-            <div>
-              <h3 className="text-sm font-black text-blue-900 uppercase tracking-tight">
-                Wait! One more step...
-              </h3>
-              <p className="text-xs text-blue-700 leading-relaxed mt-1 font-medium">
-                To confirm your booking, please send a screenshot of your
-                <strong> payment receipt</strong> to our admin email. This
-                allows the admin to verify and confirm your reservation.
-              </p>
-              <div className="mt-3 flex items-center gap-2 bg-white/60 p-2.5 rounded-xl border border-blue-200 w-fit">
-                <EnvelopeIcon className="h-4 w-4 text-blue-600" />
-                <span className="text-xs font-black text-blue-900 select-all">
-                  lessandrabukandala2021@gmail.com
-                </span>
+        {/* Tip Section - Only show if not cancelled */}
+        {statusInfo.label !== "Cancelled" && (
+          <div className="mt-6 bg-blue-50 border-l-4 border-blue-500 p-5 rounded-r-2xl no-print shadow-sm">
+            <div className="flex items-start gap-3">
+              <InformationCircleIcon className="h-6 w-6 text-blue-600 mt-0.5 shrink-0" />
+              <div>
+                <h3 className="text-sm font-black text-blue-900 uppercase tracking-tight">
+                  Wait! One more step...
+                </h3>
+                <p className="text-xs text-blue-700 leading-relaxed mt-1 font-medium">
+                  To confirm your booking, please send a screenshot of your
+                  <strong> payment receipt</strong> to our admin email.
+                </p>
+                <div className="mt-3 flex items-center gap-2 bg-white/60 p-2.5 rounded-xl border border-blue-200 w-fit">
+                  <EnvelopeIcon className="h-4 w-4 text-blue-600" />
+                  <span className="text-xs font-black text-blue-900 select-all">
+                    lessandrabukandala2021@gmail.com
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Action Buttons */}
         <div className="mt-8 flex flex-col gap-3 no-print">
@@ -213,7 +229,7 @@ const SuccessReservation = () => {
             onClick={() => window.print()}
             className="w-full bg-white text-gray-600 py-4 rounded-2xl font-black text-center border border-gray-200 flex items-center justify-center gap-2 hover:bg-gray-50 transition-all"
           >
-            <button className="h-5 w-5" />
+            <PrinterIcon className="h-5 w-5" />
             PRINT CONFIRMATION
           </button>
         </div>
