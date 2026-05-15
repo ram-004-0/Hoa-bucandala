@@ -72,31 +72,52 @@ const VisitorLog = () => {
     fetchLogs();
   }, []);
 
-  // Format Helper for Timestamps
   const formatTime = (timestamp) => {
-    if (!timestamp) return "--:--";
-    return new Date(timestamp).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
+    // If the DB value is NULL or empty, show a dash
+    if (!timestamp || timestamp === "NULL") return "--:--";
+
+    try {
+      const date = new Date(timestamp);
+      // Check if the date is actually valid
+      if (isNaN(date.getTime())) return "--:--";
+
+      return date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+    } catch (e) {
+      return "--:--";
+    }
   };
 
   // Filter Logic
+  // Filter Logic - This ensures we match the date correctly
   const filteredLogs = logs.filter((log) => {
-    const matchesDate = log.expected_date.startsWith(selectedDate);
+    // Use startsWith to handle ISO strings or standard date strings
+    const matchesDate =
+      log.expected_date && log.expected_date.includes(selectedDate);
+
+    const visitorName = log.visitor_name?.toLowerCase() || "";
+    const hostResident = log.host_resident?.toLowerCase() || "";
+    const search = searchTerm.toLowerCase();
+
     const matchesSearch =
-      log.visitor_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.host_resident.toLowerCase().includes(searchTerm.toLowerCase());
+      visitorName.includes(search) || hostResident.includes(search);
+
     return matchesDate && matchesSearch;
   });
 
+  // Stats Calculation - Added .toUpperCase() to handle database inconsistencies
   const stats = {
     total: filteredLogs.length,
-    inside: filteredLogs.filter((l) => l.status === "ARRIVED").length,
-    exited: filteredLogs.filter((l) => l.status === "DEPARTED").length,
+    // We check for "ARRIVED" status regardless of casing
+    inside: filteredLogs.filter((l) => l.status?.toUpperCase() === "ARRIVED")
+      .length,
+    // We check for "DEPARTED" status regardless of casing
+    exited: filteredLogs.filter((l) => l.status?.toUpperCase() === "DEPARTED")
+      .length,
   };
-
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
       {/* Header */}
@@ -144,12 +165,6 @@ const VisitorLog = () => {
               />
             </div>
           </div>
-          <button
-            onClick={fetchLogs}
-            className="text-sm text-[#00704e] font-semibold hover:underline"
-          >
-            Refresh Records
-          </button>
         </div>
 
         {/* Stats Grid */}
@@ -280,16 +295,18 @@ const StatBox = ({ label, value, color = "text-gray-800" }) => (
 );
 
 const StatusBadge = ({ status }) => {
+  const s = status?.toUpperCase();
   const styles = {
     ARRIVED: "bg-blue-100 text-blue-700",
     DEPARTED: "bg-gray-100 text-gray-600",
     PENDING: "bg-amber-100 text-amber-700",
   };
+
   return (
     <span
-      className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${styles[status] || styles.PENDING}`}
+      className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${styles[s] || styles.PENDING}`}
     >
-      {status === "DEPARTED" ? "EXITED" : status}
+      {s === "DEPARTED" ? "EXITED" : s}
     </span>
   );
 };
