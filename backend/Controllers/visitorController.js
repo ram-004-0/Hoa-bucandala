@@ -87,14 +87,29 @@ export const getResidentVisitorHistory = async (req, res) => {
  */
 export const getAllVisitors = async (req, res) => {
   try {
+    // We use a LEFT JOIN to ensure visitors appear even if there's an issue with resident mapping
+    // And we ensure we are selecting the status clearly
     const [rows] = await db.query(`
-      SELECT v.*, r.full_name as host_resident 
+      SELECT 
+        v.visitor_id,
+        v.visitor_name,
+        v.contact_number,
+        v.purpose_of_visit,
+        v.expected_date,
+        v.expected_time,
+        v.address_to_visit,
+        UPPER(v.status) as status, 
+        v.arrival_time,
+        v.departure_time,
+        r.full_name as host_resident 
       FROM visitors v
-      JOIN residents r ON v.resident_id = r.resident_id
+      LEFT JOIN residents r ON v.resident_id = r.resident_id
       ORDER BY v.expected_date DESC, v.expected_time DESC
     `);
+
     res.json(rows);
   } catch (err) {
+    console.error("Fetch All Visitors Error:", err);
     res.status(500).json({ message: "Failed to fetch visitors" });
   }
 };

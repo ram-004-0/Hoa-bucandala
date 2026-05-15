@@ -17,7 +17,6 @@ const VisitorList = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   const fetchVisitors = async (isAutoRefresh = false) => {
-    // Only show the full-page loading spinner on the initial load
     if (!isAutoRefresh) setLoading(true);
     else setBackgroundLoading(true);
 
@@ -32,7 +31,12 @@ const VisitorList = () => {
       );
       const data = await res.json();
       if (res.ok) {
-        setVisitors(data);
+        // Standardize status to uppercase to avoid mismatch
+        const standardizedData = data.map((v) => ({
+          ...v,
+          status: v.status ? v.status.toUpperCase() : "PENDING",
+        }));
+        setVisitors(standardizedData);
       }
     } catch (err) {
       console.error("Failed to fetch visitors:", err);
@@ -42,22 +46,15 @@ const VisitorList = () => {
     }
   };
 
-  // Real-time fetching logic
   useEffect(() => {
-    // Initial fetch
     fetchVisitors();
-
-    // Set up interval for real-time updates (every 5 seconds)
     const interval = setInterval(() => {
       fetchVisitors(true);
     }, 5000);
-
-    // Cleanup interval on component unmount
     return () => clearInterval(interval);
   }, []);
 
-  // Filter Logic: Show only PENDING or ARRIVED for the main "Active" list
-  // and filter by search term
+  // Filter Logic
   const activeVisitors = visitors.filter((v) => {
     const visitorName = v.visitor_name?.toLowerCase() || "";
     const hostResident = v.host_resident?.toLowerCase() || "";
@@ -66,6 +63,7 @@ const VisitorList = () => {
     const matchesSearch =
       visitorName.includes(search) || hostResident.includes(search);
 
+    // Ensure we show anything that isn't departed (Pending and Arrived)
     return matchesSearch && v.status !== "DEPARTED";
   });
 
@@ -77,7 +75,6 @@ const VisitorList = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
-      {/* Header - Styled like VisitorLog */}
       <div className="bg-[#00704e] text-white px-4 py-6 md:py-10">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center gap-4">
           <Link to="/guard" className="hover:scale-110 transition-transform">
@@ -92,18 +89,21 @@ const VisitorList = () => {
             </p>
           </div>
 
-          {/* Status Indicator (Replacing the manual sync button) */}
           <div className="md:ml-auto flex items-center gap-2 bg-black/20 px-4 py-2 rounded-full border border-white/10">
             <div
-              className={`w-2 h-2 rounded-full bg-green-400 ${backgroundLoading ? "animate-ping" : ""}`}
+              className={`w-2 h-2 rounded-full bg-green-400 ${
+                backgroundLoading ? "animate-ping" : ""
+              }`}
             ></div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-white">
+              {backgroundLoading ? "Syncing..." : "Live"}
+            </span>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8 flex flex-col gap-6">
-        {/* Filters Row */}
-        <div className="bg-white shadow-sm border border-gray-100 rounded-xl p-4 flex flex-col md:flex-row gap-4 justify-between items-center">
+        <div className="bg-white shadow-sm border border-gray-100 rounded-xl p-4">
           <div className="relative w-full">
             <Search
               className="absolute left-3 top-2.5 text-gray-400"
@@ -119,10 +119,9 @@ const VisitorList = () => {
           </div>
         </div>
 
-        {/* Stats Grid - Standardized Design */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StatBox
-            label="Active Expectations"
+            label="Total Active"
             value={stats.total}
             icon={<UserPlus className="w-5 h-5 text-blue-500" />}
           />
@@ -140,7 +139,6 @@ const VisitorList = () => {
           />
         </div>
 
-        {/* Visitor Grid */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4 bg-white rounded-xl border border-gray-100 shadow-sm">
             <div className="w-10 h-10 border-4 border-[#00704e] border-t-transparent rounded-full animate-spin"></div>
@@ -155,19 +153,19 @@ const VisitorList = () => {
                 key={v.visitor_id}
                 id={v.visitor_id}
                 name={v.visitor_name}
-                state={v.status} // This prop inside VisitorListProps handles the status update UI
+                state={v.status}
                 homeowner={v.host_resident}
                 address={v.address_to_visit}
                 purpose={v.purpose_of_visit}
                 time={`${v.expected_date ? v.expected_date.split("T")[0] : "N/A"} @ ${v.expected_time}`}
-                onUpdate={() => fetchVisitors(true)} // Status updates trigger a background refresh
+                onUpdate={() => fetchVisitors(true)}
               />
             ))}
           </div>
         ) : (
           <div className="bg-white p-20 rounded-xl text-center shadow-sm border-2 border-dashed border-gray-200">
             <p className="text-gray-400 font-bold uppercase text-xs tracking-widest">
-              No active visitors matching your criteria
+              No active visitors found
             </p>
           </div>
         )}
@@ -176,7 +174,6 @@ const VisitorList = () => {
   );
 };
 
-// Internal Sub-component to match VisitorLog style
 const StatBox = ({ label, value, color = "text-gray-800", icon }) => (
   <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm flex items-center justify-between">
     <div>
