@@ -79,6 +79,14 @@ const VisitorRegistration = () => {
   };
 
   const handleSubmit = async (e) => {
+    const phPhoneRegex = /^09\d{9}$/;
+    if (formData.contactNumber && !phPhoneRegex.test(formData.contactNumber)) {
+      setMessage({
+        type: "error",
+        text: "Invalid format. Use 09XXXXXXXXX (11 digits).",
+      });
+      return;
+    }
     e.preventDefault();
 
     // Final Validation Check

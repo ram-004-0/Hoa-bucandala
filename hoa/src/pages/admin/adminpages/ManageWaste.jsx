@@ -3,111 +3,77 @@ import {
   ShieldCheck,
   ArrowLeftIcon,
   Trash2,
-  Plus,
   ListChecks,
-  Calendar,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  RefreshCcw,
 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
 const ManageWaste = () => {
-  const [schedules, setSchedules] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [type, setType] = useState("BIODEGRADABLE");
-  const [date, setDate] = useState("");
-  const [notes, setNotes] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  const location = useLocation();
   const token = localStorage.getItem("token");
 
   useEffect(() => {
-    fetchSchedules();
+    fetchReports();
   }, []);
 
-  useEffect(() => {
-    document.body.style.overflow = showModal ? "hidden" : "auto";
-  }, [showModal]);
-
-  const fetchSchedules = async () => {
-    setError("");
-    try {
-      const res = await fetch(`${API_URL}/waste`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!res.ok) throw new Error("Failed to fetch waste schedules");
-
-      const data = await res.json();
-      setSchedules(data);
-    } catch (err) {
-      console.error(err);
-      // Handle the ERR_CONNECTION_REFUSED case
-      setError(
-        err.message === "Failed to fetch"
-          ? "Cannot connect to server. Is your backend running on port 5000?"
-          : err.message,
-      );
-    }
-  };
-
-  const handleAdd = async (e) => {
-    e.preventDefault();
-    if (!type || !date) {
-      setError("Type and Pickup Date are required");
-      return;
-    }
-
+  const fetchReports = async () => {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${API_URL}/waste`, {
-        method: "POST",
+      const res = await fetch(`${API_URL}/reports/all`, {
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ type, pickup_date: date, notes }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to add schedule");
+      if (!res.ok) throw new Error("Failed to fetch garbage reports");
 
-      fetchSchedules();
-      setDate("");
-      setNotes("");
-      setShowModal(false);
+      const data = await res.json();
+      setReports(data);
     } catch (err) {
+      console.error(err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (
-      !window.confirm(
-        "Are you sure? This only works if no residents have booked this slot.",
-      )
-    )
-      return;
-
+  const handleUpdateStatus = async (id, newStatus) => {
     try {
-      const res = await fetch(`${API_URL}/waste/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await fetch(`${API_URL}/reports/${id}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: newStatus }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to delete");
+      if (!res.ok) throw new Error("Failed to update status");
 
-      setSchedules((prev) => prev.filter((s) => s.id !== id));
+      // Refresh list to show updated status
+      fetchReports();
     } catch (err) {
       alert(err.message);
+    }
+  };
+
+  // Helper to style status badges
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case "Resolved":
+        return "bg-green-100 text-green-700 border-green-200";
+      case "In Progress":
+        return "bg-blue-100 text-blue-700 border-blue-200";
+      default:
+        return "bg-yellow-100 text-yellow-700 border-yellow-200";
     }
   };
 
@@ -116,165 +82,125 @@ const ManageWaste = () => {
       {/* Header */}
       <div className="bg-[#00704e] h-40 grid grid-cols-[10%_90%] p-10 text-white items-center">
         <Link to="/admin">
-          <ArrowLeftIcon className="h-10 w-10 ml-5 cursor-pointer hover:text-gray-200" />
+          <ArrowLeftIcon className="h-10 w-10 ml-5 cursor-pointer hover:text-gray-200 transition-all" />
         </Link>
-        <h1 className="font-bold text-4xl">Waste Management</h1>
+        <h1 className="font-bold text-4xl tracking-tight">
+          Waste Reports Management
+        </h1>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="mx-10 mt-6 flex gap-4">
-        <Link
-          to="/admin/manage-waste"
-          className={`flex items-center gap-2 px-6 py-2 rounded-t-lg font-bold transition-all ${
-            location.pathname.includes("manage-waste")
-              ? "bg-white text-[#00704e] shadow-sm"
-              : "text-gray-500 hover:text-[#00704e]"
-          }`}
-        >
-          <Calendar size={18} /> Master Schedule
-        </Link>
-        <Link
-          to="/admin/view-pickups"
-          className="flex items-center gap-2 px-6 py-2 rounded-t-lg font-bold text-gray-500 hover:text-[#00704e] transition-all"
-        >
-          <ListChecks size={18} /> Resident Pickups
-        </Link>
-      </div>
-
-      <div className="mx-10 mb-10 p-6 bg-white rounded-b-xl rounded-tr-xl shadow-sm">
-        <div className="mb-6 flex justify-between items-center">
+      <div className="mx-10 -mt-8 bg-white rounded-xl shadow-xl overflow-hidden border border-gray-100 mb-10">
+        <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-white">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">
-              Available Slots
+            <h2 className="text-2xl font-black text-gray-800">
+              Resident Garbage Reports
             </h2>
             <p className="text-gray-500 text-sm">
-              Create and delete dates available for resident booking.
+              Monitor and resolve uncollected garbage or overflowing bin
+              reports.
             </p>
           </div>
           <button
-            onClick={() => setShowModal(true)}
-            className="bg-[#00704e] text-white px-6 py-2 rounded-lg flex items-center gap-2 hover:bg-[#005a3e] shadow-md transition-all"
+            onClick={fetchReports}
+            className="p-3 hover:bg-gray-100 rounded-full transition-all text-[#00704e]"
+            title="Refresh List"
           >
-            <Plus className="h-5 w-5" />
-            Add New Slot
+            <RefreshCcw size={20} className={loading ? "animate-spin" : ""} />
           </button>
         </div>
 
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded shadow-sm">
-            <p className="font-bold">Error</p>
-            <p>{error}</p>
+          <div className="m-6 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-sm flex items-center gap-3">
+            <AlertCircle size={20} />
+            <p className="font-bold">{error}</p>
           </div>
         )}
 
-        {/* Modal */}
-        {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-            <div className="bg-white w-full max-w-xl rounded-2xl shadow-2xl p-8 relative animate-in fade-in zoom-in duration-200">
-              <button
-                onClick={() => setShowModal(false)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-              >
-                ✖
-              </button>
-
-              <h2 className="text-2xl font-bold mb-6 text-gray-800">
-                Add Waste Schedule
-              </h2>
-
-              <form onSubmit={handleAdd} className="grid gap-5">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">
-                    Waste Type
-                  </label>
-                  <select
-                    value={type}
-                    onChange={(e) => setType(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#00704e] outline-none"
-                  >
-                    <option value="BIODEGRADABLE">BIODEGRADABLE</option>
-                    <option value="NON-BIODEGRADABLE">NON-BIODEGRADABLE</option>
-                    <option value="RECYCLABLE">RECYCLABLE</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">
-                    Pickup Date
-                  </label>
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#00704e] outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">
-                    Notes (Optional)
-                  </label>
-                  <input
-                    placeholder="e.g. Morning Collection 8am-12pm"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#00704e] outline-none"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className={`bg-[#00704e] text-white py-4 rounded-xl font-bold shadow-lg hover:bg-[#005a3e] transition-all flex justify-center items-center gap-2 ${
-                    loading ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                >
-                  {loading ? "Processing..." : "Create Schedule Slot"}
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Table */}
-        <div className="border border-gray-100 rounded-xl overflow-hidden shadow-sm">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 border-b border-gray-100">
+        {/* Reports Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-gray-50/50">
               <tr>
-                <th className="px-6 py-4 font-bold text-gray-600">Type</th>
-                <th className="px-6 py-4 font-bold text-gray-600">
-                  Pickup Date
+                <th className="px-8 py-5 font-black text-xs uppercase tracking-widest text-gray-400">
+                  Resident
                 </th>
-                <th className="px-6 py-4 font-bold text-gray-600">Notes</th>
-                <th className="px-6 py-4 font-bold text-gray-600 text-center">
+                <th className="px-8 py-5 font-black text-xs uppercase tracking-widest text-gray-400">
+                  Type / Description
+                </th>
+                <th className="px-8 py-5 font-black text-xs uppercase tracking-widest text-gray-400">
+                  Location
+                </th>
+                <th className="px-8 py-5 font-black text-xs uppercase tracking-widest text-gray-400">
+                  Status
+                </th>
+                <th className="px-8 py-5 font-black text-xs uppercase tracking-widest text-gray-400 text-center">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {schedules.map((s) => (
-                <tr key={s.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-semibold text-[#00704e]">
-                    {s.type}
+              {reports.map((report) => (
+                <tr
+                  key={report.report_id}
+                  className="hover:bg-gray-50/50 transition-colors group"
+                >
+                  <td className="px-8 py-6">
+                    <p className="font-bold text-gray-800">
+                      {report.full_name}
+                    </p>
+                    <p className="text-[10px] text-gray-400 font-medium uppercase tracking-tighter">
+                      {new Date(report.created_at).toLocaleDateString()}
+                    </p>
                   </td>
-                  <td className="px-6 py-4 font-medium text-gray-700">
-                    {new Date(s.pickup_date).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
+                  <td className="px-8 py-6">
+                    <span className="text-sm font-black text-[#00704e] block mb-1">
+                      {report.report_type}
+                    </span>
+                    <p className="text-sm text-gray-600 line-clamp-1">
+                      {report.description || "No details provided"}
+                    </p>
                   </td>
-                  <td className="px-6 py-4 text-gray-500 italic">
-                    {s.notes || "Standard Collection"}
+                  <td className="px-8 py-6">
+                    <div className="flex items-center gap-2 text-gray-700 font-medium italic text-sm">
+                      <span className="w-2 h-2 bg-red-400 rounded-full"></span>
+                      {report.location}
+                    </div>
                   </td>
-                  <td className="px-6 py-4 text-center">
-                    <button
-                      onClick={() => handleDelete(s.id)}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-all"
-                      title="Delete Slot"
+                  <td className="px-8 py-6">
+                    <span
+                      className={`px-4 py-1.5 rounded-full text-[10px] font-black border uppercase tracking-widest ${getStatusStyle(report.status)}`}
                     >
-                      <Trash2 className="h-5 w-5" />
-                    </button>
+                      {report.status}
+                    </span>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="flex justify-center gap-2">
+                      {report.status === "Pending" && (
+                        <button
+                          onClick={() =>
+                            handleUpdateStatus(report.report_id, "In Progress")
+                          }
+                          className="flex items-center gap-1 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                        >
+                          <Clock size={14} /> Start Task
+                        </button>
+                      )}
+                      {report.status === "In Progress" && (
+                        <button
+                          onClick={() =>
+                            handleUpdateStatus(report.report_id, "Resolved")
+                          }
+                          className="flex items-center gap-1 bg-green-50 text-green-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-green-600 hover:text-white transition-all shadow-sm"
+                        >
+                          <CheckCircle2 size={14} /> Mark Resolved
+                        </button>
+                      )}
+                      {report.status === "Resolved" && (
+                        <span className="text-gray-300 text-xs font-bold italic">
+                          Completed
+                        </span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -283,14 +209,24 @@ const ManageWaste = () => {
         </div>
 
         {/* Empty State */}
-        {schedules.length === 0 && !loading && !error && (
-          <div className="py-20 text-center">
-            <ShieldCheck className="h-16 w-16 mx-auto text-gray-200 mb-4" />
-            <h3 className="text-xl font-bold text-gray-400">
-              No schedules defined
-            </h3>
-            <p className="text-gray-400">
-              Add dates so residents can start booking pickups.
+        {!loading && reports.length === 0 && (
+          <div className="py-32 text-center">
+            <div className="bg-gray-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <ShieldCheck className="h-10 w-10 text-gray-300" />
+            </div>
+            <h3 className="text-xl font-black text-gray-400">All clear!</h3>
+            <p className="text-gray-400 max-w-xs mx-auto text-sm mt-2">
+              No garbage collection reports have been filed by residents yet.
+            </p>
+          </div>
+        )}
+
+        {/* Loading Spinner */}
+        {loading && (
+          <div className="py-20 flex flex-col items-center gap-4">
+            <RefreshCcw className="animate-spin text-[#00704e]" size={32} />
+            <p className="text-gray-400 font-bold text-xs uppercase tracking-widest">
+              Loading Reports...
             </p>
           </div>
         )}

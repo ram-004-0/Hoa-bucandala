@@ -9,6 +9,7 @@ import {
   TriangleAlert,
   RefreshCcw,
   Megaphone,
+  Trash2,
   Users,
 } from "lucide-react";
 
@@ -251,9 +252,9 @@ const AdminDashboard = () => {
             </Link>
             <Link to="/admin/manage-waste">
               <Card
-                name="Create Announcement"
-                desc="Post community updates"
-                image={<Megaphone className="text-orange-600 w-6 h-6" />}
+                name="Manage Waste"
+                desc="Schedule waste collection and monitor waste management"
+                image={<Trash2 className="text-orange-600 w-6 h-6" />}
               />
             </Link>
           </div>

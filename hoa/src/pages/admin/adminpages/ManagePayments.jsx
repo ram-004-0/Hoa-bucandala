@@ -17,7 +17,7 @@ const ManagePayments = () => {
   const [payments, setPayments] = useState([]);
   const [residents, setResidents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState(false); // New state for button loading
   const [searchTerm, setSearchTerm] = useState("");
   const [view, setView] = useState("pending");
 
@@ -26,6 +26,7 @@ const ManagePayments = () => {
   const [billData, setBillData] = useState({ amount: 1500, month: "" });
   const [error, setError] = useState("");
 
+  // Get current month in YYYY-MM format for validation
   const currentMonthStr = new Date().toISOString().slice(0, 7);
 
   useEffect(() => {
@@ -44,8 +45,12 @@ const ManagePayments = () => {
         }),
       ]);
       if (!payRes.ok || !resRes.ok) throw new Error("Fetch failed");
-      setPayments(await payRes.json());
-      setResidents(await resRes.json());
+
+      const paymentsData = await payRes.json();
+      const residentsData = await resRes.json();
+
+      setPayments(paymentsData);
+      setResidents(residentsData);
     } catch (err) {
       console.error("Failed to fetch data:", err);
     } finally {
@@ -74,11 +79,13 @@ const ManagePayments = () => {
     e.preventDefault();
     setError("");
 
+    // 1. Past Date Validation
     if (billData.month < currentMonthStr) {
       setError("Cannot issue a bill for a past month.");
       return;
     }
 
+    // 2. Duplicate Check (Prevent billing the same month twice)
     const alreadyBilled = payments.find(
       (p) =>
         p.resident_id === selectedResident.resident_id &&
@@ -125,7 +132,7 @@ const ManagePayments = () => {
     }
   };
 
-  // Logic for filtering - FIXED HERE
+  // Logic for filtering
   const displayList = (() => {
     const term = searchTerm.toLowerCase();
     if (view === "residents") {
@@ -134,9 +141,9 @@ const ManagePayments = () => {
       );
     }
     return payments.filter((p) => {
-      // Added safety checks using optional chaining and default strings
-      const name = p.full_name || p.residentName || "";
-      const matchesName = name.toLowerCase().includes(term);
+      // Use residentName from API or full_name as fallback
+      const name = (p.residentName || p.full_name || "").toLowerCase();
+      const matchesName = name.includes(term);
       const matchesStatus =
         view === "pending" ? p.status === "Pending" : p.status === "Paid";
       return matchesName && matchesStatus;
@@ -162,6 +169,7 @@ const ManagePayments = () => {
       <br />
       <br />
       <br />
+
       <div className="max-w-7xl mx-auto px-6 -mt-10">
         {/* Stats Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -239,7 +247,7 @@ const ManagePayments = () => {
                 >
                   <td className="px-6 py-4">
                     <p className="font-bold text-gray-800">
-                      {item.full_name || item.residentName}
+                      {item.residentName || item.full_name}
                     </p>
                   </td>
                   {view !== "residents" && (
@@ -316,6 +324,7 @@ const ManagePayments = () => {
           )}
         </div>
       </div>
+
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
@@ -350,7 +359,8 @@ const ManagePayments = () => {
                   Resident Name
                 </label>
                 <p className="font-bold text-xl text-gray-800">
-                  {selectedResident?.full_name}
+                  {selectedResident?.full_name ||
+                    selectedResident?.residentName}
                 </p>
               </div>
 
@@ -362,7 +372,7 @@ const ManagePayments = () => {
                   <input
                     type="month"
                     required
-                    min={currentMonthStr}
+                    min={currentMonthStr} // HTML5 validation for past months
                     className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 font-bold focus:ring-2 focus:ring-[#00704e] outline-none"
                     onChange={(e) =>
                       setBillData({ ...billData, month: e.target.value })
@@ -403,6 +413,7 @@ const ManagePayments = () => {
   );
 };
 
+// ... (StatCard, TabBtn, and StatusBadge components remain exactly as they were)
 const StatCard = ({ title, value, color }) => (
   <div className="p-8 bg-white shadow-sm rounded-4xl border border-gray-100">
     <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">
