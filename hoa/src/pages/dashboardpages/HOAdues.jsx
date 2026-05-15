@@ -9,8 +9,10 @@ import {
   PhoneIcon,
   EnvelopeIcon,
   ExclamationTriangleIcon,
+  ChatBubbleLeftRightIcon, // Added for support section
 } from "@heroicons/react/24/solid";
-import { PhilippinePesoIcon } from "lucide-react";
+import { PhilippinePesoIcon, PhoneCall } from "lucide-react";
+
 const HOAdues = () => {
   const [bills, setBills] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -234,6 +236,57 @@ const HOAdues = () => {
               subDesc="Mon-Sun (9AM - 5PM)"
               color="text-amber-600"
             />
+          </div>
+        </div>
+
+        {/* Contact & Support Section */}
+        <div className="flex flex-col gap-6 mt-4">
+          <div className="flex items-center gap-3 border-b border-gray-100 pb-4">
+            <div className="w-2 h-8 bg-blue-500 rounded-full"></div>
+            <h2 className="font-black text-xl text-gray-800 tracking-tight uppercase">
+              Support & Inquiries
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-5">
+              <div className="bg-blue-50 p-3 rounded-xl text-blue-600">
+                <ChatBubbleLeftRightIcon className="h-7 w-7" />
+              </div>
+              <div>
+                <h4 className="font-bold text-gray-900 text-sm">
+                  Management Office
+                </h4>
+                <p className="text-xs text-gray-500 mt-1">Camella Bucandala</p>
+                <div className="flex flex-col mt-2 gap-1">
+                  <span className="text-xs font-black text-gray-700">
+                    +63 977 819 6554
+                  </span>
+                  <span className="text-xs font-black text-gray-700">
+                    +63 917 583 6391
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-5">
+              <div className="bg-amber-50 p-3 rounded-xl text-amber-600">
+                <PhoneCall className="h-7 w-7" />
+              </div>
+              <div>
+                <h4 className="font-bold text-gray-900 text-sm">
+                  Estate Management Service
+                </h4>
+                <p className="text-xs text-gray-500 mt-1">
+                  Hotline for concerns
+                </p>
+                <div className="mt-2">
+                  <span className="text-sm font-black text-gray-700">
+                    (02) 3226 3552
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
