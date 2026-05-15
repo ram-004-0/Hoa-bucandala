@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import AmenityCard from "../../props/AmenityCard";
 import { Building, Waves, DumbbellIcon, CalendarClock } from "lucide-react";
-import AmenityBg from "../../../assets/amenitiesbg.png";
+import AmenityBg from "../../assets/amenitiesbg.png";
 
 const AmenityReservation = () => {
   return (
