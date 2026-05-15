@@ -50,10 +50,16 @@ export const createReservation = async (req, res) => {
       return res.status(403).json({ message: "Not a resident account" });
     }
 
+    /**
+     * 1. CAPACITY CHECK (Amenity ID 3 - e.g., Swimming Pool)
+     * We only sum guest counts for 'Approved' or 'Pending' bookings.
+     * 'Cancelled' or 'Rejected' bookings are ignored, freeing up the spots.
+     */
     if (amenity_id === 3 || amenity_id === "3") {
       const [[capacityCheck]] = await db.query(
         `SELECT SUM(guest_count) as total FROM amenities_reservation 
-         WHERE amenity_id = ? AND reservation_date = ? AND time_slot = ? AND status = 'Approved'`,
+         WHERE amenity_id = ? AND reservation_date = ? AND time_slot = ? 
+         AND status NOT IN ('Cancelled', 'Rejected')`,
         [amenity_id, reservation_date, time_slot],
       );
 
@@ -63,8 +69,26 @@ export const createReservation = async (req, res) => {
           message: `Booking failed. Only ${MAX_POOL_CAPACITY - currentTotal} spots remaining.`,
         });
       }
+    } else {
+      /**
+       * 2. DUPLICATE CHECK (For other amenities like Basketball Court/Clubhouse)
+       * We check if a booking exists that is NOT cancelled or rejected.
+       */
+      const [[existingBooking]] = await db.query(
+        `SELECT reservation_id FROM amenities_reservation 
+         WHERE amenity_id = ? AND reservation_date = ? AND time_slot = ? 
+         AND status NOT IN ('Cancelled', 'Rejected')`,
+        [amenity_id, reservation_date, time_slot],
+      );
+
+      if (existingBooking) {
+        return res
+          .status(409)
+          .json({ message: "This time slot is already booked" });
+      }
     }
 
+    // 3. INSERT THE NEW RESERVATION
     const [result] = await db.query(
       `INSERT INTO amenities_reservation (amenity_id, resident_id, reservation_date, time_slot, guest_count) VALUES (?, ?, ?, ?, ?)`,
       [
@@ -91,6 +115,7 @@ export const createReservation = async (req, res) => {
     });
   } catch (err) {
     console.error("Create reservation error:", err);
+    // Standard error handling
     if (err.code === "ER_DUP_ENTRY") {
       return res
         .status(409)
@@ -214,11 +239,6 @@ export const updateReservationStatus = async (req, res) => {
   }
 };
 
-/**
- * ============================
- * RESIDENT/ADMIN: Cancel (Soft Delete)
- * ============================
- */
 export const deleteReservation = async (req, res) => {
   const { id } = req.params;
   const { resident_id, amenity_name, is_resident_action, cancel_reason } =
@@ -239,7 +259,6 @@ export const deleteReservation = async (req, res) => {
 
     // 2. If RESIDENT cancels (Notify Admin)
     if (is_resident_action) {
-      // Fetch the resident's name for the admin notification
       const [[resData]] = await db.query(
         "SELECT r.full_name FROM residents r JOIN amenities_reservation ar ON r.resident_id = ar.resident_id WHERE ar.reservation_id = ?",
         [id],
@@ -247,17 +266,18 @@ export const deleteReservation = async (req, res) => {
 
       const residentName = resData?.full_name || "A resident";
       const adminTitle = "New Cancellation ⚠️";
-      const adminMessage = `${residentName} has cancelled their reservation for ${amenity_name}. Reason: ${cancel_reason || "No reason provided"}`;
+      const adminMessage = `${residentName} cancelled ${amenity_name || "a reservation"}. Reason: ${cancel_reason || "No reason provided"}`;
 
-      // OPTION A: If you have a specific Admin ID (e.g., ID 1)
-      // OPTION B: If you notify all admins, you'd loop or use a specific admin_id field
+      // FIX: Changed 'Admin_Alert' to 'Admin' to avoid "Data Truncated" 500 error
       await db.query(
-        "INSERT INTO notifications (resident_id, type, title, message, related_id) VALUES (?, 'Admin_Alert', ?, ?, ?)",
-        [1, adminTitle, adminMessage, id], // Assuming '1' is your Admin's resident_id or account_id
+        "INSERT INTO notifications (resident_id, type, title, message, related_id) VALUES (?, 'Admin', ?, ?, ?)",
+        [1, adminTitle, adminMessage, id],
       );
     }
 
-    // 3. SWITCH TO UPDATE: Don't DELETE, just change status so we keep the reason
+    // 3. SOFT DELETE: Update status so history is kept
+    // This record remains in the DB, but because status is 'Cancelled',
+    // your availability logic should ignore it.
     await db.query(
       "UPDATE amenities_reservation SET status = 'Cancelled', cancel_reason = ? WHERE reservation_id = ?",
       [cancel_reason || "No reason provided", id],
