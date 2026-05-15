@@ -3,11 +3,15 @@ import { Link } from "react-router-dom";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import AmenityCard from "../../props/AmenityCard";
 import { Building, Waves, DumbbellIcon, CalendarClock } from "lucide-react";
+import AmenityBg from "../../assets/amenitiesbg.png";
 
 const AmenityReservation = () => {
   return (
     <div className="">
-      <div className="bg-[#00704e] h-40 gap-10 grid grid-cols-[10%_90%] p-10 text-white justify-center items-center">
+      <div
+        className="text-white px-6 pt-12 pb-24 md:px-16 shadow-2xl relative overflow-hidden bg-cover bg-center"
+        style={{ backgroundImage: `url(${AmenityBg})` }}
+      >
         <Link to="/home">
           <ArrowLeftIcon className="h-10 w-10 ml-5 md:ml-10 cursor-pointer text-white" />
         </Link>

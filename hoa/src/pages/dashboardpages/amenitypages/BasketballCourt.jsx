@@ -12,6 +12,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import "./CalendarCustom.css";
+import welcomeImg from "../../assets/basketball.png";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 const AMENITY_ID = 2;
@@ -145,7 +146,10 @@ const BasketballCourt = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      <div className="bg-[#00704e] h-48 flex items-center px-6 md:px-12 text-white">
+      <div
+        className="text-white px-6 pt-12 pb-24 md:px-16 shadow-2xl relative overflow-hidden bg-cover bg-center"
+        style={{ backgroundImage: `url(${welcomeImg})` }}
+      >
         <Link to="/amenities" className="hover:scale-110 transition-transform">
           <ArrowLeftIcon className="h-10 w-10 mr-6" />
         </Link>
