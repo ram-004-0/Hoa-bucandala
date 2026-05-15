@@ -321,15 +321,6 @@ const ClubHouse = () => {
                 "CONFIRM RESERVATION"
               )}
             </button>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Link
-                to="/amenities/history"
-                className="py-3 px-4 rounded-xl border border-red-200 text-red-600 font-bold text-xs hover:bg-red-50 transition-colors uppercase tracking-widest text-center"
-              >
-                View History
-              </Link>
-            </div>
           </div>
         </div>
       </div>

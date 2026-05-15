@@ -11,8 +11,8 @@ import {
   Speaker,
   Bell,
   ChevronRight,
-  Inbox,
 } from "lucide-react";
+import welcomeImg from "../assets/welcomebg.png";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
@@ -75,8 +75,16 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-[#FDFDFD] pb-20">
-      <div className="bg-[#00704e] text-white px-6 pt-12 pb-20 md:px-16 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+      {/* HEADER SECTION WITH BACKGROUND IMAGE */}
+      <div
+        className="text-white px-6 pt-12 pb-24 md:px-16 shadow-2xl relative overflow-hidden bg-cover bg-center"
+        style={{ backgroundImage: `url(${welcomeImg})` }}
+      >
+        {/* Dark Overlay to ensure text readability */}
+        <div className="absolute inset-0 bg-black/40 z-0"></div>
+
+        {/* Decorative Glow */}
+        <div className="absolute top-0 right-0 w-64 h-74 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl z-0"></div>
 
         <div className="max-w-7xl mx-auto flex justify-between items-start relative z-10">
           <div className="space-y-2">
@@ -120,13 +128,19 @@ const Home = () => {
                   <p className="text-xs font-black">Settings</p>
                 </div>
               </button>
-              {showMenu && <UserMenuPopUp logout={handleLogout} />}
+              {/* UserMenuPopUp with high z-index to stay on top */}
+              {showMenu && (
+                <div className="absolute right-0 mt-2 z-100">
+                  <UserMenuPopUp logout={handleLogout} />
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-10 -mt-10 relative z-20">
+      {/* CONTENT SECTION - Spacing handled via pt-12 and -mt-12 rather than <br/> */}
+      <div className="max-w-7xl mx-auto px-4 md:px-10 -mt-12 relative z-20 pt-4">
         {/* Latest Announcement */}
         <div className="mb-10">
           {latestAnnouncement ? (
@@ -166,9 +180,6 @@ const Home = () => {
           <h3 className="font-black text-gray-900 text-sm uppercase tracking-[0.2em] px-2">
             Community Services
           </h3>
-          {/* FIXED GRID: Added 'items-stretch' to ensure all children take full height 
-              and ensured grid-cols are defined clearly for all breakpoints.
-          */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
             <ServiceLink
               to="/amenities"
@@ -224,9 +235,6 @@ const ServiceLink = ({ to, color, icon: Icon, title, desc }) => {
 
   return (
     <Link to={to} className="group block h-full">
-      {/* FIXED CARD: Added 'flex flex-col h-full' to ensure the card container 
-          expands to the height of the tallest card in the row. 
-      */}
       <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 relative overflow-hidden h-full flex flex-col">
         <Icon
           className={`w-14 h-14 p-3.5 rounded-2xl mb-6 border transition-all group-hover:rotate-6 shrink-0 ${colors[color]}`}
