@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import {
   ArrowLeftIcon,
   CreditCardIcon,
-  PhilippinePeso,
   BuildingOfficeIcon,
   InformationCircleIcon,
   CheckCircleIcon,
@@ -11,7 +10,7 @@ import {
   EnvelopeIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/solid";
-
+import { PhilippinePesoIcon } from "lucide-react";
 const HOAdues = () => {
   const [bills, setBills] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -222,7 +221,7 @@ const HOAdues = () => {
               color="text-blue-700"
             />
             <MethodCard
-              icon={PhilippinePeso}
+              icon={PhilippinePesoIcon}
               name="GCash"
               desc="M**K A******Y I***N"
               subDesc="0993-805-1448"
