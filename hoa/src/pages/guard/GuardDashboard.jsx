@@ -12,6 +12,7 @@ import {
   Clock,
   BellRing,
   Camera,
+  Building2,
 } from "lucide-react";
 import Card from "../../props/AdminComponent";
 import VerificationActionModal from "./guard_modal/VerificationActionModal";
