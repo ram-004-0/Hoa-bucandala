@@ -5,12 +5,10 @@ const Login = () => {
   return (
     <div className="flex h-[100vh] w-full overflow-hidden bg-white">
       {/* LEFT SIDE: Visual Branding */}
-      <div className="hidden lg:flex lg:w-7/12 relative bg-[#00704e] items-center justify-center overflow-hidden">
-        <div
-          className="w-4/5 h-full bg-contain bg-no-repeat bg-center relative z-20"
-          style={{ backgroundImage: `url(${BgImage})` }}
-        ></div>
-
+      <div
+        className="w-4/5 h-full bg-contain bg-no-repeat bg-center relative z-20"
+        style={{ backgroundImage: `url(${BgImage})` }}
+      >
         {/* Decorative Overlays */}
         <div className="absolute inset-0 bg-linear-to-br from-black/20 via-transparent to-black/20 z-10"></div>
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-yellow-400/10 rounded-full blur-3xl z-0"></div>
