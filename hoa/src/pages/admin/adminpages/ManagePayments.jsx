@@ -137,8 +137,13 @@ const ManagePayments = () => {
       );
     }
     return payments.filter((p) => {
-      // FIX: Check residentName (from SQL alias) OR full_name (from fallback)
-      const name = (p.residentName || p.full_name || "").toLowerCase();
+      // Defensive fallback checking all possible name aliases from your backend queries
+      const name = (
+        p.residentName ||
+        p.full_name ||
+        p.name ||
+        ""
+      ).toLowerCase();
       const matchesName = name.includes(term);
       const matchesStatus =
         view === "pending" ? p.status === "Pending" : p.status === "Paid";
@@ -240,9 +245,10 @@ const ManagePayments = () => {
                 >
                   <td className="px-6 py-4">
                     <p className="font-bold text-gray-800">
-                      {/* FIX: Check for residentName alias first */}
+                      {/* Checks every possible name key returned by your different database endpoints */}
                       {item.residentName ||
                         item.full_name ||
+                        item.name ||
                         "Unknown Resident"}
                     </p>
                   </td>

@@ -1,24 +1,24 @@
 import pool from "../config/db.js";
 
 // GET all payments with resident names
-// GET all payments with resident names and IDs
+// Look for this function in your backend payment/billing controller:
 export const getAllPayments = async (req, res) => {
   try {
-    const [rows] = await pool.query(`
-      SELECT b.billing_id as id, 
-             b.resident_id,         
-             r.full_name as residentName, 
-             b.billing_month as billingMonth, 
-             b.amount, 
-             'Bank Transfer/GCash' as method, 
-             b.status
+    const [rows] = await db.query(`
+      SELECT 
+        b.billing_id AS id, 
+        b.resident_id,
+        r.full_name AS residentName, 
+        b.billing_month AS billingMonth, 
+        b.amount, 
+        b.status
       FROM billing b
-      JOIN residents r ON b.resident_id = r.resident_id
-      ORDER BY b.created_at DESC
+      INNER JOIN residents r ON b.resident_id = r.resident_id
+      ORDER BY b.billing_id DESC
     `);
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ message: "Internal Server Error" });
+    res.status(500).json({ error: err.message });
   }
 };
 
