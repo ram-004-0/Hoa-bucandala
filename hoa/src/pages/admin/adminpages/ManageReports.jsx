@@ -46,6 +46,9 @@ const ManageReports = () => {
         </Link>
         <h1 className="font-black text-4xl tracking-tight">Security Logs</h1>
       </div>
+      <br />
+      <br />
+      <br />
 
       <div className="max-w-6xl mx-auto px-6 -mt-10">
         {loading ? (

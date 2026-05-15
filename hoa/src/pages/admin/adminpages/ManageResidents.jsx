@@ -9,14 +9,15 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom"; // Added useNavigate
+import { Link, useNavigate } from "react-router-dom";
 import CreateUser from "./CreateUser";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
 const ManageResidents = () => {
   const navigate = useNavigate();
-  const isMounted = useRef(true); // Track if component is still in the DOM
+  const isMounted = useRef(true);
+  const abortControllerRef = useRef(null); // Added ref for logout cleanup
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,36 +28,35 @@ const ManageResidents = () => {
   const [showGuardModal, setShowGuardModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // Stabilized fetch with AbortController support
   const fetchAllUsers = useCallback(async (signal) => {
     const token = localStorage.getItem("token");
     if (!token) return;
 
     try {
-      const res = await fetch(`${API_URL}/residents`, {
+      // Fetching from the combined community endpoint
+      const res = await fetch(`${API_URL}/residents/community-members`, {
         headers: { Authorization: `Bearer ${token}` },
-        signal, // Attach the abort signal here
+        signal,
       });
 
       const data = await res.json();
 
-      // Only update state if the component hasn't been unmounted/logged out
       if (isMounted.current) {
         const transformed = data.map((u) => ({
-          id: u.resident_id || u.id,
+          id: u.id,
           account_id: u.account_id,
-          name: u.full_name || u.name || u.username,
+          name: u.name,
           email: u.email,
-          address: u.address,
-          contact: u.contact,
-          role: u.role || "RESIDENT",
+          address: u.address || "N/A",
+          contact: u.contact || "N/A",
+          role: u.role,
           withBalance: !!u.has_balance,
         }));
         setUsers(transformed);
       }
     } catch (err) {
       if (err.name === "AbortError") {
-        console.log("Fetch aborted on logout/unmount");
+        console.log("Fetch aborted");
       } else {
         console.error("Fetch failed:", err);
       }
@@ -68,32 +68,23 @@ const ManageResidents = () => {
   useEffect(() => {
     isMounted.current = true;
     const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     fetchAllUsers(controller.signal);
 
     return () => {
-      // KILL everything when the user leaves or logs out
       isMounted.current = false;
       controller.abort();
     };
   }, [fetchAllUsers]);
 
-  // Updated Logout logic to prevent the "Node not found" error
   const handleLogout = () => {
-    // 1. Set the mounted ref to false first to stop all state updates
     isMounted.current = false;
-
-    // 2. Kill pending network requests immediately
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
-
-    // 3. Clear the token
     localStorage.removeItem("token");
-    localStorage.removeItem("role"); // Also clear role
-
-    // 4. Use a hard window navigation to clear the React state and memory entirely.
-    // This is the "Nuclear Option" that guarantees the flicker stops.
+    localStorage.removeItem("role");
     window.location.href = "/login";
   };
 
@@ -122,7 +113,7 @@ const ManageResidents = () => {
     if (newEntry.role === "ADMIN") return;
 
     const formatted = {
-      id: newEntry.resident_id || newEntry.id,
+      id: newEntry.resident_id || newEntry.guard_id || newEntry.id,
       account_id: newEntry.account_id,
       name: newEntry.full_name || newEntry.username || newEntry.name,
       email: newEntry.email,
@@ -142,11 +133,12 @@ const ManageResidents = () => {
       prev.map((u) => {
         const isMatch =
           u.account_id === updated.account_id ||
-          u.id === (updated.resident_id || updated.id);
+          u.id === (updated.resident_id || updated.guard_id || updated.id);
         if (isMatch) {
           return {
             ...u,
-            name: updated.full_name || updated.name || u.name,
+            name:
+              updated.full_name || updated.username || updated.name || u.name,
             email: updated.email || u.email,
             address: updated.address || u.address,
             contact: updated.contact || u.contact,
@@ -175,7 +167,6 @@ const ManageResidents = () => {
         </Link>
         <div className="flex justify-between items-center w-full pr-10">
           <h1 className="font-bold text-4xl">Community Management</h1>
-          {/* Added a Logout button here as well just in case, or you can use your sidebar/header */}
         </div>
       </div>
 
@@ -197,7 +188,6 @@ const ManageResidents = () => {
           />
         </div>
 
-        {/* ... (rest of your UI: Tabs, Search, Table) ... */}
         <div className="flex border-b border-gray-200 mb-6">
           <button
             onClick={() => setCurrentTab("RESIDENT")}
@@ -238,7 +228,9 @@ const ManageResidents = () => {
                 ? setShowGuardModal(true)
                 : setShowCreateModal(true)
             }
-            className={`px-6 py-2.5 rounded-xl text-white font-bold flex items-center gap-2 ${currentTab === "GUARD" ? "bg-blue-600" : "bg-[#00704e]"}`}
+            className={`px-6 py-2.5 rounded-xl text-white font-bold flex items-center gap-2 ${
+              currentTab === "GUARD" ? "bg-blue-600" : "bg-[#00704e]"
+            }`}
           >
             {currentTab === "GUARD" ? <Plus /> : <UserPlus />} Add {currentTab}
           </button>
@@ -274,7 +266,13 @@ const ManageResidents = () => {
                   </td>
                   <td className="px-6 py-4">
                     <span
-                      className={`px-3 py-1 text-xs rounded-full font-bold ${u.withBalance ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}
+                      className={`px-3 py-1 text-xs rounded-full font-bold ${
+                        u.role === "GUARD"
+                          ? "bg-blue-100 text-blue-700"
+                          : u.withBalance
+                            ? "bg-red-100 text-red-700"
+                            : "bg-green-100 text-green-700"
+                      }`}
                     >
                       {u.role === "GUARD"
                         ? "Active Duty"
@@ -336,7 +334,9 @@ const StatCard = ({ title, value, red, blue }) => (
       {title}
     </h2>
     <span
-      className={`text-4xl font-black ${red ? "text-red-500" : blue ? "text-blue-600" : "text-gray-800"}`}
+      className={`text-4xl font-black ${
+        red ? "text-red-500" : blue ? "text-blue-600" : "text-gray-800"
+      }`}
     >
       {value}
     </span>

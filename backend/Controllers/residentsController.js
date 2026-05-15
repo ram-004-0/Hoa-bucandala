@@ -177,3 +177,43 @@ export const deleteResident = async (req, res) => {
     connection.release();
   }
 };
+
+export const getAllCommunityMembers = async (req, res) => {
+  try {
+    // We join accounts with residents, then UNION with accounts joined with guards
+    const [rows] = await db.query(`
+      SELECT 
+        a.id AS account_id, 
+        a.email, 
+        a.role,
+        r.resident_id AS id,
+        r.full_name AS name,
+        r.address,
+        r.contact,
+        r.has_balance
+      FROM accounts a
+      INNER JOIN residents r ON a.id = r.account_id
+      WHERE a.role = 'RESIDENT'
+      
+      UNION ALL
+      
+      SELECT 
+        a.id AS account_id, 
+        a.email, 
+        a.role,
+        g.guard_id AS id,
+        g.username AS name,
+        'N/A' AS address,
+        'N/A' AS contact,
+        FALSE AS has_balance
+      FROM accounts a
+      INNER JOIN guard g ON a.id = g.account_id
+      WHERE a.role = 'GUARD'
+    `);
+
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error("Error fetching community members:", error);
+    res.status(500).json({ message: "Failed to fetch community members" });
+  }
+};
