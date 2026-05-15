@@ -4,7 +4,7 @@ import {
   LogOutIcon,
   ShieldCheck,
   User2,
-  BanknoteIcon,
+  PhilippinePeso,
   Calendar,
   TriangleAlert,
   RefreshCcw,
@@ -126,7 +126,7 @@ const AdminDashboard = () => {
       color: "#2563eb",
     },
     {
-      icon: BanknoteIcon,
+      icon: PhilippinePeso,
       label: "Uncollected Dues",
       value: `₱${Number(statsData.unpaidDues).toLocaleString()}`,
       color: "#dc2626",
@@ -232,7 +232,7 @@ const AdminDashboard = () => {
               <Card
                 name="HOA Dues Management"
                 desc="Track HOA payment status"
-                image={<BanknoteIcon className="text-red-700 w-6 h-6" />}
+                image={<PhilippinePeso className="text-red-700 w-6 h-6" />}
               />
             </Link>
             <Link to="/admin/manage-reports">
@@ -243,6 +243,13 @@ const AdminDashboard = () => {
               />
             </Link>
             <Link to="/admin/create-announcement">
+              <Card
+                name="Create Announcement"
+                desc="Post community updates"
+                image={<Megaphone className="text-orange-600 w-6 h-6" />}
+              />
+            </Link>
+            <Link to="/admin/manage-waste">
               <Card
                 name="Create Announcement"
                 desc="Post community updates"

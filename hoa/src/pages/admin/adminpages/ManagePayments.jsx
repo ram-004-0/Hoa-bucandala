@@ -17,7 +17,7 @@ const ManagePayments = () => {
   const [payments, setPayments] = useState([]);
   const [residents, setResidents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false); // New state for button loading
+  const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [view, setView] = useState("pending");
 
@@ -26,7 +26,6 @@ const ManagePayments = () => {
   const [billData, setBillData] = useState({ amount: 1500, month: "" });
   const [error, setError] = useState("");
 
-  // Get current month in YYYY-MM format for validation
   const currentMonthStr = new Date().toISOString().slice(0, 7);
 
   useEffect(() => {
@@ -75,13 +74,11 @@ const ManagePayments = () => {
     e.preventDefault();
     setError("");
 
-    // 1. Past Date Validation
     if (billData.month < currentMonthStr) {
       setError("Cannot issue a bill for a past month.");
       return;
     }
 
-    // 2. Duplicate Check (Prevent billing the same month twice)
     const alreadyBilled = payments.find(
       (p) =>
         p.resident_id === selectedResident.resident_id &&
@@ -128,14 +125,18 @@ const ManagePayments = () => {
     }
   };
 
-  // Logic for filtering
+  // Logic for filtering - FIXED HERE
   const displayList = (() => {
     const term = searchTerm.toLowerCase();
     if (view === "residents") {
-      return residents.filter((r) => r.full_name.toLowerCase().includes(term));
+      return residents.filter((r) =>
+        (r.full_name || "").toLowerCase().includes(term),
+      );
     }
     return payments.filter((p) => {
-      const matchesName = p.residentName?.toLowerCase().includes(term);
+      // Added safety checks using optional chaining and default strings
+      const name = p.full_name || p.residentName || "";
+      const matchesName = name.toLowerCase().includes(term);
       const matchesStatus =
         view === "pending" ? p.status === "Pending" : p.status === "Paid";
       return matchesName && matchesStatus;
@@ -158,7 +159,9 @@ const ManagePayments = () => {
           Payment Verification
         </h1>
       </div>
-
+      <br />
+      <br />
+      <br />
       <div className="max-w-7xl mx-auto px-6 -mt-10">
         {/* Stats Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -313,7 +316,6 @@ const ManagePayments = () => {
           )}
         </div>
       </div>
-
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
@@ -360,7 +362,7 @@ const ManagePayments = () => {
                   <input
                     type="month"
                     required
-                    min={currentMonthStr} // HTML5 validation for past months
+                    min={currentMonthStr}
                     className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 font-bold focus:ring-2 focus:ring-[#00704e] outline-none"
                     onChange={(e) =>
                       setBillData({ ...billData, month: e.target.value })
@@ -385,7 +387,7 @@ const ManagePayments = () => {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-[#00704e] text-white font-black py-5 rounded-[1.5rem] hover:bg-[#005a3e] shadow-xl shadow-green-900/20 transition-all disabled:opacity-50 flex justify-center items-center gap-2"
+                className="w-full bg-[#00704e] text-white font-black py-5 rounded-3xl hover:bg-[#005a3e] shadow-xl shadow-green-900/20 transition-all disabled:opacity-50 flex justify-center items-center gap-2"
               >
                 {submitting ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -402,7 +404,7 @@ const ManagePayments = () => {
 };
 
 const StatCard = ({ title, value, color }) => (
-  <div className="p-8 bg-white shadow-sm rounded-[2rem] border border-gray-100">
+  <div className="p-8 bg-white shadow-sm rounded-4xl border border-gray-100">
     <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">
       {title}
     </h2>

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import {
   ArrowLeftIcon,
   CreditCardIcon,
-  BanknotesIcon,
+  PhilippinePeso,
   BuildingOfficeIcon,
   InformationCircleIcon,
   CheckCircleIcon,
@@ -222,7 +222,7 @@ const HOAdues = () => {
               color="text-blue-700"
             />
             <MethodCard
-              icon={BanknotesIcon}
+              icon={PhilippinePeso}
               name="GCash"
               desc="M**K A******Y I***N"
               subDesc="0993-805-1448"

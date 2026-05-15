@@ -5,7 +5,7 @@ import { UserCircleIcon } from "@heroicons/react/24/solid";
 import {
   Trash2,
   Calendar1,
-  DollarSign,
+  PhilippinePeso,
   Shield,
   UserPlus,
   Speaker,
@@ -192,7 +192,7 @@ const Home = () => {
             <ServiceLink
               to="/hoadues"
               color="yellow"
-              icon={DollarSign}
+              icon={PhilippinePeso}
               title="HOA Dues"
               desc="Payment Records & Billing"
             />

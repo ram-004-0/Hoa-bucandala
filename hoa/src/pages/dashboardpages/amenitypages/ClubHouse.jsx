@@ -55,7 +55,7 @@ const ClubHouse = () => {
     }
   };
 
-  // Fetch reserved dates for the clubhouse to mark the calendar
+  // Fetch reserved dates for the clubhouse (only those where all slots are full)
   useEffect(() => {
     const fetchReservedDates = async () => {
       try {
@@ -153,6 +153,20 @@ const ClubHouse = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
+      {/* CSS FIX FOR CALENDAR INTERACTION ISSUE */}
+      <style>{`
+        .react-calendar__tile {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          text-align: center !important;
+        }
+        .react-calendar__month-view__days {
+          display: grid !important;
+          grid-template-columns: repeat(7, 1fr) !important;
+        }
+      `}</style>
+
       <div
         className="text-white px-6 pt-12 pb-24 md:px-16 shadow-2xl relative overflow-hidden bg-cover bg-center"
         style={{ backgroundImage: `url(${ClubHouseImg})` }}
@@ -168,48 +182,61 @@ const ClubHouse = () => {
         </div>
       </div>
 
-      <br />
-      <br />
-      <br />
-
-      <div className="max-w-4xl mx-auto -mt-10 px-4 space-y-6">
-        {/* Venue Info & Policy */}
+      <div className="max-w-4xl mx-auto -mt-10 px-4 space-y-6 pt-10">
+        {/* Venue Info & Rates */}
         <div className="bg-white shadow-xl rounded-4xl p-8 border border-gray-100 space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-4">
+          <div className="flex flex-col md:flex-row justify-between gap-6">
+            <div className="space-y-4 flex-1">
               <h2 className="font-black text-xl text-gray-800 flex items-center gap-2">
                 <InformationCircleIcon className="h-6 w-6 text-[#00704e]" />
-                Event Venue Info
+                Clubhouse Rental (Exclusive Use)
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-gray-50 p-4 rounded-2xl">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">
-                    Base Rate
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 text-center">
+                  <p className="text-[10px] font-black text-blue-500 uppercase">
+                    Day Rate
                   </p>
-                  <p className="font-bold text-gray-700">₱500 / Slot</p>
+                  <p className="font-bold text-gray-700">₱3,500.00</p>
+                  <p className="text-[9px] text-blue-400">8:00 AM – 2:00 PM</p>
                 </div>
-                <div className="bg-gray-50 p-4 rounded-2xl">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">
-                    Max Capacity
+                <div className="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 text-center">
+                  <p className="text-[10px] font-black text-indigo-500 uppercase">
+                    Night Rate
                   </p>
-                  <p className="font-bold text-gray-700">50 Persons</p>
+                  <p className="font-bold text-gray-700">₱4,500.00</p>
+                  <p className="text-[9px] text-indigo-400">
+                    3:00 PM – 9:00 PM
+                  </p>
+                </div>
+                <div className="bg-purple-50 p-4 rounded-2xl border border-purple-100 text-center">
+                  <p className="text-[10px] font-black text-purple-500 uppercase">
+                    Whole Day
+                  </p>
+                  <p className="font-bold text-gray-700">₱6,000.00</p>
+                  <p className="text-[9px] text-purple-400">Full Access</p>
                 </div>
               </div>
             </div>
-            <div className="bg-green-50 p-6 rounded-3xl border border-green-100 text-center">
+
+            <div className="bg-green-50 p-6 rounded-3xl border border-green-100 text-center flex flex-col justify-center shrink-0">
               <p className="text-xs font-bold text-[#00704e] uppercase mb-1">
-                Downpayment Required
+                Security Bond
               </p>
-              <p className="text-lg font-black text-[#00704e]">₱250.00</p>
+              <p className="text-lg font-black text-[#00704e]">
+                50% Refundable
+              </p>
+              <p className="text-[10px] text-[#00704e]/60 font-bold uppercase mt-1">
+                ₱500 Base Slot Fee
+              </p>
             </div>
           </div>
 
           <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-2xl flex gap-3">
             <ExclamationTriangleIcon className="h-6 w-6 text-amber-600 shrink-0" />
             <p className="text-sm text-amber-800 font-medium">
-              <span className="font-black">Policy:</span> If guest count exceeds
-              the maximum capacity of 50 persons, an additional fee per person
-              will be applied upon arrival.
+              <span className="font-black">Policy:</span> Max capacity is 50
+              persons. A refundable bond and reservation fee are required.
+              Additional fees apply if the guest count exceeds the limit.
             </p>
           </div>
         </div>
@@ -228,13 +255,13 @@ const ClubHouse = () => {
               </span>
             </div>
 
-            <div className="p-4 bg-gray-50 rounded-4xl border-2 border-gray-100 flex justify-center">
+            <div className="p-4 bg-gray-50 rounded-4xl border-2 border-gray-100 flex justify-center overflow-hidden">
               <Calendar
                 onChange={(val) => setDate(val.toISOString().split("T")[0])}
                 value={date ? new Date(date) : new Date()}
                 minDate={new Date()}
                 tileClassName={tileClassName}
-                className="rounded-2xl border-none shadow-none font-bold text-gray-700"
+                className="rounded-2xl border-none shadow-none font-bold text-gray-700 w-full"
               />
             </div>
             {date && (

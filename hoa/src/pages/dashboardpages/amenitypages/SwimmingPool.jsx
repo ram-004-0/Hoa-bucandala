@@ -28,7 +28,7 @@ const TIME_SLOTS = [
 const SwimmingPool = () => {
   const navigate = useNavigate();
   const [date, setDate] = useState("");
-  const [reservedDates, setReservedDates] = useState([]); // Added for calendar highlighting
+  const [fullyReservedDates, setFullyReservedDates] = useState([]);
   const [pax, setPax] = useState(1);
   const [slots, setSlots] = useState(
     TIME_SLOTS.map((s) => ({ ...s, available: true, currentPax: 0 })),
@@ -56,24 +56,24 @@ const SwimmingPool = () => {
     }
   }, [navigate]);
 
-  // Fetch reserved dates to highlight on the calendar
+  // Fetch only dates where ALL 4 slots are full
   useEffect(() => {
-    const fetchReservedDates = async () => {
+    const fetchFullyReservedDates = async () => {
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(
-          `${API_URL}/amenities/${AMENITY_ID}/reserved-dates`,
+          `${API_URL}/amenities/${AMENITY_ID}/fully-reserved-dates`,
           {
             headers: { Authorization: `Bearer ${token}` },
           },
         );
         const data = await res.json();
-        setReservedDates(data || []);
+        setFullyReservedDates(data || []);
       } catch (err) {
         console.error("Failed to fetch reserved dates");
       }
     };
-    fetchReservedDates();
+    fetchFullyReservedDates();
   }, []);
 
   const fetchAvailability = useCallback(async () => {
@@ -89,7 +89,6 @@ const SwimmingPool = () => {
       );
       const data = await res.json();
 
-      // Logic updated to ensure slots stay visible/available based on guest count
       const updatedSlots = TIME_SLOTS.map((slot) => {
         const slotData = data.slotDetails?.find(
           (d) => d.time_slot === slot.value,
@@ -100,7 +99,6 @@ const SwimmingPool = () => {
         return {
           ...slot,
           currentPax: currentTotal,
-          // Slot is available as long as it hasn't reached the max capacity
           available: currentTotal < MAX_CAPACITY,
         };
       });
@@ -111,7 +109,6 @@ const SwimmingPool = () => {
         const current = updatedSlots.find(
           (s) => s.value === selectedSlot.value,
         );
-        // Deselect if the background update shows the slot just became full
         if (current && current.currentPax >= MAX_CAPACITY)
           setSelectedSlot(null);
       }
@@ -178,11 +175,11 @@ const SwimmingPool = () => {
     }
   };
 
-  // Calendar styling logic
+  // Only mark red if the date is in the "fully reserved" list (all 4 slots full)
   const tileClassName = ({ date: viewDate, view }) => {
     if (view === "month") {
       const dateStr = viewDate.toISOString().split("T")[0];
-      if (reservedDates.includes(dateStr)) {
+      if (fullyReservedDates.includes(dateStr)) {
         return "reserved-date";
       }
     }
@@ -191,6 +188,20 @@ const SwimmingPool = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
+      {/* CSS FIX FOR CALENDAR ALIGNMENT */}
+      <style>{`
+        .react-calendar__tile {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          text-align: center !important;
+        }
+        .react-calendar__month-view__days {
+          display: grid !important;
+          grid-template-columns: repeat(7, 1fr) !important;
+        }
+      `}</style>
+
       <div
         className="text-white px-6 pt-12 pb-24 md:px-16 shadow-2xl relative overflow-hidden bg-cover bg-center"
         style={{ backgroundImage: `url(${SwimmingPoolImg})` }}
@@ -209,32 +220,56 @@ const SwimmingPool = () => {
       <div className="max-w-4xl mx-auto -mt-10 px-4 space-y-6 pt-10">
         <div className="bg-white shadow-xl rounded-4xl p-8 border border-gray-100 space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-4">
+            <div className="space-y-4 flex-1">
               <h2 className="font-black text-xl text-gray-800 flex items-center gap-2">
                 <InformationCircleIcon className="h-6 w-6 text-[#00704e]" />
-                Pool Rules & Info
+                Pool Rates & Shifts
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-gray-50 p-4 rounded-2xl">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">
-                    Rate
+                <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                  <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">
+                    Day Shift (8AM - 2PM)
                   </p>
-                  <p className="font-bold text-gray-700">₱500 / Slot</p>
+                  <div className="mt-2 space-y-1">
+                    <p className="text-xs font-bold text-gray-600">
+                      Adult (13+): <span className="text-gray-900">₱80.00</span>
+                    </p>
+                    <p className="text-xs font-bold text-gray-600">
+                      Child (4-12):{" "}
+                      <span className="text-gray-900">₱50.00</span>
+                    </p>
+                  </div>
                 </div>
-                <div className="bg-gray-50 p-4 rounded-2xl">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">
-                    Max Capacity
+                <div className="bg-indigo-50 p-4 rounded-2xl border border-indigo-100">
+                  <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">
+                    Night Shift (3PM - 9PM)
                   </p>
-                  <p className="font-bold text-gray-700">20 Persons</p>
+                  <div className="mt-2 space-y-1">
+                    <p className="text-xs font-bold text-gray-600">
+                      Adult (13+):{" "}
+                      <span className="text-gray-900">₱100.00</span>
+                    </p>
+                    <p className="text-xs font-bold text-gray-600">
+                      Child (4-12):{" "}
+                      <span className="text-gray-900">₱80.00</span>
+                    </p>
+                  </div>
                 </div>
               </div>
+              <p className="text-[10px] font-black text-gray-400 uppercase ml-1">
+                Toddlers (3 yrs & below):{" "}
+                <span className="text-green-600">FREE</span>
+              </p>
             </div>
-            <div className="bg-green-50 p-6 rounded-3xl border border-green-100 text-center">
+            <div className="bg-green-50 p-6 rounded-3xl border border-green-100 text-center shrink-0">
               <p className="text-xs font-bold text-[#00704e] uppercase mb-1">
                 Operating Hours
               </p>
               <p className="text-lg font-black text-[#00704e]">
                 8:00 AM – 12:00 AM
+              </p>
+              <p className="text-[10px] font-bold text-[#00704e]/60 mt-1 uppercase">
+                ₱500 Reservation Base Fee
               </p>
             </div>
           </div>
@@ -255,7 +290,6 @@ const SwimmingPool = () => {
             Make a Reservation
           </h2>
 
-          {/* Step 1: Visual Calendar */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-gray-500 ml-1">
               <CalendarIcon className="h-5 w-5" />
@@ -264,13 +298,13 @@ const SwimmingPool = () => {
               </span>
             </div>
 
-            <div className="p-4 bg-gray-50 rounded-4xl border-2 border-gray-100 flex justify-center">
+            <div className="p-4 bg-gray-50 rounded-4xl border-2 border-gray-100 flex justify-center overflow-hidden">
               <Calendar
                 onChange={(val) => setDate(val.toISOString().split("T")[0])}
                 value={date ? new Date(date) : new Date()}
                 minDate={new Date()}
                 tileClassName={tileClassName}
-                className="rounded-2xl border-none shadow-none font-bold text-gray-700"
+                className="rounded-2xl border-none shadow-none font-bold text-gray-700 w-full"
               />
             </div>
             {date && (

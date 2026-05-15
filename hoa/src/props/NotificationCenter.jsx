@@ -8,6 +8,8 @@ import {
   CalendarDaysIcon,
   ExclamationCircleIcon,
   InboxIcon,
+  CheckCheckIcon,
+  TrashIcon,
 } from "@heroicons/react/24/outline";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
@@ -16,22 +18,56 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetch(`${API_URL}/notifications/my-alerts`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      const data = await response.json();
+      setNotifications(data);
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const response = await fetch(`${API_URL}/notifications/my-alerts`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        });
-        const data = await response.json();
-        setNotifications(data);
-      } catch (err) {
-        console.error("Error fetching notifications:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchNotifications();
   }, []);
+
+  // Function to Mark All as Read
+  const handleMarkAllRead = async () => {
+    try {
+      const response = await fetch(`${API_URL}/notifications/mark-read`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      if (response.ok) {
+        // Optimistically update UI or re-fetch
+        setNotifications((prev) => prev.map((n) => ({ ...n, status: "Read" })));
+      }
+    } catch (err) {
+      console.error("Error marking as read:", err);
+    }
+  };
+
+  // Function to Clear All Notifications
+  const handleClearAll = async () => {
+    if (!window.confirm("Are you sure you want to clear all notifications?"))
+      return;
+    try {
+      const response = await fetch(`${API_URL}/notifications/clear-all`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      if (response.ok) {
+        setNotifications([]);
+      }
+    } catch (err) {
+      console.error("Error clearing notifications:", err);
+    }
+  };
 
   const getIcon = (type) => {
     const style = "h-6 w-6";
@@ -57,7 +93,7 @@ const Notifications = () => {
         <Link to="/home">
           <ArrowLeftIcon className="h-8 w-8 mr-6 hover:scale-110 transition-transform" />
         </Link>
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-black tracking-tighter uppercase">
             Community Inbox
           </h1>
@@ -65,10 +101,27 @@ const Notifications = () => {
             All System Notifications
           </p>
         </div>
+
+        {/* Action Buttons */}
+        {notifications.length > 0 && (
+          <div className="flex gap-2">
+            <button
+              onClick={handleMarkAllRead}
+              className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+            >
+              <CheckCheckIcon className="h-4 w-4" /> Mark Read
+            </button>
+            <button
+              onClick={handleClearAll}
+              className="flex items-center gap-2 bg-red-500/20 hover:bg-red-500/40 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+            >
+              <TrashIcon className="h-4 w-4" /> Clear All
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="max-w-4xl mx-auto -mt-10 px-4">
-        <br />
         <br />
         <br />
         <br />
@@ -82,7 +135,9 @@ const Notifications = () => {
               {notifications.map((notif) => (
                 <div
                   key={notif.notification_id}
-                  className={`p-8 flex items-start gap-6 hover:bg-gray-50 transition-colors ${notif.status === "Unread" ? "bg-green-50/20" : ""}`}
+                  className={`p-8 flex items-start gap-6 hover:bg-gray-50 transition-colors ${
+                    notif.status === "Unread" ? "bg-green-50/20" : ""
+                  }`}
                 >
                   <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 shrink-0">
                     {getIcon(notif.type)}

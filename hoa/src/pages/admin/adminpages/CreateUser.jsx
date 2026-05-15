@@ -270,7 +270,7 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
               </p>
             </div>
 
-            {!isGuardRole && (
+            {/* {!isGuardRole && (
               <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-gray-100">
                 <input
                   type="checkbox"
@@ -284,7 +284,7 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
                   Outstanding Balance
                 </span>
               </label>
-            )}
+            )} */}
 
             <button
               type="submit"

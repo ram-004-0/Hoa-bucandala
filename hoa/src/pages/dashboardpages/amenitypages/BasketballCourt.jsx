@@ -26,7 +26,7 @@ const TIME_SLOTS = [
 const BasketballCourt = () => {
   const navigate = useNavigate();
   const [date, setDate] = useState("");
-  const [reservedDates, setReservedDates] = useState([]); // Track approved dates
+  const [reservedDates, setReservedDates] = useState([]); // Track fully booked dates
   const [slots, setSlots] = useState(
     TIME_SLOTS.map((s) => ({ ...s, available: true })),
   );
@@ -65,7 +65,6 @@ const BasketballCourt = () => {
           },
         );
         const data = await res.json();
-        // Assuming API returns array of strings: ["2026-05-20", "2026-05-21"]
         setReservedDates(data || []);
       } catch (err) {
         console.error("Failed to fetch reserved dates");
@@ -79,6 +78,9 @@ const BasketballCourt = () => {
     if (!checkTokenExpiry()) return;
 
     const token = localStorage.getItem("token");
+    setSelectedSlot(null);
+    setError("");
+
     fetch(`${API_URL}/amenities/${AMENITY_ID}/availability?date=${date}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -132,12 +134,10 @@ const BasketballCourt = () => {
     }
   };
 
-  // Helper to highlight dates on the calendar
   const tileClassName = ({ date: viewDate, view }) => {
     if (view === "month") {
       const dateStr = viewDate.toISOString().split("T")[0];
       if (reservedDates.includes(dateStr)) {
-        // Use the class name we defined in the CSS file
         return "reserved-date";
       }
     }
@@ -146,6 +146,20 @@ const BasketballCourt = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
+      {/* CSS FIX FOR CALENDAR INTERACTION ISSUE */}
+      <style>{`
+        .react-calendar__tile {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          text-align: center !important;
+        }
+        .react-calendar__month-view__days {
+          display: grid !important;
+          grid-template-columns: repeat(7, 1fr) !important;
+        }
+      `}</style>
+
       <div
         className="text-white px-6 pt-12 pb-24 md:px-16 shadow-2xl relative overflow-hidden bg-cover bg-center"
         style={{ backgroundImage: `url(${welcomeImg})` }}
@@ -158,11 +172,8 @@ const BasketballCourt = () => {
           <p className="opacity-80 mt-1">Schedule your practice or game</p>
         </div>
       </div>
-      <br />
-      <br />
-      <br />
 
-      <div className="max-w-4xl mx-auto -mt-10 px-4 space-y-6">
+      <div className="max-w-4xl mx-auto -mt-10 px-4 space-y-6 pt-10">
         {/* Regulation Card */}
         <div className="bg-white shadow-xl rounded-4xl p-8 border border-gray-100 space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -201,7 +212,7 @@ const BasketballCourt = () => {
             <ExclamationTriangleIcon className="h-6 w-6 text-amber-600 shrink-0" />
             <p className="text-sm text-amber-800 font-medium">
               <span className="font-black">Policy:</span> Reservations are
-              subject to admin review.
+              subject to admin review. Please ensure your account is verified.
             </p>
           </div>
         </div>
@@ -221,13 +232,13 @@ const BasketballCourt = () => {
               </span>
             </div>
 
-            <div className="p-4 bg-gray-50 rounded-4xl border-2 border-gray-100 flex justify-center">
+            <div className="p-4 bg-gray-50 rounded-4xl border-2 border-gray-100 flex justify-center overflow-hidden">
               <Calendar
                 onChange={(val) => setDate(val.toISOString().split("T")[0])}
                 value={date ? new Date(date) : new Date()}
                 minDate={new Date()}
                 tileClassName={tileClassName}
-                className="rounded-2xl border-none shadow-none font-bold text-gray-700"
+                className="rounded-2xl border-none shadow-none font-bold text-gray-700 w-full"
               />
             </div>
             {date && (
