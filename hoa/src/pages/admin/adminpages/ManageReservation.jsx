@@ -9,7 +9,7 @@ import {
   Users,
   Clock,
   Info,
-  XMarkIcon,
+  X,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -308,7 +308,7 @@ const ManageReservation = () => {
               onClick={() => setShowReasonModal(false)}
               className="absolute top-6 right-6 p-2 hover:bg-gray-100 rounded-full transition-colors"
             >
-              <XMarkIcon className="w-6 h-6 text-gray-400" />
+              <X className="w-6 h-6 text-gray-400" />
             </button>
 
             <div className="text-center mb-6">
