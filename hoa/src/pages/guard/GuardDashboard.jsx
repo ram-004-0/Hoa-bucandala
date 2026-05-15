@@ -196,29 +196,64 @@ const GuardDashboard = () => {
         </div>
 
         {/* Emergency Support */}
-        <div className="bg-white rounded-2xl border border-red-100 shadow-sm overflow-hidden">
-          <div className="bg-red-50 px-6 py-4 border-b border-red-100 flex items-center justify-between">
-            <h3 className="text-red-700 font-bold flex items-center gap-2 text-sm uppercase tracking-wider">
-              <Phone size={16} /> Emergency Support
-            </h3>
+        <div className="p-6 shadow-md rounded-lg bg-white border-t-4 border-blue-600">
+          <div className="flex items-center gap-2 mb-2">
+            <Building2 className="w-6 h-6 text-blue-600" />
+            <h1 className="font-bold text-xl uppercase tracking-tight">
+              Imus City Emergency Services
+            </h1>
           </div>
-          <div className="p-8 grid grid-cols-1 sm:grid-cols-2 gap-8">
-            <div className="flex flex-col gap-1">
-              <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">
-                Control Center
-              </span>
-              <span className="text-2xl font-black text-gray-800 tracking-tight">
-                0917-000-0000
-              </span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">
-                Police / Medical
-              </span>
-              <span className="text-2xl font-black text-red-600 underline decoration-2 underline-offset-8">
-                911
-              </span>
-            </div>
+          <p className="text-sm text-gray-500 mb-6 italic">
+            If the emergency requires outside intervention:
+          </p>
+
+          <div className="overflow-hidden rounded-xl border border-gray-100">
+            <table className="w-full text-left">
+              <thead className="bg-blue-50">
+                <tr>
+                  <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-blue-800">
+                    Agency
+                  </th>
+                  <th className="px-4 py-3 text-xs font-black uppercase tracking-wider text-blue-800 text-right">
+                    Contact Number
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-4 text-sm font-semibold text-gray-700">
+                    Imus City Police Station
+                  </td>
+                  <td className="px-4 py-4 text-sm font-black text-gray-900 text-right">
+                    (046) 471-3993
+                  </td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-4 text-sm font-semibold text-gray-700">
+                    Imus Bureau of Fire Protection
+                  </td>
+                  <td className="px-4 py-4 text-sm font-black text-gray-900 text-right">
+                    (046) 970-5161
+                  </td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-4 text-sm font-semibold text-gray-700">
+                    Imus CDRRMO (Disaster/Ambulance)
+                  </td>
+                  <td className="px-4 py-4 text-sm font-black text-gray-900 text-right">
+                    (046) 472-2618
+                  </td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-4 text-sm font-semibold text-gray-700">
+                    City Information Office
+                  </td>
+                  <td className="px-4 py-4 text-sm font-black text-gray-900 text-right">
+                    (046) 471-2491
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
