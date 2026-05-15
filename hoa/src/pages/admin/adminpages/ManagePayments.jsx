@@ -48,8 +48,8 @@ const ManagePayments = () => {
       const paymentsData = await payRes.json();
       const residentsData = await resRes.json();
 
-      setPayments(paymentsData);
-      setResidents(residentsData);
+      setPayments(Array.isArray(paymentsData) ? paymentsData : []);
+      setResidents(Array.isArray(residentsData) ? residentsData : []);
     } catch (err) {
       console.error("Failed to fetch data:", err);
     } finally {
@@ -85,7 +85,7 @@ const ManagePayments = () => {
 
     const alreadyBilled = payments.find(
       (p) =>
-        p.resident_id === selectedResident.resident_id &&
+        p.resident_id === selectedResident?.resident_id &&
         p.billingMonth === billData.month,
     );
 
@@ -107,7 +107,7 @@ const ManagePayments = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          residentId: selectedResident.resident_id,
+          residentId: selectedResident?.resident_id,
           amount: billData.amount,
           billingMonth: billData.month,
           status: "Pending",
@@ -137,7 +137,7 @@ const ManagePayments = () => {
       );
     }
     return payments.filter((p) => {
-      // Defensive fallback checking all possible name aliases from your backend queries
+      // Robust name extraction checks all potential schema variants
       const name = (
         p.residentName ||
         p.full_name ||
@@ -153,7 +153,7 @@ const ManagePayments = () => {
 
   const totalCollected = payments
     .filter((p) => p.status === "Paid")
-    .reduce((sum, p) => sum + Number(p.amount), 0);
+    .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
   const pendingCount = payments.filter((p) => p.status === "Pending").length;
 
@@ -238,14 +238,13 @@ const ManagePayments = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {displayList.map((item) => (
+              {displayList.map((item, index) => (
                 <tr
-                  key={item.id || item.resident_id}
+                  key={item.id || item.resident_id || index}
                   className="hover:bg-gray-50/50 transition-colors group"
                 >
                   <td className="px-6 py-4">
                     <p className="font-bold text-gray-800">
-                      {/* Checks every possible name key returned by your different database endpoints */}
                       {item.residentName ||
                         item.full_name ||
                         item.name ||
@@ -264,7 +263,7 @@ const ManagePayments = () => {
                       </span>
                     ) : (
                       <span className="font-bold text-gray-900">
-                        ₱{Number(item.amount).toLocaleString()}
+                        ₱{Number(item.amount || 0).toLocaleString()}
                       </span>
                     )}
                   </td>
@@ -360,8 +359,10 @@ const ManagePayments = () => {
                   Resident Name
                 </label>
                 <p className="font-bold text-xl text-gray-800">
-                  {selectedResident?.full_name ||
-                    selectedResident?.residentName}
+                  {selectedResident?.residentName ||
+                    selectedResident?.full_name ||
+                    selectedResident?.name ||
+                    "Unknown Resident"}
                 </p>
               </div>
 

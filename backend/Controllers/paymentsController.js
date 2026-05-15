@@ -1,9 +1,9 @@
 import pool from "../config/db.js";
 
-// GET all payments with resident names
-// Look for this function in your backend payment/billing controller:
+// 📊 GET all payments with resident names
 export const getAllPayments = async (req, res) => {
   try {
+    // We select r.full_name as residentName to map directly to your frontend table
     const [rows] = await db.query(`
       SELECT 
         b.billing_id AS id, 
@@ -16,12 +16,16 @@ export const getAllPayments = async (req, res) => {
       INNER JOIN residents r ON b.resident_id = r.resident_id
       ORDER BY b.billing_id DESC
     `);
-    res.json(rows);
+
+    res.status(200).json(rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    // This will print the EXACT database issue in your Railway logs (e.g., Unknown column)
+    console.error("❌ SQL Error inside getAllPayments:", err.message);
+    res
+      .status(500)
+      .json({ error: "Database query failed", details: err.message });
   }
 };
-
 // POST Create a new bill (Issue Bill) + Notification
 export const createBill = async (req, res) => {
   const { residentId, amount, billingMonth } = req.body;
