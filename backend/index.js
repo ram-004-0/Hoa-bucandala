@@ -21,6 +21,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 const allowedOrigins = [
+  "https://hoa-bucandala.netlify.app/",
   "https://hoa-camella-bucandala.vercel.app",
   "http://localhost:5173",
 ];
