@@ -12,7 +12,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import "./CalendarCustom.css";
-import welcomeImg from "../assets/basketball.png";
+import welcomeImg from "../../../assets/basketball.png";
 
 const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 const AMENITY_ID = 2;
