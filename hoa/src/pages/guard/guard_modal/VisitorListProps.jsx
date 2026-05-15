@@ -18,6 +18,7 @@ const VisitorListProps = ({
   time,
   onUpdate,
 }) => {
+  // Logic to handle the status update via the API
   const handleStatusChange = async (newStatus) => {
     try {
       const res = await fetch(
@@ -31,7 +32,10 @@ const VisitorListProps = ({
           body: JSON.stringify({ status: newStatus }),
         },
       );
-      if (res.ok) onUpdate();
+      if (res.ok) {
+        // Refresh the parent list after a successful update
+        onUpdate();
+      }
     } catch (err) {
       console.error("Status update failed:", err);
     }
@@ -45,7 +49,9 @@ const VisitorListProps = ({
 
   return (
     <div
-      className={`bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full transition-all ${state === "DEPARTED" ? "opacity-60" : "hover:shadow-md"}`}
+      className={`bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full transition-all ${
+        state === "DEPARTED" ? "opacity-60" : "hover:shadow-md"
+      }`}
     >
       <div className="p-6 flex flex-col gap-5 flex-grow">
         <div className="flex justify-between items-start">
@@ -71,6 +77,7 @@ const VisitorListProps = ({
         </div>
       </div>
 
+      {/* FOOTER ACTIONS: Where the update happens */}
       <div className="p-4 bg-gray-50 border-t border-gray-100 mt-auto">
         {state === "PENDING" && (
           <button

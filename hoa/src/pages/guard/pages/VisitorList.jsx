@@ -3,10 +3,10 @@ import { Link } from "react-router-dom";
 import {
   ArrowLeftIcon,
   Search,
-  RefreshCw,
   UserPlus,
   Clock,
   CheckCircle,
+  RefreshCw,
 } from "lucide-react";
 import VisitorListProps from "../guard_modal/VisitorListProps";
 
@@ -17,12 +17,9 @@ const VisitorList = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   const fetchVisitors = async (isAutoRefresh = false) => {
-    // Show main loader only on initial mount or manual sync
-    if (!isAutoRefresh) {
-      setLoading(true);
-    } else {
-      setBackgroundLoading(true);
-    }
+    // Only show the full-page loading spinner on the initial load
+    if (!isAutoRefresh) setLoading(true);
+    else setBackgroundLoading(true);
 
     try {
       const res = await fetch(
@@ -94,20 +91,26 @@ const VisitorList = () => {
               Validate entries and manage current guests
             </p>
           </div>
-          {/* Subtle indicator for background syncing */}
-          {backgroundLoading && (
-            <div className="md:ml-auto flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">
-              <RefreshCw size={10} className="animate-spin" />
-              Syncing Live
-            </div>
-          )}
+
+          {/* Status Indicator (Replacing the manual sync button) */}
+          <div className="md:ml-auto flex items-center gap-2 bg-black/20 px-4 py-2 rounded-full border border-white/10">
+            <div
+              className={`w-2 h-2 rounded-full bg-green-400 ${backgroundLoading ? "animate-ping" : ""}`}
+            ></div>
+            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+              Live Monitoring{" "}
+              {backgroundLoading && (
+                <RefreshCw size={10} className="animate-spin" />
+              )}
+            </span>
+          </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8 flex flex-col gap-6">
-        {/* Filters Row - Reference from VisitorLog */}
+        {/* Filters Row */}
         <div className="bg-white shadow-sm border border-gray-100 rounded-xl p-4 flex flex-col md:flex-row gap-4 justify-between items-center">
-          <div className="relative w-full md:w-96">
+          <div className="relative w-full">
             <Search
               className="absolute left-3 top-2.5 text-gray-400"
               size={18}
@@ -120,15 +123,6 @@ const VisitorList = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-
-          <button
-            onClick={() => fetchVisitors(false)}
-            disabled={loading}
-            className="flex items-center gap-2 text-sm text-[#00704e] font-bold hover:bg-green-50 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-          >
-            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-            Sync Database
-          </button>
         </div>
 
         {/* Stats Grid - Standardized Design */}
@@ -167,12 +161,12 @@ const VisitorList = () => {
                 key={v.visitor_id}
                 id={v.visitor_id}
                 name={v.visitor_name}
-                state={v.status}
+                state={v.status} // This prop inside VisitorListProps handles the status update UI
                 homeowner={v.host_resident}
                 address={v.address_to_visit}
                 purpose={v.purpose_of_visit}
                 time={`${v.expected_date ? v.expected_date.split("T")[0] : "N/A"} @ ${v.expected_time}`}
-                onUpdate={() => fetchVisitors(true)}
+                onUpdate={() => fetchVisitors(true)} // Status updates trigger a background refresh
               />
             ))}
           </div>
