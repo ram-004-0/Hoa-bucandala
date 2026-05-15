@@ -17,7 +17,7 @@ const ManagePayments = () => {
   const [payments, setPayments] = useState([]);
   const [residents, setResidents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false); // New state for button loading
+  const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [view, setView] = useState("pending");
 
@@ -26,7 +26,6 @@ const ManagePayments = () => {
   const [billData, setBillData] = useState({ amount: 1500, month: "" });
   const [error, setError] = useState("");
 
-  // Get current month in YYYY-MM format for validation
   const currentMonthStr = new Date().toISOString().slice(0, 7);
 
   useEffect(() => {
@@ -79,13 +78,11 @@ const ManagePayments = () => {
     e.preventDefault();
     setError("");
 
-    // 1. Past Date Validation
     if (billData.month < currentMonthStr) {
       setError("Cannot issue a bill for a past month.");
       return;
     }
 
-    // 2. Duplicate Check (Prevent billing the same month twice)
     const alreadyBilled = payments.find(
       (p) =>
         p.resident_id === selectedResident.resident_id &&
@@ -132,7 +129,6 @@ const ManagePayments = () => {
     }
   };
 
-  // Logic for filtering
   const displayList = (() => {
     const term = searchTerm.toLowerCase();
     if (view === "residents") {
@@ -141,7 +137,7 @@ const ManagePayments = () => {
       );
     }
     return payments.filter((p) => {
-      // Use residentName from API or full_name as fallback
+      // FIX: Check residentName (from SQL alias) OR full_name (from fallback)
       const name = (p.residentName || p.full_name || "").toLowerCase();
       const matchesName = name.includes(term);
       const matchesStatus =
@@ -171,7 +167,6 @@ const ManagePayments = () => {
       <br />
 
       <div className="max-w-7xl mx-auto px-6 -mt-10">
-        {/* Stats Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <StatCard
             title="Total Collections"
@@ -190,7 +185,6 @@ const ManagePayments = () => {
           />
         </div>
 
-        {/* Controls */}
         <div className="mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex bg-gray-200 p-1 rounded-xl w-full md:w-auto">
             {["pending", "history", "residents"].map((t) => (
@@ -215,7 +209,6 @@ const ManagePayments = () => {
           </div>
         </div>
 
-        {/* Table */}
         <div className="bg-white shadow-xl shadow-gray-200/50 rounded-2xl overflow-hidden border border-gray-100">
           <table className="w-full text-left">
             <thead className="bg-gray-50/50 border-b border-gray-100">
@@ -247,7 +240,10 @@ const ManagePayments = () => {
                 >
                   <td className="px-6 py-4">
                     <p className="font-bold text-gray-800">
-                      {item.residentName || item.full_name}
+                      {/* FIX: Check for residentName alias first */}
+                      {item.residentName ||
+                        item.full_name ||
+                        "Unknown Resident"}
                     </p>
                   </td>
                   {view !== "residents" && (
@@ -325,7 +321,6 @@ const ManagePayments = () => {
         </div>
       </div>
 
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300">
@@ -372,7 +367,7 @@ const ManagePayments = () => {
                   <input
                     type="month"
                     required
-                    min={currentMonthStr} // HTML5 validation for past months
+                    min={currentMonthStr}
                     className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 font-bold focus:ring-2 focus:ring-[#00704e] outline-none"
                     onChange={(e) =>
                       setBillData({ ...billData, month: e.target.value })
@@ -413,7 +408,6 @@ const ManagePayments = () => {
   );
 };
 
-// ... (StatCard, TabBtn, and StatusBadge components remain exactly as they were)
 const StatCard = ({ title, value, color }) => (
   <div className="p-8 bg-white shadow-sm rounded-4xl border border-gray-100">
     <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">
