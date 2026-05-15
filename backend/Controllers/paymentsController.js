@@ -4,7 +4,7 @@ import pool from "../config/db.js";
 export const getAllPayments = async (req, res) => {
   try {
     // We select r.full_name as residentName to map directly to your frontend table
-    const [rows] = await db.query(`
+    const [rows] = await pool.query(`
       SELECT 
         b.billing_id AS id, 
         b.resident_id,
