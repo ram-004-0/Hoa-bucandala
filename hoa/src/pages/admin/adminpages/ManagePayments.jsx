@@ -32,6 +32,14 @@ const ManagePayments = () => {
     fetchData();
   }, []);
 
+  // ✅ FIX 1: Reset search and selected states when switching views to prevent ghost row leaks
+  const handleViewChange = (newView) => {
+    setView(newView);
+    setSearchTerm("");
+    setSelectedResident(null);
+    setError("");
+  };
+
   const fetchData = async () => {
     const token = localStorage.getItem("token");
     try {
@@ -135,7 +143,7 @@ const ManagePayments = () => {
   const displayList = (() => {
     const term = searchTerm.toLowerCase().trim();
 
-    // 1. Filter Residents View
+    // 1. Handle Residents List Filtering exclusively
     if (view === "residents") {
       return residents.filter((r) =>
         (r.full_name || r.residentName || r.name || "")
@@ -144,7 +152,7 @@ const ManagePayments = () => {
       );
     }
 
-    // 2. Filter Payments View (Pending vs History)
+    // 2. Handle Payments & History Tab Rendering with sanitized string parsing
     return payments.filter((p) => {
       const name = (
         p.residentName ||
@@ -155,12 +163,14 @@ const ManagePayments = () => {
 
       const matchesName = name.includes(term);
 
-      // ✅ FIX: Strict isolated status rendering matching for specific tab views
+      // ✅ FIX 2: Strict normalization case check to match exact database data payload strings
+      const normalizedStatus = (p.status || "").trim().toLowerCase();
+
       let matchesStatus = false;
       if (view === "pending") {
-        matchesStatus = p.status === "Pending";
+        matchesStatus = normalizedStatus === "pending";
       } else if (view === "history") {
-        matchesStatus = p.status === "Paid";
+        matchesStatus = normalizedStatus === "paid";
       }
 
       return matchesName && matchesStatus;
@@ -168,10 +178,12 @@ const ManagePayments = () => {
   })();
 
   const totalCollected = payments
-    .filter((p) => p.status === "Paid")
+    .filter((p) => (p.status || "").trim().toLowerCase() === "paid")
     .reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
-  const pendingCount = payments.filter((p) => p.status === "Pending").length;
+  const pendingCount = payments.filter(
+    (p) => (p.status || "").trim().toLowerCase() === "pending",
+  ).length;
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans antialiased">
@@ -212,7 +224,7 @@ const ManagePayments = () => {
               <TabBtn
                 key={t}
                 active={view === t}
-                onClick={() => setView(t)}
+                onClick={() => handleViewChange(t)} // ✅ FIX 3: Safe tracking transition cleaner
                 label={t.charAt(0).toUpperCase() + t.slice(1)}
               />
             ))}
@@ -254,80 +266,95 @@ const ManagePayments = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {displayList.map((item, index) => (
-                <tr
-                  key={item.id || item.resident_id || index}
-                  className="hover:bg-gray-50/50 transition-colors group"
-                >
-                  <td className="px-6 py-4">
-                    <p className="font-bold text-gray-800">
-                      {item.residentName ||
-                        item.full_name ||
-                        item.name ||
-                        "Unknown Resident"}
-                    </p>
-                  </td>
-                  {view !== "residents" && (
-                    <td className="px-6 py-4 text-sm text-gray-500 font-medium">
-                      {item.billingMonth}
+              {displayList.map((item, index) => {
+                // ✅ FIX 4: Explicit, calculated key strings unique to their respective context collections
+                const rowKey =
+                  view === "residents"
+                    ? `res-${item.resident_id || item.id || index}`
+                    : `pay-${item.id || index}`;
+
+                return (
+                  <tr
+                    key={rowKey}
+                    className="hover:bg-gray-50/50 transition-colors group"
+                  >
+                    <td className="px-6 py-4">
+                      <p className="font-bold text-gray-800">
+                        {item.residentName ||
+                          item.full_name ||
+                          item.name ||
+                          "Unknown Resident"}
+                      </p>
                     </td>
-                  )}
-                  <td className="px-6 py-4">
-                    {view === "residents" ? (
-                      <span className="text-sm text-gray-500">
-                        {item.address}
-                      </span>
-                    ) : (
-                      <span className="font-bold text-gray-900">
-                        ₱{Number(item.amount || 0).toLocaleString()}
-                      </span>
+                    {view !== "residents" && (
+                      <td className="px-6 py-4 text-sm text-gray-500 font-medium">
+                        {item.billingMonth || item.billing_month}
+                      </td>
                     )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <StatusBadge
-                      status={
-                        view === "residents"
-                          ? item.has_balance
-                            ? "Dues"
-                            : "Clean"
-                          : item.status
-                      }
-                    />
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    {view === "residents" ? (
-                      <button
-                        onClick={() => {
-                          setSelectedResident(item);
-                          setError("");
-                          setShowModal(true);
-                        }}
-                        className="text-[#00704e] font-bold text-xs flex items-center gap-1 mx-auto hover:scale-105 transition-transform"
-                      >
-                        <CreditCard className="h-4 w-4" /> Issue Bill
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() =>
-                          handleUpdateStatus(
-                            item.id,
-                            item.status === "Pending" ? "Paid" : "Pending",
-                          )
+                    <td className="px-6 py-4">
+                      {view === "residents" ? (
+                        <span className="text-sm text-gray-500">
+                          {item.address}
+                        </span>
+                      ) : (
+                        <span className="font-bold text-gray-900">
+                          ₱{Number(item.amount || 0).toLocaleString()}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <StatusBadge
+                        status={
+                          view === "residents"
+                            ? item.has_balance
+                              ? "Dues"
+                              : "Clean"
+                            : item.status
                         }
-                        className={`text-xs font-black uppercase tracking-tighter px-4 py-2 rounded-lg transition-all ${
-                          item.status === "Pending"
-                            ? "bg-[#00704e] text-white hover:bg-[#005a3e]"
-                            : "text-gray-400 hover:text-red-500"
-                        }`}
-                      >
-                        {item.status === "Pending"
-                          ? "Verify Payment"
-                          : "Revert"}
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                      />
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      {view === "residents" ? (
+                        <button
+                          onClick={() => {
+                            setSelectedResident(item);
+                            setError("");
+                            setShowModal(true);
+                          }}
+                          className="text-[#00704e] font-bold text-xs flex items-center gap-1 mx-auto hover:scale-105 transition-transform"
+                        >
+                          <CreditCard className="h-4 w-4" /> Issue Bill
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            const normalizedItemStatus = (item.status || "")
+                              .trim()
+                              .toLowerCase();
+                            handleUpdateStatus(
+                              item.id,
+                              normalizedItemStatus === "pending"
+                                ? "Paid"
+                                : "Pending",
+                            );
+                          }}
+                          className={`text-xs font-black uppercase tracking-tighter px-4 py-2 rounded-lg transition-all ${
+                            (item.status || "").trim().toLowerCase() ===
+                            "pending"
+                              ? "bg-[#00704e] text-white hover:bg-[#005a3e]"
+                              : "text-gray-400 hover:text-red-500"
+                          }`}
+                        >
+                          {(item.status || "").trim().toLowerCase() ===
+                          "pending"
+                            ? "Verify Payment"
+                            : "Revert"}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 
