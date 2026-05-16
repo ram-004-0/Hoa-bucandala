@@ -107,7 +107,7 @@ const ManagePayments = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          residentId: residentId, // camelCase
+          residentId: selectedResident?.resident_id, // ✅ FIX: Correct reference to selected resident object
           amount: Number(billData.amount),
           billingMonth: billData.month,
           status: "Pending",
@@ -130,20 +130,23 @@ const ManagePayments = () => {
   };
 
   const displayList = (() => {
-    const term = searchTerm.toLowerCase();
+    const term = searchTerm.toLowerCase().trim();
     if (view === "residents") {
       return residents.filter((r) =>
-        (r.full_name || "").toLowerCase().includes(term),
+        (r.full_name || r.residentName || r.name || "")
+          .toLowerCase()
+          .includes(term),
       );
     }
     return payments.filter((p) => {
-      // Robust name extraction checks all potential schema variants
+      // ✅ FIX: Robust extraction mapping all structural iterations of the API schema strings
       const name = (
         p.residentName ||
         p.full_name ||
         p.name ||
         ""
       ).toLowerCase();
+
       const matchesName = name.includes(term);
       const matchesStatus =
         view === "pending" ? p.status === "Pending" : p.status === "Paid";
