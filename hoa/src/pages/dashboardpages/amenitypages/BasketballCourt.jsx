@@ -53,7 +53,6 @@ const BasketballCourt = () => {
     }
   }, [navigate]);
 
-  // Fetch fully booked dates where all slots are exhausted
   useEffect(() => {
     const fetchReservedDates = async () => {
       try {
@@ -74,7 +73,6 @@ const BasketballCourt = () => {
     fetchReservedDates();
   }, []);
 
-  // Fetch slot availability when a valid, unbooked date is picked
   useEffect(() => {
     if (!date || !checkTokenExpiry()) return;
 
@@ -88,12 +86,9 @@ const BasketballCourt = () => {
       .then((res) => res.json())
       .then((data) => {
         const updatedSlots = TIME_SLOTS.map((slot) => {
-          // Find slot inside the returned details array
           const slotData = data.slotDetails?.find(
             (d) => d.time_slot === slot.value,
           );
-
-          // Slot is unavailable only if an entry explicitly carries an Approved status
           let isOccupied = false;
           if (slotData) {
             if (

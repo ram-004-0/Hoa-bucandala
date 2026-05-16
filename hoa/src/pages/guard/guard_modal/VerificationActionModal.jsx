@@ -126,7 +126,6 @@ const VerificationActionModal = ({ onClose }) => {
   };
 
   const markArrived = async () => {
-    // Ensure we check both common ID field names
     const id = visitor?.visitor_id || visitor?.id;
 
     if (!id) {

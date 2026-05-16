@@ -27,11 +27,28 @@ export const getAllPayments = async (req, res) => {
   }
 };
 // POST Create a new bill (Issue Bill) + Notification
+// POST Create a new bill (Issue Bill) + Notification
 export const createBill = async (req, res) => {
-  const { residentId, amount, billingMonth } = req.body;
+  // Handle both camelCase and snake_case properties from req.body
+  const residentId = req.body.residentId || req.body.resident_id;
+  const { amount, billingMonth } = req.body;
+
+  // 1. Guard clause: Stop execution early if payload properties are missing
+  if (!residentId) {
+    return res.status(400).json({
+      message:
+        "Validation Error: 'residentId' is missing or undefined in the request body.",
+    });
+  }
+  if (!amount || !billingMonth) {
+    return res.status(400).json({
+      message:
+        "Validation Error: 'amount' and 'billingMonth' are required fields.",
+    });
+  }
 
   try {
-    // 1. Create the Bill
+    // 2. Create the Bill
     const [result] = await pool.query(
       "INSERT INTO billing (resident_id, amount, billing_month, status, created_at) VALUES (?, ?, ?, ?, NOW())",
       [residentId, amount, billingMonth, "Pending"],
@@ -39,8 +56,7 @@ export const createBill = async (req, res) => {
 
     const billingId = result.insertId;
 
-    // 2. Create a Notification for the resident
-    // Currency is formatted to PHP as an example
+    // 3. Create a Notification for the resident
     await pool.query(
       `INSERT INTO notifications (resident_id, type, title, message, related_id) 
        VALUES (?, 'Bill', 'New Bill Issued', ?, ?)`,
@@ -56,8 +72,11 @@ export const createBill = async (req, res) => {
       billingId: billingId,
     });
   } catch (err) {
-    console.error("SQL ERROR:", err.sqlMessage);
-    res.status(500).json({ message: err.sqlMessage });
+    console.error(
+      "SQL ERROR inside createBill:",
+      err.sqlMessage || err.message,
+    );
+    res.status(500).json({ message: err.sqlMessage || err.message });
   }
 };
 

@@ -13,11 +13,9 @@ import VisitorImage from "../../assets/visitorbg.png";
 const VisitorRegistration = () => {
   const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 
-  // Helpers for Date/Time restrictions
   const today = new Date();
-  const minDate = today.toISOString().split("T")[0]; // "YYYY-MM-DD"
+  const minDate = today.toISOString().split("T")[0];
 
-  // Get current time in HH:mm format for the min attribute
   const currentTime =
     today.getHours().toString().padStart(2, "0") +
     ":" +
@@ -36,7 +34,7 @@ const VisitorRegistration = () => {
     visitorName: "",
     contactNumber: "",
     purpose: "",
-    date: minDate, // Default to today
+    date: minDate,
     time: "",
     phase: "",
     block: "",
@@ -68,15 +66,13 @@ const VisitorRegistration = () => {
     const { id, value } = e.target;
 
     // --- START PHONE VALIDATION ---
-    // Prevent non-numeric characters from being typed in the contactNumber field
     if (id === "contactNumber") {
-      const numericValue = value.replace(/\D/g, ""); // Remove anything that isn't a digit
+      const numericValue = value.replace(/\D/g, "");
       setFormData((prev) => ({ ...prev, [id]: numericValue }));
       return;
     }
     // --- END PHONE VALIDATION ---
 
-    // If the user changes the date to today, check if their selected time is now in the past
     if (id === "date" && value === minDate) {
       if (formData.time && formData.time < currentTime) {
         setFormData((prev) => ({ ...prev, date: value, time: "" }));
@@ -118,7 +114,6 @@ const VisitorRegistration = () => {
         const newVisitor = { ...formData, id: data.visitorId };
         setSelectedVisitor(newVisitor);
         setShowRegistered(true);
-        // Reset form to defaults
         setFormData({
           visitorName: "",
           contactNumber: "",

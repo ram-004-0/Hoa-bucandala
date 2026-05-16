@@ -107,8 +107,8 @@ const ManagePayments = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          residentId: selectedResident?.resident_id,
-          amount: billData.amount,
+          residentId: residentId, // camelCase
+          amount: Number(billData.amount),
           billingMonth: billData.month,
           status: "Pending",
         }),

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowLeftIcon } from "lucide-react";
 import React, { useEffect, useState } from "react";
+
 const CreateAnnouncement = () => {
   const [category, setCategory] = useState("Policy");
   const [title, setTitle] = useState("");
@@ -44,41 +45,58 @@ const CreateAnnouncement = () => {
       setSuccess("Announcement posted successfully!");
       setTitle("");
       setContent("");
+      fetchAnnouncements(); // Refresh list so the new post shows up with its ID
     } catch (err) {
       setError(err.message);
     }
   };
 
   const handleDelete = async (id) => {
+    if (!id) {
+      setError("Cannot delete announcement: Invalid ID identification.");
+      return;
+    }
     if (!window.confirm("Delete this announcement?")) return;
+
+    setError("");
+    setSuccess("");
 
     try {
       const res = await fetch(
         `https://hoa-camellabucandalav-production.up.railway.app/api/announcements/${id}`,
         {
           method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`, // FIXED: Resolves the 401 Unauthorized error
+          },
         },
       );
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+      if (!res.ok)
+        throw new Error(data.message || "Failed to delete announcement");
 
-      setSuccess("Announcement deleted");
-      fetchAnnouncements(); // refresh list
+      setSuccess("Announcement deleted successfully!");
+      fetchAnnouncements(); // Refresh list to remove the item from view
     } catch (err) {
       setError(err.message);
     }
   };
+
   useEffect(() => {
     fetchAnnouncements();
   }, []);
 
   const fetchAnnouncements = async () => {
-    const res = await fetch(
-      "https://hoa-camellabucandalav-production.up.railway.app/api/announcements",
-    );
-    const data = await res.json();
-    setAnnouncements(data);
+    try {
+      const res = await fetch(
+        "https://hoa-camellabucandalav-production.up.railway.app/api/announcements",
+      );
+      const data = await res.json();
+      setAnnouncements(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to load announcements", err);
+    }
   };
 
   return (
@@ -106,7 +124,8 @@ const CreateAnnouncement = () => {
               <option value="Policy">Policy</option>
               <option value="Maintenance">Maintenance</option>
               <option value="Events">Events</option>
-              <option value="Events">Meeting</option>
+              <option value="Meeting">Meeting</option>{" "}
+              {/* FIXED: Fixed option duplication bug */}
             </select>
           </div>
 
@@ -137,14 +156,14 @@ const CreateAnnouncement = () => {
             />
           </div>
 
-          {/* Error / Success */}
-          {error && <p className="text-red-600">{error}</p>}
-          {success && <p className="text-green-600">{success}</p>}
+          {/* Error / Success Alerts */}
+          {error && <p className="text-red-600 font-medium">{error}</p>}
+          {success && <p className="text-green-600 font-medium">{success}</p>}
 
           {/* Post Button */}
           <button
             onClick={handlePost}
-            className="bg-[#00704e] rounded-lg px-6 py-2 text-white w-max hover:bg-[#005a3e] transition-colors"
+            className="bg-[#00704e] rounded-lg px-6 py-2 text-white w-max hover:bg-[#005a3e] transition-colors font-semibold"
           >
             Post Announcement
           </button>
@@ -158,6 +177,8 @@ const CreateAnnouncement = () => {
             posting. Make sure all information is accurate before submitting.
           </p>
         </div>
+
+        {/* Existing Announcements List View */}
         <div className="w-full max-w-4xl bg-white shadow rounded-lg p-6">
           <h2 className="text-xl font-semibold mb-4">Existing Announcements</h2>
 
@@ -165,24 +186,29 @@ const CreateAnnouncement = () => {
             <p className="text-gray-500">No announcements found</p>
           )}
 
-          {announcements.map((a) => (
-            <div
-              key={a.id}
-              className="flex justify-between items-center border-b py-3"
-            >
-              <div>
-                <p className="font-medium">{a.title}</p>
-                <p className="text-sm text-gray-500">{a.category}</p>
-              </div>
+          {announcements.map((a) => {
+            // FIXED: Automatically maps properties securely regardless if backend uses schema id identifiers like _id, id, or announcement_id
+            const announcementId = a._id || a.id || a.announcement_id;
 
-              <button
-                onClick={() => handleDelete(a.id)}
-                className="bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700"
+            return (
+              <div
+                key={announcementId || Math.random()}
+                className="flex justify-between items-center border-b py-3 last:border-b-0"
               >
-                Delete
-              </button>
-            </div>
-          ))}
+                <div>
+                  <p className="font-medium text-gray-800">{a.title}</p>
+                  <p className="text-sm text-gray-500">{a.category}</p>
+                </div>
+
+                <button
+                  onClick={() => handleDelete(announcementId)}
+                  className="bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
