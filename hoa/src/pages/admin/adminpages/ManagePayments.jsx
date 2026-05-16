@@ -83,7 +83,6 @@ const ManagePayments = () => {
       return;
     }
 
-    // Capture the absolute ID depending on endpoint format structures
     const targetResidentId =
       selectedResident?.resident_id || selectedResident?.id;
 
@@ -103,7 +102,6 @@ const ManagePayments = () => {
     const token = localStorage.getItem("token");
 
     try {
-      // ✅ FIX 1: Pointing directly to your specific backend router post URL path
       const res = await fetch(`${API_URL}/payments/create-bill`, {
         method: "POST",
         headers: {
@@ -111,7 +109,7 @@ const ManagePayments = () => {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          residentId: targetResidentId, // ✅ FIX 2: Safely maps extracted property
+          residentId: targetResidentId,
           amount: Number(billData.amount),
           billingMonth: billData.month,
           status: "Pending",
@@ -137,7 +135,7 @@ const ManagePayments = () => {
   const displayList = (() => {
     const term = searchTerm.toLowerCase().trim();
 
-    // ✅ FIX 3: Search bar accurately queries fields across all schema configurations
+    // 1. Filter Residents View
     if (view === "residents") {
       return residents.filter((r) =>
         (r.full_name || r.residentName || r.name || "")
@@ -146,6 +144,7 @@ const ManagePayments = () => {
       );
     }
 
+    // 2. Filter Payments View (Pending vs History)
     return payments.filter((p) => {
       const name = (
         p.residentName ||
@@ -155,8 +154,15 @@ const ManagePayments = () => {
       ).toLowerCase();
 
       const matchesName = name.includes(term);
-      const matchesStatus =
-        view === "pending" ? p.status === "Pending" : p.status === "Paid";
+
+      // ✅ FIX: Strict isolated status rendering matching for specific tab views
+      let matchesStatus = false;
+      if (view === "pending") {
+        matchesStatus = p.status === "Pending";
+      } else if (view === "history") {
+        matchesStatus = p.status === "Paid";
+      }
+
       return matchesName && matchesStatus;
     });
   })();
