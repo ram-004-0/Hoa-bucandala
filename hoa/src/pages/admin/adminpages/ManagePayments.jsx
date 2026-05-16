@@ -32,7 +32,6 @@ const ManagePayments = () => {
     fetchData();
   }, []);
 
-  // ✅ FIX 1: Explicitly clear volatile tracking dependencies when shifting tab domains
   const handleViewChange = (newView) => {
     setView(newView);
     setSearchTerm("");
@@ -65,17 +64,27 @@ const ManagePayments = () => {
     }
   };
 
-  // ✅ FIX 2: Added Optimistic State mapping updates to stop race conditions during database writes
-  const handleUpdateStatus = async (id, targetStatus) => {
+  // ✅ FIX 1: Safely accept targetRecordId and handle instant local state switching
+  const handleUpdateStatus = async (targetRecordId, targetStatus) => {
+    if (!targetRecordId || targetRecordId === "undefined") {
+      console.error("Error: Cannot update payment with undefined ID");
+      return;
+    }
+
     const token = localStorage.getItem("token");
 
-    // Instantly modify local collection element properties to keep row visibility pristine
+    // Optimistically update frontend arrays immediately to clear the row from current tab view
     setPayments((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status: targetStatus } : p)),
+      prev.map((p) => {
+        const currentId = p.id || p.billing_id;
+        return currentId === targetRecordId
+          ? { ...p, status: targetStatus }
+          : p;
+      }),
     );
 
     try {
-      const res = await fetch(`${API_URL}/payments/${id}`, {
+      const res = await fetch(`${API_URL}/payments/${targetRecordId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -85,8 +94,7 @@ const ManagePayments = () => {
       });
 
       if (!res.ok) {
-        // Fallback re-fetch if the API error returns
-        fetchData();
+        fetchData(); // Sync up from server if DB update encounters an issue
       }
     } catch (err) {
       console.error("Update failed:", err);
@@ -108,7 +116,9 @@ const ManagePayments = () => {
 
     const alreadyBilled = payments.find(
       (p) =>
-        p.resident_id === targetResidentId && p.billingMonth === billData.month,
+        p.resident_id === targetResidentId &&
+        (p.billingMonth === billData.month ||
+          p.billing_month === billData.month),
     );
 
     if (alreadyBilled) {
@@ -170,10 +180,7 @@ const ManagePayments = () => {
         p.name ||
         ""
       ).toLowerCase();
-
       const matchesName = name.includes(term);
-
-      // ✅ FIX 3: Sanitized status mapping fallback to secure exact matching arrays
       const normalizedStatus = (p.status || "").trim().toLowerCase();
 
       let matchesStatus = false;
@@ -277,10 +284,12 @@ const ManagePayments = () => {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {displayList.map((item, index) => {
+                // ✅ FIX 2: Check aliases to protect primary keys
+                const recordId = item.id || item.billing_id;
                 const rowKey =
                   view === "residents"
                     ? `res-${item.resident_id || item.id || index}`
-                    : `pay-${item.id || index}`;
+                    : `pay-${recordId || index}`;
 
                 return (
                   <tr
@@ -307,7 +316,7 @@ const ManagePayments = () => {
                         </span>
                       ) : (
                         <span className="font-bold text-gray-900">
-                          ₱{Number(item.amount || 0).toLocaleString()}
+                          ₱{...Number(item.amount || 0).toLocaleString()}
                         </span>
                       )}
                     </td>
@@ -340,10 +349,10 @@ const ManagePayments = () => {
                             const currentStatus = (item.status || "")
                               .trim()
                               .toLowerCase();
-                            // ✅ FIX 4: Toggle accurately sends capitalized parameters to your endpoint
                             const nextStatus =
                               currentStatus === "pending" ? "Paid" : "Pending";
-                            handleUpdateStatus(item.id, nextStatus);
+                            // ✅ FIX 3: Pass safely evaluated parameter matching
+                            handleUpdateStatus(recordId, nextStatus);
                           }}
                           className={`text-xs font-black uppercase tracking-tighter px-4 py-2 rounded-lg transition-all ${
                             (item.status || "").trim().toLowerCase() ===
