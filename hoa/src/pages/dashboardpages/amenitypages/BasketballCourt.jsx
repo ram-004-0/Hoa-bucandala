@@ -65,7 +65,6 @@ const BasketballCourt = () => {
           },
         );
         const data = await res.json();
-        // Ensure data is mapped accurately to string arrays
         setReservedDates(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Failed to fetch reserved dates");
@@ -88,10 +87,31 @@ const BasketballCourt = () => {
     })
       .then((res) => res.json())
       .then((data) => {
-        const updatedSlots = TIME_SLOTS.map((slot) => ({
-          ...slot,
-          available: data.availableSlots?.includes(slot.value) || false,
-        }));
+        const updatedSlots = TIME_SLOTS.map((slot) => {
+          // Find slot inside the returned details array
+          const slotData = data.slotDetails?.find(
+            (d) => d.time_slot === slot.value,
+          );
+
+          // Slot is unavailable only if an entry explicitly carries an Approved status
+          let isOccupied = false;
+          if (slotData) {
+            if (
+              slotData.status === undefined ||
+              slotData.status === "Approved"
+            ) {
+              isOccupied = true;
+            }
+          }
+
+          return {
+            ...slot,
+            available:
+              !isOccupied &&
+              (data.availableSlots?.includes(slot.value) || false),
+          };
+        });
+
         setSlots(updatedSlots);
         setSelectedSlot(updatedSlots.find((s) => s.available) || null);
       })
@@ -154,7 +174,7 @@ const BasketballCourt = () => {
     return null;
   };
 
-  // NEW: Disables clicking interaction completely for fully booked dates
+  // Disables clicking interaction completely for fully booked dates
   const tileDisabled = ({ date: viewDate, view }) => {
     if (view === "month") {
       const dateStr = getLocalDateString(viewDate);
@@ -267,7 +287,7 @@ const BasketballCourt = () => {
                 value={date ? new Date(date + "T00:00:00") : new Date()}
                 minDate={new Date()}
                 tileClassName={tileClassName}
-                tileDisabled={tileDisabled} // Injected interaction blocker
+                tileDisabled={tileDisabled}
                 className="rounded-2xl border-none shadow-none font-bold text-gray-700 w-full"
               />
             </div>

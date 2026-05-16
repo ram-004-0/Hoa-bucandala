@@ -52,12 +52,13 @@ export const createReservation = async (req, res) => {
 
     /**
      * 1. CAPACITY CHECK (Amenity ID 3 - Swimming Pool)
+     * Changed: Only count guests from already APPROVED reservations
      */
     if (parseInt(amenity_id) === 3) {
       const [[capacityCheck]] = await db.query(
         `SELECT SUM(guest_count) as total FROM amenities_reservation 
          WHERE amenity_id = ? AND reservation_date = ? AND time_slot = ? 
-         AND status NOT IN ('Cancelled', 'Rejected')`,
+         AND status = 'Approved'`,
         [amenity_id, reservation_date, time_slot],
       );
 
@@ -70,18 +71,19 @@ export const createReservation = async (req, res) => {
     } else {
       /**
        * 2. DUPLICATE CHECK (For single-booking amenities like Basketball Court)
+       * Changed: A slot is only considered un-bookable if there is an APPROVED booking
        */
       const [[existingBooking]] = await db.query(
         `SELECT reservation_id FROM amenities_reservation 
          WHERE amenity_id = ? AND reservation_date = ? AND time_slot = ? 
-         AND status NOT IN ('Cancelled', 'Rejected')`,
+         AND status = 'Approved'`,
         [amenity_id, reservation_date, time_slot],
       );
 
       if (existingBooking) {
         return res
           .status(409)
-          .json({ message: "This time slot is already booked" });
+          .json({ message: "This time slot is already booked and approved" });
       }
     }
 
@@ -133,10 +135,11 @@ export const getAvailability = async (req, res) => {
     const MAX_POOL_CAPACITY = 20;
 
     // 1. Get capacity totals grouping by slots
+    // Changed: Only look up counts for 'Approved' reservations
     const [slotDetails] = await db.query(
       `SELECT time_slot, SUM(guest_count) as total_guests 
        FROM amenities_reservation 
-       WHERE amenity_id = ? AND reservation_date = ? AND status NOT IN ('Cancelled', 'Rejected')
+       WHERE amenity_id = ? AND reservation_date = ? AND status = 'Approved'
        GROUP BY time_slot`,
       [id, date],
     );
@@ -312,12 +315,13 @@ export const getFullyReservedDates = async (req, res) => {
     const MAX_POOL_CAPACITY = 20;
 
     if (parseInt(id) === 3) {
+      // Changed: Calendar only blacks out dates where all slots hit maximum capacity with APPROVED bookings
       const [rows] = await db.query(
         `SELECT DATE_FORMAT(reservation_date, '%Y-%m-%d') AS full_date
          FROM (
            SELECT reservation_date, time_slot, SUM(guest_count) AS total_guests
            FROM amenities_reservation
-           WHERE amenity_id = ? AND status NOT IN ('Cancelled', 'Rejected')
+           WHERE amenity_id = ? AND status = 'Approved'
            GROUP BY reservation_date, time_slot
            HAVING total_guests >= ?
          ) AS full_slots
@@ -327,10 +331,11 @@ export const getFullyReservedDates = async (req, res) => {
       );
       return res.json(rows.map((r) => r.full_date));
     } else {
+      // Changed: Calendar only highlights dates where all 4 slots are explicitly status = 'Approved'
       const [rows] = await db.query(
         `SELECT DATE_FORMAT(reservation_date, '%Y-%m-%d') AS full_date
          FROM amenities_reservation
-         WHERE amenity_id = ? AND status NOT IN ('Cancelled', 'Rejected')
+         WHERE amenity_id = ? AND status = 'Approved'
          GROUP BY reservation_date
          HAVING COUNT(DISTINCT time_slot) >= 4`,
         [id],

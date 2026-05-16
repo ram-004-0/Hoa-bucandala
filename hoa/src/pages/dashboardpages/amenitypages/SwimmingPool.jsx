@@ -96,15 +96,10 @@ const SwimmingPool = () => {
           (d) => d.time_slot === slot.value,
         );
 
-        // UPDATE: Check if status is explicitly "Confirmed" to calculate total guests.
-        // If your backend endpoint aggregates total_guests automatically, ensure your
-        // backend filtering handles the status logic, otherwise we handle the mapping fallback here.
+        // UPDATE: Accommodate either backend aggregation or explicit confirmation flag
         let currentTotal = 0;
         if (slotData) {
-          if (
-            slotData.status === undefined ||
-            slotData.status === "Confirmed"
-          ) {
+          if (slotData.status === undefined || slotData.status === "Approved") {
             currentTotal = parseInt(slotData.total_guests) || 0;
           }
         }
@@ -348,7 +343,7 @@ const SwimmingPool = () => {
                 value={date ? new Date(date + "T00:00:00") : new Date()}
                 minDate={new Date()}
                 tileClassName={tileClassName}
-                tileDisabled={tileDisabled} // Added prop to prevent click interaction
+                tileDisabled={tileDisabled}
                 className="rounded-2xl border-none shadow-none font-bold text-gray-700 w-full"
               />
             </div>

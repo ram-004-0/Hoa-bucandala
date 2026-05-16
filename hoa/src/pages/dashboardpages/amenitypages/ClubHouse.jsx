@@ -88,11 +88,31 @@ const ClubHouse = () => {
     })
       .then((res) => res.json())
       .then((data) => {
-        const updatedSlots = TIME_SLOTS.map((slot) => ({
-          ...slot,
-          // Slots are available only if returned in availableSlots array from backend
-          available: data.availableSlots?.includes(slot.value) || false,
-        }));
+        const updatedSlots = TIME_SLOTS.map((slot) => {
+          // Find the slot inside the raw data array
+          const slotData = data.slotDetails?.find(
+            (d) => d.time_slot === slot.value,
+          );
+
+          // An individual slot is occupied and unavailable ONLY if it has an explicit "Approved" status
+          let isOccupied = false;
+          if (slotData) {
+            if (
+              slotData.status === undefined ||
+              slotData.status === "Approved"
+            ) {
+              isOccupied = true;
+            }
+          }
+
+          return {
+            ...slot,
+            available:
+              !isOccupied &&
+              (data.availableSlots?.includes(slot.value) || false),
+          };
+        });
+
         setSlots(updatedSlots);
         setSelectedSlot(updatedSlots.find((s) => s.available) || null);
       })
@@ -106,7 +126,7 @@ const ClubHouse = () => {
       return;
     }
 
-    setLoading(true); // FIXED: Correct state modifier function syntax invocation
+    setLoading(true);
     const token = localStorage.getItem("token");
 
     try {
@@ -158,7 +178,7 @@ const ClubHouse = () => {
     return null;
   };
 
-  // NEW: Disables clicking on calendar dates if all slots are reserved
+  // Disables clicking on calendar dates if all slots are reserved
   const tileDisabled = ({ date: viewDate, view }) => {
     if (view === "month") {
       const yyyy = viewDate.getFullYear();
@@ -294,7 +314,7 @@ const ClubHouse = () => {
                 value={date ? new Date(date + "T00:00:00") : new Date()}
                 minDate={new Date()}
                 tileClassName={tileClassName}
-                tileDisabled={tileDisabled} // FIXED: Block click handlers on booked-out dates
+                tileDisabled={tileDisabled}
                 className="rounded-2xl border-none shadow-none font-bold text-gray-700 w-full"
               />
             </div>
