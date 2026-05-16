@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Radio, RadioGroup } from "@headlessui/react";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import {
@@ -34,7 +34,7 @@ const BasketballCourt = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const checkTokenExpiry = () => {
+  const checkTokenExpiry = useCallback(() => {
     const token = localStorage.getItem("token");
     if (!token) {
       navigate("/login");
@@ -51,7 +51,7 @@ const BasketballCourt = () => {
     } catch {
       return false;
     }
-  };
+  }, [navigate]);
 
   // Fetch fully booked dates where all slots are exhausted
   useEffect(() => {
@@ -66,9 +66,10 @@ const BasketballCourt = () => {
         );
         const data = await res.json();
         // Ensure data is mapped accurately to string arrays
-        setReservedDates(data || []);
+        setReservedDates(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Failed to fetch reserved dates");
+        setReservedDates([]);
       }
     };
     fetchReservedDates();
@@ -76,8 +77,7 @@ const BasketballCourt = () => {
 
   // Fetch slot availability when a valid, unbooked date is picked
   useEffect(() => {
-    if (!date) return;
-    if (!checkTokenExpiry()) return;
+    if (!date || !checkTokenExpiry()) return;
 
     const token = localStorage.getItem("token");
     setSelectedSlot(null);
@@ -90,17 +90,16 @@ const BasketballCourt = () => {
       .then((data) => {
         const updatedSlots = TIME_SLOTS.map((slot) => ({
           ...slot,
-          available: data.availableSlots.includes(slot.value),
+          available: data.availableSlots?.includes(slot.value) || false,
         }));
         setSlots(updatedSlots);
         setSelectedSlot(updatedSlots.find((s) => s.available) || null);
       })
       .catch(() => setError("Failed to load availability."));
-  }, [date, navigate]);
+  }, [date, checkTokenExpiry]);
 
   const handleBooking = async () => {
-    if (!date || !selectedSlot) return;
-    if (!checkTokenExpiry()) return;
+    if (!date || !selectedSlot || !checkTokenExpiry()) return;
 
     setLoading(true);
     try {
@@ -148,18 +147,18 @@ const BasketballCourt = () => {
   const tileClassName = ({ date: viewDate, view }) => {
     if (view === "month") {
       const dateStr = getLocalDateString(viewDate);
-      if (reservedDates.includes(dateStr)) {
+      if (reservedDates?.includes?.(dateStr)) {
         return "fully-booked-date";
       }
     }
     return null;
   };
 
-  // Disables clicking interaction completely for fully booked dates
+  // NEW: Disables clicking interaction completely for fully booked dates
   const tileDisabled = ({ date: viewDate, view }) => {
     if (view === "month") {
       const dateStr = getLocalDateString(viewDate);
-      return reservedDates.includes(dateStr);
+      return reservedDates?.includes?.(dateStr);
     }
     return false;
   };
@@ -181,6 +180,12 @@ const BasketballCourt = () => {
         .react-calendar__month-view__days {
           display: grid !important;
           grid-template-columns: repeat(7, 1fr) !important;
+        }
+        /* Style rule override to block actions visually on disabled elements */
+        .react-calendar__tile:disabled {
+          background-color: #f3f4f6 !important;
+          color: #9ca3af !important;
+          cursor: not-allowed !important;
         }
       `}</style>
 
@@ -262,7 +267,7 @@ const BasketballCourt = () => {
                 value={date ? new Date(date + "T00:00:00") : new Date()}
                 minDate={new Date()}
                 tileClassName={tileClassName}
-                tileDisabled={tileDisabled}
+                tileDisabled={tileDisabled} // Injected interaction blocker
                 className="rounded-2xl border-none shadow-none font-bold text-gray-700 w-full"
               />
             </div>

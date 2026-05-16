@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Radio, RadioGroup } from "@headlessui/react";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import {
@@ -36,7 +36,7 @@ const ClubHouse = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const checkTokenExpiry = () => {
+  const checkTokenExpiry = useCallback(() => {
     const token = localStorage.getItem("token");
     if (!token) {
       navigate("/login");
@@ -53,7 +53,7 @@ const ClubHouse = () => {
     } catch {
       return false;
     }
-  };
+  }, [navigate]);
 
   // Fetch reserved dates for the clubhouse (only those where all slots are full)
   useEffect(() => {
@@ -67,14 +67,16 @@ const ClubHouse = () => {
           },
         );
         const data = await res.json();
-        setReservedDates(data || []);
+        setReservedDates(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Failed to fetch reserved dates");
+        setReservedDates([]);
       }
     };
     fetchReservedDates();
   }, []);
 
+  // Fetch slot availability for selected date
   useEffect(() => {
     if (!date || !checkTokenExpiry()) return;
     const token = localStorage.getItem("token");
@@ -88,13 +90,14 @@ const ClubHouse = () => {
       .then((data) => {
         const updatedSlots = TIME_SLOTS.map((slot) => ({
           ...slot,
-          available: data.availableSlots.includes(slot.value),
+          // Slots are available only if returned in availableSlots array from backend
+          available: data.availableSlots?.includes(slot.value) || false,
         }));
         setSlots(updatedSlots);
         setSelectedSlot(updatedSlots.find((s) => s.available) || null);
       })
       .catch(() => setError("Failed to load availability."));
-  }, [date, navigate]);
+  }, [date, checkTokenExpiry]);
 
   const handleBooking = async () => {
     if (!date || !selectedSlot || !checkTokenExpiry()) return;
@@ -103,7 +106,7 @@ const ClubHouse = () => {
       return;
     }
 
-    loading(true);
+    setLoading(true); // FIXED: Correct state modifier function syntax invocation
     const token = localStorage.getItem("token");
 
     try {
@@ -143,20 +146,31 @@ const ClubHouse = () => {
 
   const tileClassName = ({ date: viewDate, view }) => {
     if (view === "month") {
-      // FIX: Use local format parameters to build string so timezone mapping doesn't slide the date back 1 day
       const yyyy = viewDate.getFullYear();
       const mm = String(viewDate.getMonth() + 1).padStart(2, "0");
       const dd = String(viewDate.getDate()).padStart(2, "0");
       const dateStr = `${yyyy}-${mm}-${dd}`;
 
-      if (reservedDates.includes(dateStr)) {
+      if (reservedDates?.includes?.(dateStr)) {
         return "reserved-date";
       }
     }
     return null;
   };
 
-  // FIX: Formatter calculation logic mapping local timezone parameters explicitly
+  // NEW: Disables clicking on calendar dates if all slots are reserved
+  const tileDisabled = ({ date: viewDate, view }) => {
+    if (view === "month") {
+      const yyyy = viewDate.getFullYear();
+      const mm = String(viewDate.getMonth() + 1).padStart(2, "0");
+      const dd = String(viewDate.getDate()).padStart(2, "0");
+      const dateStr = `${yyyy}-${mm}-${dd}`;
+
+      return reservedDates?.includes?.(dateStr);
+    }
+    return false;
+  };
+
   const handleDateChange = (val) => {
     if (!val) return;
     const yyyy = val.getFullYear();
@@ -167,7 +181,6 @@ const ClubHouse = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* CSS FIX FOR CALENDAR INTERACTION ISSUE */}
       <style>{`
         .react-calendar__tile {
           display: flex !important;
@@ -178,6 +191,12 @@ const ClubHouse = () => {
         .react-calendar__month-view__days {
           display: grid !important;
           grid-template-columns: repeat(7, 1fr) !important;
+        }
+        /* Style rule override for disabled elements */
+        .react-calendar__tile:disabled {
+          background-color: #f3f4f6 !important;
+          color: #9ca3af !important;
+          cursor: not-allowed !important;
         }
       `}</style>
 
@@ -275,6 +294,7 @@ const ClubHouse = () => {
                 value={date ? new Date(date + "T00:00:00") : new Date()}
                 minDate={new Date()}
                 tileClassName={tileClassName}
+                tileDisabled={tileDisabled} // FIXED: Block click handlers on booked-out dates
                 className="rounded-2xl border-none shadow-none font-bold text-gray-700 w-full"
               />
             </div>

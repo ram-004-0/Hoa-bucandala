@@ -68,7 +68,6 @@ const SwimmingPool = () => {
           },
         );
         const data = await res.json();
-        // FIXED: Ensure we always fall back safely to an empty array if data isn't an array type
         setFullyReservedDates(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Failed to fetch reserved dates");
@@ -92,11 +91,23 @@ const SwimmingPool = () => {
       const data = await res.json();
 
       const updatedSlots = TIME_SLOTS.map((slot) => {
+        // Find the slot inside the data layout
         const slotData = data.slotDetails?.find(
           (d) => d.time_slot === slot.value,
-        ) || { total_guests: 0 };
+        );
 
-        const currentTotal = parseInt(slotData.total_guests) || 0;
+        // UPDATE: Check if status is explicitly "Confirmed" to calculate total guests.
+        // If your backend endpoint aggregates total_guests automatically, ensure your
+        // backend filtering handles the status logic, otherwise we handle the mapping fallback here.
+        let currentTotal = 0;
+        if (slotData) {
+          if (
+            slotData.status === undefined ||
+            slotData.status === "Confirmed"
+          ) {
+            currentTotal = parseInt(slotData.total_guests) || 0;
+          }
+        }
 
         return {
           ...slot,
@@ -178,6 +189,7 @@ const SwimmingPool = () => {
     }
   };
 
+  // Keep original visual styles for reserved dates
   const tileClassName = ({ date: viewDate, view }) => {
     if (view === "month") {
       const yyyy = viewDate.getFullYear();
@@ -185,12 +197,24 @@ const SwimmingPool = () => {
       const dd = String(viewDate.getDate()).padStart(2, "0");
       const dateStr = `${yyyy}-${mm}-${dd}`;
 
-      // FIXED: Added optional chaining validation fallback defense
       if (fullyReservedDates?.includes?.(dateStr)) {
         return "reserved-date";
       }
     }
     return null;
+  };
+
+  // NEW: Disables clicking on dates where all slots are fully booked
+  const tileDisabled = ({ date: viewDate, view }) => {
+    if (view === "month") {
+      const yyyy = viewDate.getFullYear();
+      const mm = String(viewDate.getMonth() + 1).padStart(2, "0");
+      const dd = String(viewDate.getDate()).padStart(2, "0");
+      const dateStr = `${yyyy}-${mm}-${dd}`;
+
+      return fullyReservedDates?.includes?.(dateStr);
+    }
+    return false;
   };
 
   const handleDateChange = (val) => {
@@ -213,6 +237,12 @@ const SwimmingPool = () => {
         .react-calendar__month-view__days {
           display: grid !important;
           grid-template-columns: repeat(7, 1fr) !important;
+        }
+        /* Disable interaction styling */
+        .react-calendar__tile:disabled {
+          background-color: #f3f4f6 !important;
+          color: #9ca3af !important;
+          cursor: not-allowed !important;
         }
       `}</style>
 
@@ -318,6 +348,7 @@ const SwimmingPool = () => {
                 value={date ? new Date(date + "T00:00:00") : new Date()}
                 minDate={new Date()}
                 tileClassName={tileClassName}
+                tileDisabled={tileDisabled} // Added prop to prevent click interaction
                 className="rounded-2xl border-none shadow-none font-bold text-gray-700 w-full"
               />
             </div>
