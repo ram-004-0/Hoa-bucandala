@@ -28,55 +28,45 @@ export const getAllPayments = async (req, res) => {
 };
 // POST Create a new bill (Issue Bill) + Notification
 // POST Create a new bill (Issue Bill) + Notification
+// Inside your paymentsController.js
 export const createBill = async (req, res) => {
-  // Handle both camelCase and snake_case properties from req.body
   const residentId = req.body.residentId || req.body.resident_id;
   const { amount, billingMonth } = req.body;
 
-  // 1. Guard clause: Stop execution early if payload properties are missing
   if (!residentId) {
     return res.status(400).json({
-      message:
-        "Validation Error: 'residentId' is missing or undefined in the request body.",
-    });
-  }
-  if (!amount || !billingMonth) {
-    return res.status(400).json({
-      message:
-        "Validation Error: 'amount' and 'billingMonth' are required fields.",
+      message: "Validation Error: 'residentId' is missing or undefined.",
     });
   }
 
   try {
-    // 2. Create the Bill
+    // Ensure numeric types are cast precisely for MySQL numerical columns
+    const parsedAmount = Number(amount);
+
     const [result] = await pool.query(
       "INSERT INTO billing (resident_id, amount, billing_month, status, created_at) VALUES (?, ?, ?, ?, NOW())",
-      [residentId, amount, billingMonth, "Pending"],
+      [residentId, parsedAmount, billingMonth, "Pending"],
     );
 
     const billingId = result.insertId;
 
-    // 3. Create a Notification for the resident
     await pool.query(
       `INSERT INTO notifications (resident_id, type, title, message, related_id) 
        VALUES (?, 'Bill', 'New Bill Issued', ?, ?)`,
       [
         residentId,
-        `A new bill for ${billingMonth} amounting to ₱${Number(amount).toLocaleString()} has been posted.`,
+        `A new bill for ${billingMonth} amounting to ₱${parsedAmount.toLocaleString()} has been posted.`,
         billingId,
       ],
     );
 
     res.status(201).json({
-      message: "Bill created and resident notified successfully",
+      message: "Bill created successfully",
       billingId: billingId,
     });
   } catch (err) {
-    console.error(
-      "SQL ERROR inside createBill:",
-      err.sqlMessage || err.message,
-    );
-    res.status(500).json({ message: err.sqlMessage || err.message });
+    console.error("SQL ERROR:", err.message);
+    res.status(500).json({ message: err.message });
   }
 };
 

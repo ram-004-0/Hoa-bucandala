@@ -21,7 +21,7 @@ router.get(
 );
 
 // ADMIN
-router.post("/", authenticate, authorizeRoles("ADMIN"), createBill);
+router.post("/create-bill", authenticate, authorizeRoles("ADMIN"), createBill);
 
 // ADMIN
 router.patch(

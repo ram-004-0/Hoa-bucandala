@@ -83,10 +83,13 @@ const ManagePayments = () => {
       return;
     }
 
+    // Capture the absolute ID depending on endpoint format structures
+    const targetResidentId =
+      selectedResident?.resident_id || selectedResident?.id;
+
     const alreadyBilled = payments.find(
       (p) =>
-        p.resident_id === selectedResident?.resident_id &&
-        p.billingMonth === billData.month,
+        p.resident_id === targetResidentId && p.billingMonth === billData.month,
     );
 
     if (alreadyBilled) {
@@ -100,14 +103,15 @@ const ManagePayments = () => {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch(`${API_URL}/payments`, {
+      // ✅ FIX 1: Pointing directly to your specific backend router post URL path
+      const res = await fetch(`${API_URL}/payments/create-bill`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          residentId: selectedResident?.resident_id, // ✅ FIX: Correct reference to selected resident object
+          residentId: targetResidentId, // ✅ FIX 2: Safely maps extracted property
           amount: Number(billData.amount),
           billingMonth: billData.month,
           status: "Pending",
@@ -123,6 +127,7 @@ const ManagePayments = () => {
         setError(errData.message || "Failed to create bill.");
       }
     } catch (err) {
+      console.error("Billing operation failed:", err);
       setError("Connection error. Please try again.");
     } finally {
       setSubmitting(false);
@@ -131,6 +136,8 @@ const ManagePayments = () => {
 
   const displayList = (() => {
     const term = searchTerm.toLowerCase().trim();
+
+    // ✅ FIX 3: Search bar accurately queries fields across all schema configurations
     if (view === "residents") {
       return residents.filter((r) =>
         (r.full_name || r.residentName || r.name || "")
@@ -138,8 +145,8 @@ const ManagePayments = () => {
           .includes(term),
       );
     }
+
     return payments.filter((p) => {
-      // ✅ FIX: Robust extraction mapping all structural iterations of the API schema strings
       const name = (
         p.residentName ||
         p.full_name ||
