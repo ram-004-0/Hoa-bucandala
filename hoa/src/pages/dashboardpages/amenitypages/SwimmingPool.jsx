@@ -68,9 +68,11 @@ const SwimmingPool = () => {
           },
         );
         const data = await res.json();
-        setFullyReservedDates(data || []);
+        // FIXED: Ensure we always fall back safely to an empty array if data isn't an array type
+        setFullyReservedDates(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Failed to fetch reserved dates");
+        setFullyReservedDates([]);
       }
     };
     fetchFullyReservedDates();
@@ -138,7 +140,7 @@ const SwimmingPool = () => {
       return;
     }
 
-    setLoading(true); // FIXED: Correctly calling setLoading function instead of state variable
+    setLoading(true);
     const token = localStorage.getItem("token");
 
     try {
@@ -183,7 +185,8 @@ const SwimmingPool = () => {
       const dd = String(viewDate.getDate()).padStart(2, "0");
       const dateStr = `${yyyy}-${mm}-${dd}`;
 
-      if (fullyReservedDates.includes(dateStr)) {
+      // FIXED: Added optional chaining validation fallback defense
+      if (fullyReservedDates?.includes?.(dateStr)) {
         return "reserved-date";
       }
     }
@@ -200,7 +203,6 @@ const SwimmingPool = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* CSS FIX FOR CALENDAR ALIGNMENT */}
       <style>{`
         .react-calendar__tile {
           display: flex !important;
