@@ -71,8 +71,9 @@ export const createBill = async (req, res) => {
 };
 
 // PATCH update payment status + Notification
+// PATCH update payment status + Notification
 export const updatePaymentStatus = async (req, res) => {
-  const { status } = req.body;
+  const { status } = req.body; // e.g. "Paid" or "Pending"
   const { id } = req.params; // billing_id
 
   try {
@@ -88,27 +89,34 @@ export const updatePaymentStatus = async (req, res) => {
 
     const { resident_id, billing_month } = billDetails[0];
 
+    // ✅ FIX: Force structural case matching capitalization styles
+    const capitalizedStatus =
+      status.charAt(0).toUpperCase() + status.slice(1).toLowerCase(); // Ensures "Paid" or "Pending"
+
     // 2. Update the Bill status
     await pool.query("UPDATE billing SET status = ? WHERE billing_id = ?", [
-      status,
+      capitalizedStatus,
       id,
     ]);
 
-    // 3. Notify the resident about the status change (e.g., Payment Confirmed)
-    if (status === "Paid") {
+    // 3. Notify the resident about the status change
+    if (capitalizedStatus === "Paid") {
       await pool.query(
         `INSERT INTO notifications (resident_id, type, title, message, related_id) 
          VALUES (?, 'Bill', 'Payment Confirmed', ?, ?)`,
         [
           resident_id,
+          "Bill",
+          "Payment Confirmed",
           `Your payment for the ${billing_month} bill has been verified and marked as Paid.`,
           id,
         ],
       );
     }
 
-    res.json({ message: `Payment status updated to ${status}` });
+    res.json({ message: `Payment status updated to ${capitalizedStatus}` });
   } catch (err) {
+    console.error("❌ Error inside updatePaymentStatus:", err.message);
     res.status(500).json({ message: err.message });
   }
 };

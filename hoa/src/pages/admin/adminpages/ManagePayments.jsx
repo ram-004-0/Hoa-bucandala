@@ -32,7 +32,7 @@ const ManagePayments = () => {
     fetchData();
   }, []);
 
-  // ✅ FIX 1: Reset search and selected states when switching views to prevent ghost row leaks
+  // ✅ FIX 1: Explicitly clear volatile tracking dependencies when shifting tab domains
   const handleViewChange = (newView) => {
     setView(newView);
     setSearchTerm("");
@@ -65,20 +65,32 @@ const ManagePayments = () => {
     }
   };
 
-  const handleUpdateStatus = async (id, status) => {
+  // ✅ FIX 2: Added Optimistic State mapping updates to stop race conditions during database writes
+  const handleUpdateStatus = async (id, targetStatus) => {
     const token = localStorage.getItem("token");
+
+    // Instantly modify local collection element properties to keep row visibility pristine
+    setPayments((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, status: targetStatus } : p)),
+    );
+
     try {
-      await fetch(`${API_URL}/payments/${id}`, {
+      const res = await fetch(`${API_URL}/payments/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status: targetStatus }),
       });
-      fetchData();
+
+      if (!res.ok) {
+        // Fallback re-fetch if the API error returns
+        fetchData();
+      }
     } catch (err) {
       console.error("Update failed:", err);
+      fetchData();
     }
   };
 
@@ -143,7 +155,6 @@ const ManagePayments = () => {
   const displayList = (() => {
     const term = searchTerm.toLowerCase().trim();
 
-    // 1. Handle Residents List Filtering exclusively
     if (view === "residents") {
       return residents.filter((r) =>
         (r.full_name || r.residentName || r.name || "")
@@ -152,7 +163,6 @@ const ManagePayments = () => {
       );
     }
 
-    // 2. Handle Payments & History Tab Rendering with sanitized string parsing
     return payments.filter((p) => {
       const name = (
         p.residentName ||
@@ -163,7 +173,7 @@ const ManagePayments = () => {
 
       const matchesName = name.includes(term);
 
-      // ✅ FIX 2: Strict normalization case check to match exact database data payload strings
+      // ✅ FIX 3: Sanitized status mapping fallback to secure exact matching arrays
       const normalizedStatus = (p.status || "").trim().toLowerCase();
 
       let matchesStatus = false;
@@ -224,7 +234,7 @@ const ManagePayments = () => {
               <TabBtn
                 key={t}
                 active={view === t}
-                onClick={() => handleViewChange(t)} // ✅ FIX 3: Safe tracking transition cleaner
+                onClick={() => handleViewChange(t)}
                 label={t.charAt(0).toUpperCase() + t.slice(1)}
               />
             ))}
@@ -267,7 +277,6 @@ const ManagePayments = () => {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {displayList.map((item, index) => {
-                // ✅ FIX 4: Explicit, calculated key strings unique to their respective context collections
                 const rowKey =
                   view === "residents"
                     ? `res-${item.resident_id || item.id || index}`
@@ -328,15 +337,13 @@ const ManagePayments = () => {
                       ) : (
                         <button
                           onClick={() => {
-                            const normalizedItemStatus = (item.status || "")
+                            const currentStatus = (item.status || "")
                               .trim()
                               .toLowerCase();
-                            handleUpdateStatus(
-                              item.id,
-                              normalizedItemStatus === "pending"
-                                ? "Paid"
-                                : "Pending",
-                            );
+                            // ✅ FIX 4: Toggle accurately sends capitalized parameters to your endpoint
+                            const nextStatus =
+                              currentStatus === "pending" ? "Paid" : "Pending";
+                            handleUpdateStatus(item.id, nextStatus);
                           }}
                           className={`text-xs font-black uppercase tracking-tighter px-4 py-2 rounded-lg transition-all ${
                             (item.status || "").trim().toLowerCase() ===
