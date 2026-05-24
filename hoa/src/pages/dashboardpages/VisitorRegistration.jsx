@@ -11,7 +11,7 @@ import VisitorPass from "../dashboardpages/visitorregistration_modal/VisitorPass
 import VisitorImage from "../../assets/visitorbg.png";
 
 const VisitorRegistration = () => {
-  const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
+  const API_URL = "https://hoa-bucandala.onrender.com/api";
 
   const today = new Date();
   const minDate = today.toISOString().split("T")[0];

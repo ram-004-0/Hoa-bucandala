@@ -19,7 +19,7 @@ const VerificationActionModal = ({ onClose }) => {
   const [error, setError] = useState("");
   const scannerRef = useRef(null);
 
-  const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
+  const API_URL = "https://hoa-bucandala.onrender.com/api";
 
   useEffect(() => {
     // If we switch to scan mode, start the camera

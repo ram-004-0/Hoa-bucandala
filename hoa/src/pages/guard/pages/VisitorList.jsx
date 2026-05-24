@@ -22,7 +22,7 @@ const VisitorList = () => {
 
     try {
       const res = await fetch(
-        "https://hoa-camellabucandalav-production.up.railway.app/api/visitors/all",
+        "https://hoa-bucandala.onrender.com/api/visitors/all",
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,

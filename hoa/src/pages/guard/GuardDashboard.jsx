@@ -35,14 +35,14 @@ const GuardDashboard = () => {
     try {
       // Fetch Visitor Stats
       const visitorRes = await fetch(
-        "https://hoa-camellabucandalav-production.up.railway.app/api/visitors/all",
+        "https://hoa-bucandala.onrender.com/api/visitors/all",
         { headers },
       );
       const visitorData = await visitorRes.json();
 
       // Fetch Security Request Stats
       const requestRes = await fetch(
-        "https://hoa-camellabucandalav-production.up.railway.app/api/guard-requests/pending",
+        "https://hoa-bucandala.onrender.com/api/guard-requests/pending",
         { headers },
       );
       const requestData = await requestRes.json();

@@ -11,7 +11,6 @@ import {
   Loader2,
 } from "lucide-react";
 
-// const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
 const API_URL = "https://hoa-bucandala.onrender.com/api";
 const ManagePayments = () => {
   const [payments, setPayments] = useState([]);

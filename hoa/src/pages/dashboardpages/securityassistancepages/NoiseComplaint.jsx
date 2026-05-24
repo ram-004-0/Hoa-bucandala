@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 
-const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
+const API_URL = "https://hoa-bucandala.onrender.com/api";
 
 const NoiseComplaint = () => {
   const navigate = useNavigate();

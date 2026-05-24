@@ -16,7 +16,7 @@ import { PhilippinePesoIcon, PhoneCall } from "lucide-react";
 const HOAdues = () => {
   const [bills, setBills] = useState([]);
   const [loading, setLoading] = useState(true);
-  const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
+  const API_URL = "https://hoa-bucandala.onrender.com/api";
 
   useEffect(() => {
     fetchMyBills();

@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 // Updated Base URL
-const API_URL = "https://hoa-camellabucandalav-production.up.railway.app";
+const API_URL = "https://hoa-bucandala.onrender.com";
 
 const ResidentPickups = () => {
   const [reports, setReports] = useState([]);

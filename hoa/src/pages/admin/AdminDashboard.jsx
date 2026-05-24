@@ -15,7 +15,7 @@ import {
 
 import Card from "../../props/AdminComponent";
 
-const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
+const API_URL = "https://hoa-bucandala.onrender.com/api";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();

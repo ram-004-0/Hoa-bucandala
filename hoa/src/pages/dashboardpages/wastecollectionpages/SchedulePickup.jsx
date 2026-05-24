@@ -93,7 +93,7 @@ const SchedulePickup = ({ type }) => {
     const token = localStorage.getItem("token");
     try {
       const res = await fetch(
-        `https://hoa-camellabucandalav-production.up.railway.app/api/waste/availability?date=${selectedDate}&type=${type}`,
+        `https://hoa-bucandala.onrender.com/api/waste/availability?date=${selectedDate}&type=${type}`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
       const data = await res.json();
@@ -143,7 +143,7 @@ const SchedulePickup = ({ type }) => {
     const token = localStorage.getItem("token");
     try {
       const res = await fetch(
-        "https://hoa-camellabucandalav-production.up.railway.app/api/waste/book",
+        "https://hoa-bucandala.onrender.com/api/waste/book",
         {
           method: "POST",
           headers: {

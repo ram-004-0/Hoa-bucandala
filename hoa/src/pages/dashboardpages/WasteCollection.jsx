@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import WasteImage from "../../assets/wastebg.png";
 
-const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
+const API_URL = "https://hoa-bucandala.onrender.com/api";
 
 const WasteCollection = () => {
   const [notification, setNotification] = useState({

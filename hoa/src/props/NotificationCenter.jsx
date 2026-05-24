@@ -12,7 +12,7 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 
-const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
+const API_URL = "https://hoa-bucandala.onrender.com/api";
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);

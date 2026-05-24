@@ -12,7 +12,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import CreateUser from "./CreateUser";
 
-const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
+const API_URL = "https://hoa-bucandala.onrender.com/api";
 
 const ManageResidents = () => {
   const navigate = useNavigate();

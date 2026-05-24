@@ -124,8 +124,7 @@ const CreateUser = ({ onClose, onCreate, editData, isGuardRole }) => {
 
     setLoading(true);
     const token = localStorage.getItem("token");
-    const BASE_URL =
-      "https://hoa-camellabucandalav-production.up.railway.app/api";
+    const BASE_URL = "https://hoa-bucandala.onrender.com/api";
 
     const isEditing = !!editData;
     const method = isEditing ? "PUT" : "POST";

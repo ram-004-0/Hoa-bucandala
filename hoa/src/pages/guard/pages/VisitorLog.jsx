@@ -24,7 +24,7 @@ const VisitorLog = () => {
     setLoading(true);
     try {
       const res = await fetch(
-        `https://hoa-camellabucandalav-production.up.railway.app/api/visitors/all`,
+        `https://hoa-bucandala.onrender.com/api/visitors/all`,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         },
@@ -43,7 +43,7 @@ const VisitorLog = () => {
     setIsProcessing(true);
     try {
       const res = await fetch(
-        `https://hoa-camellabucandalav-production.up.railway.app/api/visitors/${id}/status`,
+        `https://hoa-bucandala.onrender.com/api/visitors/${id}/status`,
         {
           method: "PATCH",
           headers: {

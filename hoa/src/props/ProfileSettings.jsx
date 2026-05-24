@@ -24,14 +24,11 @@ const ProfileSettings = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch(
-          "https://hoa-camellabucandalav-production.up.railway.app/api/me",
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
+        const res = await fetch("https://hoa-bucandala.onrender.com/api/me", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        );
+        });
         const data = await res.json();
         if (res.ok) {
           setFormData((prev) => ({
@@ -97,7 +94,7 @@ const ProfileSettings = () => {
     setLoading(true);
     try {
       const res = await fetch(
-        "https://hoa-camellabucandalav-production.up.railway.app/api/update-profile",
+        "https://hoa-bucandala.onrender.com/api/update-profile",
         {
           method: "PATCH",
           headers: {

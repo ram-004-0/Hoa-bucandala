@@ -12,7 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 
-const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
+const API_URL = "https://hoa-bucandala.onrender.com/api";
 
 const ViewPickups = () => {
   const [reports, setReports] = useState([]);

@@ -22,7 +22,7 @@ const VisitorListProps = ({
   const handleStatusChange = async (newStatus) => {
     try {
       const res = await fetch(
-        `https://hoa-camellabucandalav-production.up.railway.app/api/visitors/${id}/status`,
+        `https://hoa-bucandala.onrender.com/api/visitors/${id}/status`,
         {
           method: "PATCH",
           headers: {

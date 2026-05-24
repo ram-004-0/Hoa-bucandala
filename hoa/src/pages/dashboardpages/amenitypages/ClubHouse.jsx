@@ -15,7 +15,7 @@ import "react-calendar/dist/Calendar.css";
 import "./CalendarCustom.css";
 import ClubHouseImg from "../../../assets/clubhouse.png";
 
-const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
+const API_URL = "https://hoa-bucandala.onrender.com/api";
 const AMENITY_ID = 1;
 const TIME_SLOTS = [
   { label: "08:00 AM - 12:00 PM", value: "08:00-12:00" },

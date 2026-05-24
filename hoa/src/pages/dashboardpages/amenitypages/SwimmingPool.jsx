@@ -15,7 +15,7 @@ import "react-calendar/dist/Calendar.css";
 import "./CalendarCustom.css";
 import SwimmingPoolImg from "../../../assets/swimmingpool.png";
 
-const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
+const API_URL = "https://hoa-bucandala.onrender.com/api";
 const AMENITY_ID = 3;
 const MAX_CAPACITY = 20;
 const TIME_SLOTS = [

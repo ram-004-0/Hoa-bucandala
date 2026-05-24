@@ -23,7 +23,7 @@ const VisitorPass = ({ visitor, visitorId, onBack, onDone }) => {
   const [error, setError] = useState(null);
 
   // Correct URL for your current production backend
-  const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
+  const API_URL = "https://hoa-bucandala.onrender.com/api";
 
   useEffect(() => {
     // If we already have the full visitor object from props, don't fetch
