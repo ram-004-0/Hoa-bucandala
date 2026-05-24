@@ -21,7 +21,7 @@ const CreateAnnouncement = () => {
 
     try {
       const res = await fetch(
-        "https://hoa-camellabucandalav-production.up.railway.app/api/announcements",
+        "https://hoa-bucandala.onrender.com/api/announcements",
         {
           method: "POST",
           headers: {
@@ -63,7 +63,7 @@ const CreateAnnouncement = () => {
 
     try {
       const res = await fetch(
-        `https://hoa-camellabucandalav-production.up.railway.app/api/announcements/${id}`,
+        `https://hoa-bucandala.onrender.com/api/announcements/${id}`,
         {
           method: "DELETE",
           headers: {
@@ -90,7 +90,7 @@ const CreateAnnouncement = () => {
   const fetchAnnouncements = async () => {
     try {
       const res = await fetch(
-        "https://hoa-camellabucandalav-production.up.railway.app/api/announcements",
+        "https://hoa-bucandala.onrender.com/api/announcements",
       );
       const data = await res.json();
       setAnnouncements(Array.isArray(data) ? data : []);

@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [tailwindcss(), react()],
   server: {
     proxy: {
-      "/api": "https://hoa-camellabucandalav-production.up.railway.app",
+      "/api": "https://hoa-bucandala.onrender.com/api",
     },
   },
 });

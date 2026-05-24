@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import welcomeImg from "../assets/welcomebg.png";
 
-const API_URL = "https://hoa-camellabucandalav-production.up.railway.app/api";
+const API_URL = "https://hoa-bucandala.onrender.com/api";
 
 const Home = () => {
   const [showMenu, setShowMenu] = useState(false);
