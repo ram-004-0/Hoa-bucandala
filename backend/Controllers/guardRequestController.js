@@ -3,21 +3,16 @@ import { v2 as cloudinary } from "cloudinary";
 import multer from "multer";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 
-// 1. Cloudinary Configuration
-// Ensure these variables in your Railway environment match image_ef8379.png
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, // dahm3q1zr
-  api_key: process.env.CLOUDINARY_API_KEY, // 792197588311632
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-
-// 2. Setup Cloudinary Storage for Multer
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: "hoa-security-reports",
     allowed_formats: ["jpg", "png", "jpeg"],
-    // Transformation ensures images are optimized before they even hit your DB
     transformation: [{ width: 800, height: 600, crop: "limit" }],
   },
 });
@@ -62,7 +57,7 @@ export const createGuardRequest = async (req, res) => {
 
     res.status(201).json({
       message: "Security report submitted successfully.",
-      url: photoUrl, // Return for debugging
+      url: photoUrl,
     });
   } catch (err) {
     console.error("Upload Error:", err.message);

@@ -23,6 +23,7 @@ const app = express();
 const allowedOrigins = [
   "https://hoa-bucandala.netlify.app/",
   "https://hoa-camella-bucandala.vercel.app",
+  "https://hoa-bucandala.onrender.com",
   "http://localhost:5173",
 ];
 
